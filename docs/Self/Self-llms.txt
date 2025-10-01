@@ -1,0 +1,26 @@
+# Self Docs
+
+## Self Docs
+
+- [Self Protocol](/readme.md)
+- [Quickstart](/use-self/quickstart.md)
+- [Disclosures](/use-self/disclosures.md)
+- [Use deeplinking](/use-self/use-deeplinking.md): Generate deep links to open the Self mobile app directly
+- [Using mock passports](/use-self/using-mock-passports.md)
+- [Self Map countries list](/use-self/self-map-countries-list.md): list of countries supported by self protocol : https://map.self.xyz/
+- [V1 to V2 Migration Guide](/use-self/migration-v1-v2.md)
+- [SelfAppBuilder](/sdk-reference/selfappbuilder.md)
+- [SelfBackendVerifier](/sdk-reference/selfbackendverifier.md)
+- [SelfQRcodeWrapper](/sdk-reference/selfqrcodewrapper.md)
+- [Basic Integration](/contract-integration/basic-integration.md)
+- [Frontend Configuration](/contract-integration/frontend-configuration.md)
+- [Deployed Contracts](/contract-integration/deployed-contracts.md): What you're looking for if you're implementing the onchain sdk
+- [Airdrop Example](/contract-integration/airdrop-example.md)
+- [Happy Birthday Example](/contract-integration/happy-birthday-example.md)
+- [Utilize Identity Attributes](/contract-integration/utilize-identity-attributes.md)
+- [Verification in the IdentityVerificationHub](/verification-in-the-identityverificationhub.md)
+- [Overview](/technical-docs/overview.md): An in-depth overview of the Self protocol.
+- [Architecture](/technical-docs/architecture.md)
+- [attestation IDs](/concepts/attestation-ids.md)
+- [Config Storage](/concepts/config-storage.md)
+- [User context data](/concepts/user-context-data.md)

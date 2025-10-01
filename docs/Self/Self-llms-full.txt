@@ -1,0 +1,4289 @@
+# Self Protocol
+
+Verify real users while preserving privacy.
+
+## Overview
+
+Self is a **privacy-first, open-source identity protocol** that uses **zero-knowledge proofs** for secure identity verification.
+
+It enables **Sybil resistance** and **selective disclosure** using real-world attestations like passports. With a few lines of code, developers can easily check if their users are humans, while preserving their privacy.
+
+### All you need for building on Self
+
+* [Workshop (ETHGlobal Cannes)](https://www.youtube.com/live/0Jg1o9BFUBs?si=976RbmmCM-4kHToI) - Essential workshop for getting started
+* [Self Developer Tools](https://tools.self.xyz)
+* [Self Builder Group](https://t.me/+d2TGsbkSDmgzODVi)
+* [Celo Testnet Faucet](https://faucet.celo.org/alfajores)
+
+### How it Works
+
+Self Protocol simplifies **digital identity verification** with **zero-knowledge proofs** in three steps:
+
+1. **Scan Your Passport:** Scan your passport using the NFC reader of your phone.
+2. **Generate a Proof:** Generate a zk proof over your passport, selecting only what you want to disclose.
+3. **Share Your Proof:** Share your zk proof with the selected application.
+
+### Common use cases for Self:
+
+* **Airdrop protection:** Protect a token distribution from bots
+* **Social media:** Add humanity checks to user's profiles
+* **Quadratic funding:** Prevent farmers from skewing rewards
+* **Wallet recovery:** Safeguard assets using IDs as recovery sources
+* **Sanction list checking:** Check users are not on sanctioned entity lists
+
+
+# Quickstart
+
+> ⚠️ **Important**: The Self SDK is currently undergoing significant changes. This guide reflects the latest implementation. If you encounter issues, please check the [SDK repository](https://github.com/selfxyz/self) for updates.
+
+## Before You Start
+
+**New to Self Protocol?** We highly recommend watching our [ETHGlobal Cannes Workshop](https://www.youtube.com/live/0Jg1o9BFUBs?si=4g0okIn91QMIzew-) first. This essential workshop walks through the core concepts and provides a hands-on introduction to building with Self.
+
+## Overview
+
+To use Self in your web app, you will display QR codes to request proofs from your front-end, then verify them in your back-end or onchain. This means you will integrate two SDKs:
+
+* The front-end SDK generates and displays QR codes containing information from your app and what you want users to disclose.
+* The back-end SDK verifies proofs on a node server (as in this quickstart) or [directly onchain](https://docs.self.xyz/contract-integration/basic-integration).
+
+## Add the QR code generator to your front-end
+
+`QRCodeGenerator` is a React component for generating QR codes for Self passport verification.
+
+### Installation
+
+Install the required frontend packages:
+
+{% tabs %}
+{% tab title="npm" %}
+
+```bash
+npm install @selfxyz/qrcode @selfxyz/core ethers
+```
+
+{% endtab %}
+
+{% tab title="yarn" %}
+
+```bash
+yarn add @selfxyz/qrcode @selfxyz/core ethers
+```
+
+{% endtab %}
+
+{% tab title="bun" %}
+
+```bash
+bun install @selfxyz/qrcode @selfxyz/core ethers
+```
+
+{% endtab %}
+{% endtabs %}
+
+**Package purposes:**
+
+* `@selfxyz/qrcode`: QR code generation and display components
+* `@selfxyz/core`: Core utilities including `getUniversalLink` for deeplinks
+* `ethers`: Ethereum utilities for address handling
+
+### Basic Usage
+
+Here's a simplified approach to setting up the QR code:
+
+**1. Import required components**
+
+```javascript
+import SelfQRcodeWrapper, { SelfAppBuilder } from '@selfxyz/qrcode';
+import { getUniversalLink } from "@selfxyz/core";
+import { ethers } from "ethers";
+```
+
+**2. Create and configure your SelfApp**
+
+```javascript
+// Use zero address for demo purposes
+const userId = ethers.ZeroAddress;
+
+// Create the SelfApp
+const selfApp = new SelfAppBuilder({
+  version: 2,
+  appName: "Self Example",
+  scope: "your-app-scope",
+  endpoint: process.env.NEXT_PUBLIC_SELF_ENDPOINT || "",
+  logoBase64: "https://i.postimg.cc/mrmVf9hm/self.png",
+  userId: userId,
+  endpointType: "staging_https",
+  userIdType: "hex",
+  userDefinedData: "Hello World!",
+  disclosures: {
+    // Verification requirements (must match backend)
+    minimumAge: 18,
+    // ofac: false,
+    // excludedCountries: [],
+
+    // Disclosure requests (what users reveal)
+    nationality: true,
+    gender: true,
+    // Other optional fields:
+    // name: false,
+    // date_of_birth: true,
+    // passport_number: false,
+    // expiry_date: false,
+  }
+}).build();
+```
+
+> ⚠️ **Important**: Use the same scope and disclosures configuration as your backend to avoid verification failures.
+
+**3. Display the QR code**
+
+```javascript
+function VerificationComponent() {
+  return (
+    <SelfQRcodeWrapper
+      selfApp={selfApp}
+      onSuccess={() => {
+        console.log('Verification successful');
+        // Handle successful verification
+      }}
+      onError={() => {
+        console.error('Failed to verify identity');
+      }}
+    />
+  );
+}
+```
+
+SelfQRcodeWrapper wraps SelfQRcode to prevent server-side rendering when using nextjs. When not using nextjs, SelfQRcode can be used instead.
+
+Your scope is an identifier for your application. It makes sure people can't use proofs destined for other applications in yours. You'll have to use the same scope in the backend verification SDK if you need to verify proofs offchain. Make sure it's no longer than 30 characters.
+
+To see how you can configure your SelfApp take a look at `SelfAppBuilder`. You can also find the SDK reference for `SelfQRcodeWrapper`.
+
+### Complete Example
+
+Here's a complete Next.js component example based on the workshop:
+
+```javascript
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { getUniversalLink } from "@selfxyz/core";
+import {
+  SelfQRcodeWrapper,
+  SelfAppBuilder,
+  type SelfApp,
+} from "@selfxyz/qrcode";
+import { ethers } from "ethers";
+
+function VerificationPage() {
+  const [selfApp, setSelfApp] = useState<SelfApp | null>(null);
+  const [universalLink, setUniversalLink] = useState("");
+  const [userId] = useState(ethers.ZeroAddress);
+
+  useEffect(() => {
+    try {
+      const app = new SelfAppBuilder({
+        version: 2,
+        appName: process.env.NEXT_PUBLIC_SELF_APP_NAME || "Self Workshop",
+        scope: process.env.NEXT_PUBLIC_SELF_SCOPE || "self-workshop",
+        endpoint: `${process.env.NEXT_PUBLIC_SELF_ENDPOINT}`,
+        logoBase64: "https://i.postimg.cc/mrmVf9hm/self.png",
+        userId: userId,
+        endpointType: "staging_https",
+        userIdType: "hex",
+        userDefinedData: "Hello World",
+        disclosures: {
+          /* 1. what you want to verify from users' identity */
+          minimumAge: 18,
+          // ofac: false,
+          // excludedCountries: [countries.BELGIUM],
+
+          /* 2. what you want users to reveal */
+          // name: false,
+          // issuing_state: true,
+          nationality: true,
+          // date_of_birth: true,
+          // passport_number: false,
+          gender: true,
+          // expiry_date: false,
+        }
+      }).build();
+
+      setSelfApp(app);
+      setUniversalLink(getUniversalLink(app));
+    } catch (error) {
+      console.error("Failed to initialize Self app:", error);
+    }
+  }, [userId]);
+
+  const handleSuccessfulVerification = () => {
+    console.log("Verification successful!");
+    // Handle success - redirect, update UI, etc.
+  };
+
+  return (
+    <div className="verification-container">
+      <h1>Verify Your Identity</h1>
+      <p>Scan this QR code with the Self app</p>
+      
+      {selfApp ? (
+        <SelfQRcodeWrapper
+          selfApp={selfApp}
+          onSuccess={handleSuccessfulVerification}
+          onError={() => {
+            console.error("Error: Failed to verify identity");
+          }}
+        />
+      ) : (
+        <div>Loading QR Code...</div>
+      )}
+    </div>
+  );
+}
+
+export default VerificationPage;
+```
+
+### Universal Links (Optional)
+
+The `getUniversalLink` function from `@selfxyz/core` generates deep links that allow users to open the Self app directly instead of scanning a QR code. This is useful for:
+
+* **Mobile web experiences**: Users can tap a button to open the Self app directly
+* **Better UX on mobile**: Avoid the need to scan QR codes on the same device
+* **Share links**: Send verification links via messaging or email
+
+**When to use Universal Links:**
+
+* Building mobile-first applications
+* Want to provide alternative to QR code scanning
+* Need to integrate with messaging platforms or email
+
+**Example implementation:**
+
+```javascript
+import { getUniversalLink } from "@selfxyz/core";
+
+function VerificationPage() {
+  const [selfApp, setSelfApp] = useState(null);
+  const [universalLink, setUniversalLink] = useState("");
+
+  useEffect(() => {
+    const app = new SelfAppBuilder({...}).build();
+    setSelfApp(app);
+    
+    // Generate universal link for direct app opening
+    setUniversalLink(getUniversalLink(app));
+  }, []);
+
+  const openSelfApp = () => {
+    if (universalLink) {
+      window.open(universalLink, "_blank");
+    }
+  };
+
+  return (
+    <div>
+      {/* QR Code for desktop/cross-device */}
+      <SelfQRcodeWrapper selfApp={selfApp} />
+      
+      {/* Universal Link button for mobile */}
+      <button onClick={openSelfApp}>
+        Open Self App
+      </button>
+    </div>
+  );
+}
+```
+
+> **Note**: Universal links work best on mobile devices where the Self app is installed. On desktop, users should use the QR code method.
+
+### Example
+
+For a more comprehensive and interactive example, please refer to the [playground](https://github.com/selfxyz/playground).
+
+### Verification Flow
+
+The QR code component displays the current verification status with an LED indicator and changes its appearance based on the verification state:
+
+1. **QR Code Display**: Component shows QR code for users to scan
+2. **User Scans**: User scans with Self app and provides proof
+3. **Backend Verification**: Your API endpoint receives and verifies the proof
+4. **Success Callback**: `onSuccess` callback is triggered when verification completes
+
+## Add `SelfBackendVerifier` to your back-end
+
+### Requirements
+
+* Node v16+
+
+### Install dependencies
+
+{% tabs %}
+{% tab title="npm" %}
+
+```bash
+npm install @selfxyz/core 
+```
+
+{% endtab %}
+
+{% tab title="yarn" %}
+
+```bash
+yarn add @selfxyz/core 
+```
+
+{% endtab %}
+
+{% tab title="bun" %}
+
+```bash
+bun install @selfxyz/core 
+```
+
+{% endtab %}
+{% endtabs %}
+
+### Set Up SelfBackendVerifier
+
+The setup follows a simplified pattern. Here's a complete example based on our workshop:
+
+```javascript
+import {
+  SelfBackendVerifier,
+  AllIds,
+  DefaultConfigStore,
+  VerificationConfig
+} from '@selfxyz/core';
+
+// Define your verification requirements
+const verification_config = {
+  excludedCountries: [],
+  ofac: false,
+  minimumAge: 18,
+};
+
+// Create the configuration store
+const configStore = new DefaultConfigStore(verification_config);
+
+// Initialize the verifier
+const selfBackendVerifier = new SelfBackendVerifier(
+  "your-app-scope",                           // Your app's unique scope
+  "https://your-api-endpoint.com/api/verify", // Your API endpoint
+  true,                                       // true = mock for testing, false = production
+  AllIds,                                     // Accept all document types
+  configStore,                                // Configuration store
+  "hex"                                       // "hex" for addresses, "uuid" for UUIDs
+);
+```
+
+{% hint style="warning" %}
+The endpoint must be publicly accessible (not localhost). For local development, use ngrok to tunnel your localhost endpoint.
+{% endhint %}
+
+### Verification
+
+The verification process handles the proof data from your frontend:
+
+```javascript
+// Extract data from the request
+const { attestationId, proof, publicSignals, userContextData } = await req.json();
+
+// Verify all required fields are present
+if (!proof || !publicSignals || !attestationId || !userContextData) {
+  return NextResponse.json({
+    message: "Proof, publicSignals, attestationId and userContextData are required",
+  }, { status: 400 });
+}
+
+// Verify the proof
+const result = await selfBackendVerifier.verify(
+  attestationId,    // Document type (1 = passport, 2 = EU ID card)
+  proof,            // The zero-knowledge proof
+  publicSignals,    // Public signals array
+  userContextData   // User context data
+);
+
+// Check if verification was successful
+if (result.isValidDetails.isValid) {
+  // Verification successful - process the result
+  return NextResponse.json({
+    status: "success",
+    result: true,
+    credentialSubject: result.discloseOutput,
+  });
+} else {
+  // Verification failed
+  return NextResponse.json({
+    status: "error",
+    result: false,
+    message: "Verification failed",
+    details: result.isValidDetails,
+  }, { status: 500 });
+}
+```
+
+## Key Points
+
+### Configuration Matching
+
+Your frontend and backend configurations must match exactly:
+
+```javascript
+// Backend configuration
+const verification_config = {
+  excludedCountries: [],
+  ofac: false,
+  minimumAge: 18,
+};
+
+// Frontend configuration (must match)
+disclosures: {
+  minimumAge: 18,        // Same as backend
+  excludedCountries: [], // Same as backend  
+  ofac: false,           // Same as backend
+  // Plus any disclosure fields you want
+  nationality: true,
+  gender: true,
+}
+```
+
+
+# Disclosures
+
+Disclosures control what information users reveal during identity verification. You configure them in the frontend `disclosures` object, which contains two types of settings:
+
+1. **Verification Requirements** - conditions that must be met (must match backend)
+2. **Disclosure Requests** - information users will reveal (frontend only)
+
+## Verification Requirements
+
+These settings define verification conditions and must match your backend `verification_config`:
+
+### `minimumAge`
+
+Verifies user is at least this age without revealing exact age or date of birth.
+
+```javascript
+disclosures: {
+  minimumAge: 18, // User must be 18 or older
+}
+```
+
+### `excludedCountries`
+
+Blocks users from specific countries using ISO 3-letter country codes.
+
+```javascript
+disclosures: {
+  excludedCountries: ['IRN', 'PRK'], // Block Iran and North Korea
+}
+```
+
+### `ofac`
+
+Enables OFAC (sanctions) checking against official watchlists.
+
+```javascript
+disclosures: {
+  ofac: true, // Enable sanctions checking
+}
+```
+
+## Disclosure Requests
+
+These settings specify what information users will reveal. Configure only in frontend - backend receives this data automatically.
+
+### Personal Information
+
+* **`name`**: User's full name from passport
+* **`nationality`**: User's nationality
+* **`gender`**: User's gender (M/F)
+* **`date_of_birth`**: Full date of birth
+
+### Document Information
+
+* **`passport_number`**: Passport number (use carefully for privacy)
+* **`expiry_date`**: Passport expiry date
+* **`issuing_state`**: Country that issued the passport
+
+## Example Configuration
+
+```javascript
+disclosures: {
+  // Verification requirements (must match backend)
+  minimumAge: 21,
+  excludedCountries: ['IRN'],
+  ofac: true,
+  
+  // Disclosure requests (frontend only)
+  nationality: true,
+  gender: true,
+  name: false,           // Don't request name
+  date_of_birth: true,
+  passport_number: false, // Don't request for privacy
+}
+```
+
+## Verification Result
+
+When verification succeeds, disclosed information is available in `result.discloseOutput`:
+
+```javascript
+const result = await selfBackendVerifier.verify(/*...*/);
+if (result.isValidDetails.isValid) {
+  const data = result.discloseOutput;
+  
+  console.log(data.nationality);    // "USA" (if requested)
+  console.log(data.gender);         // "M" or "F" (if requested)
+  console.log(data.olderThan);      // "18" (if minimumAge set)
+  console.log(data.name);           // undefined (if not requested)
+}
+```
+
+## Privacy Best Practices
+
+* **Request only what you need**: Each disclosure reveals personal information
+* **Avoid sensitive fields**: Be cautious with `passport_number` and `name`
+* **Consider alternatives**: Use `minimumAge` instead of `date_of_birth` for age verification
+* **Store carefully**: Implement proper data protection for disclosed information
+
+## Common Use Cases
+
+**Age verification only:**
+
+```javascript
+disclosures: {
+  minimumAge: 18, // No personal data revealed
+}
+```
+
+**Basic identity with nationality:**
+
+```javascript
+disclosures: {
+  minimumAge: 18,
+  nationality: true,
+  gender: true,
+}
+```
+
+**Complete identity verification:**
+
+```javascript
+disclosures: {
+  minimumAge: 21,
+  ofac: true,
+  nationality: true,
+  name: true,
+  date_of_birth: true,
+}
+```
+
+
+# Use deeplinking
+
+Generate deep links to open the Self mobile app directly
+
+Deep links allow users to open the Self mobile app directly instead of scanning QR codes. This provides a better mobile experience by eliminating the need to scan codes on the same device.
+
+## When to Use Deep Links
+
+* **Mobile web applications**: Users can tap a button to open Self app
+* **Same-device verification**: Avoid QR code scanning on mobile
+* **Messaging platforms**: Share verification links via SMS, email, or chat
+* **Native mobile apps**: Direct integration with mobile applications
+
+## Basic Usage
+
+Generate a deep link from your SelfApp configuration:
+
+```javascript
+import { getUniversalLink } from '@selfxyz/core';
+import { SelfAppBuilder } from '@selfxyz/qrcode';
+
+// Create your SelfApp (same as for QR codes)
+const selfApp = new SelfAppBuilder({
+  // ... your configuration
+}).build();
+
+// Generate the deep link
+const deeplink = getUniversalLink(selfApp);
+
+// Use the deep link
+window.open(deeplink, '_blank'); // Opens Self app
+```
+
+## Implementation Examples
+
+### Simple Button
+
+```javascript
+function OpenSelfButton() {
+  const handleOpenSelf = () => {
+    const deeplink = getUniversalLink(selfApp);
+    window.open(deeplink, '_blank');
+  };
+
+  return (
+    <button onClick={handleOpenSelf}>
+      Open Self App
+    </button>
+  );
+}
+```
+
+### Mobile-First Experience
+
+```javascript
+function VerificationOptions() {
+  const [deeplink, setDeeplink] = useState('');
+  
+  useEffect(() => {
+    if (selfApp) {
+      setDeeplink(getUniversalLink(selfApp));
+    }
+  }, [selfApp]);
+
+  return (
+    <div>
+      {/* Show deep link button on mobile */}
+      <div className="md:hidden">
+        <button onClick={() => window.open(deeplink, '_blank')}>
+          Open Self App
+        </button>
+      </div>
+      
+      {/* Show QR code on desktop */}
+      <div className="hidden md:block">
+        <SelfQRcodeWrapper selfApp={selfApp} />
+      </div>
+    </div>
+  );
+}
+```
+
+## Platform Considerations
+
+### Mobile Browsers
+
+* **iOS Safari**: Deep links work reliably
+* **Android Chrome**: Deep links work reliably
+* **In-app browsers**: May have limitations
+
+### Desktop Browsers
+
+* Deep links will attempt to open the mobile app
+* If app not installed, may show app store page
+* Generally better to show QR codes on desktop
+
+## Best Practices
+
+* **Provide both options**: Offer both QR codes and deep links
+* **Mobile-first**: Prioritize deep links on mobile devices
+* **Clear labeling**: Make it obvious what the button does
+* **Testing**: Test on various mobile browsers and devices
+
+
+# Using mock passports
+
+To create a mock passport, on the first screen, tap 5 times with one finger on the Self card.
+
+<figure><img src="https://3083267457-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%2F3b7SjmW8sq7ARi9xvk7J%2Fuploads%2FBf70GEDb87wQpSbQu4bZ%2FIMG_AFD54FE4EA59-1.jpeg?alt=media&#x26;token=1e536382-33f5-4bdc-beb0-42315a200fdc" alt="" width="188"><figcaption></figcaption></figure>
+
+This will show a screen to create a mock passport. To try it out, use <https://playground.staging.self.xyz/> instead of <https://playground.self.xyz/>
+
+When using offchain verification, pass `mockPassport` to the Self verifier as explained [here](https://docs.self.xyz/sdk-reference/selfbackendverifier).
+
+When using onchain verification, use the [Alfajores contracts](https://docs.self.xyz/contract-integration/deployed-contracts).
+
+To stop using a mock passport, go in Settings, then tap 5 times with 2 fingers on the empty space below the options. This will show additional options, including the Debug menu that allows going back to the first screen and scanning a new passport.
+
+<figure><img src="https://3083267457-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%2F3b7SjmW8sq7ARi9xvk7J%2Fuploads%2F0a6fAaGXpJJDUZL6XWb6%2FIMG_53F184B8BCC5-1.jpeg?alt=media&#x26;token=bcb4ddd2-6097-4069-ae2e-e1422cd6982f" alt="" width="188"><figcaption></figcaption></figure>
+
+{% hint style="info" %}
+Two passports registered with the same private key will give the same disclosure nullifier, thus won't be able to e.g. claim an airdrop twice.
+
+If you want to use two passports in prod, you should backup your seed phrase then tap "Delete keychain secrets" before loading a new passport. If later you rescan the previous passport, you'll be able to pass your recovery phrase to recover the corresponding Self identity.
+
+The next versions will support multiple IDs natively.
+{% endhint %}
+
+
+# Self Map countries list
+
+list of countries supported by self protocol : https\://map.self.xyz/
+
+## Supported Countries
+
+Self supports electronic passport and identity document verification across multiple countries worldwide. Our coverage includes both Document Signer Certificates (DSC) and Country Signing Certificate Authority (CSCA) support.
+
+### Interactive Coverage Map
+
+For a visual representation of our global coverage, visit our [Interactive Coverage Map](https://map.self.xyz/).
+
+### Country Support Status
+
+We currently support document verification for the following countries:
+
+#### Full Support (Both DSC and CSCA)
+
+These countries have both Document Signer Certificates and Country Signing Certificate Authority support:
+
+| Country                   | Code | Region          |
+| ------------------------- | ---- | --------------- |
+| 🇦🇪 United Arab Emirates | AE   | Middle East     |
+| 🇦🇷 Argentina            | AR   | South America   |
+| 🇦🇹 Austria              | AT   | Europe          |
+| 🇦🇺 Australia            | AU   | Oceania         |
+| 🇧🇬 Bulgaria             | BG   | Europe          |
+| 🇧🇭 Bahrain              | BH   | Middle East     |
+| 🇧🇯 Benin                | BJ   | Africa          |
+| 🇧🇷 Brazil               | BR   | South America   |
+| 🇧🇿 Belize               | BZ   | Central America |
+| 🇨🇦 Canada               | CA   | North America   |
+| 🇨🇭 Switzerland          | CH   | Europe          |
+| 🇨🇲 Cameroon             | CM   | Africa          |
+| 🇨🇳 China                | CN   | Asia            |
+| 🇨🇴 Colombia             | CO   | South America   |
+| 🇨🇿 Czech Republic       | CZ   | Europe          |
+| 🇩🇪 Germany              | DE   | Europe          |
+| 🇪🇸 Spain                | ES   | Europe          |
+| 🇪🇺 European Union       | EU   | Europe          |
+| 🇫🇮 Finland              | FI   | Europe          |
+| 🇫🇷 France               | FR   | Europe          |
+| 🇬🇧 United Kingdom       | GB   | Europe          |
+| 🇭🇺 Hungary              | HU   | Europe          |
+| 🇮🇩 Indonesia            | ID   | Asia            |
+| 🇮🇪 Ireland              | IE   | Europe          |
+| 🇮🇶 Iraq                 | IQ   | Middle East     |
+| 🇮🇷 Iran                 | IR   | Middle East     |
+| 🇮🇸 Iceland              | IS   | Europe          |
+| 🇮🇹 Italy                | IT   | Europe          |
+| 🇯🇵 Japan                | JP   | Asia            |
+| 🇰🇷 South Korea          | KR   | Asia            |
+| 🇱🇺 Luxembourg           | LU   | Europe          |
+| 🇲🇦 Morocco              | MA   | Africa          |
+| 🇲🇩 Moldova              | MD   | Europe          |
+| 🇲🇳 Mongolia             | MN   | Asia            |
+| 🇲🇽 Mexico               | MX   | North America   |
+| 🇲🇾 Malaysia             | MY   | Asia            |
+| 🇳🇴 Norway               | NO   | Europe          |
+| 🇳🇵 Nepal                | NP   | Asia            |
+| 🇳🇿 New Zealand          | NZ   | Oceania         |
+| 🇵🇦 Panama               | PA   | Central America |
+| 🇶🇦 Qatar                | QA   | Middle East     |
+| 🇷🇴 Romania              | RO   | Europe          |
+| 🇷🇼 Rwanda               | RW   | Africa          |
+| 🇸🇪 Sweden               | SE   | Europe          |
+| 🇸🇬 Singapore            | SG   | Asia            |
+| 🇸🇰 Slovakia             | SK   | Europe          |
+| 🇹🇭 Thailand             | TH   | Asia            |
+| 🇹🇲 Turkmenistan         | TM   | Asia            |
+| 🇹🇿 Tanzania             | TZ   | Africa          |
+| 🇺🇦 Ukraine              | UA   | Europe          |
+| 🇺🇸 United States        | US   | North America   |
+| 🇺🇿 Uzbekistan           | UZ   | Asia            |
+| 🇻🇳 Vietnam              | VN   | Asia            |
+
+#### CSCA Support Only
+
+These countries have Country Signing Certificate Authority support:
+
+| Country                               | Code | Region          |
+| ------------------------------------- | ---- | --------------- |
+| 🇦🇩 Andorra                          | AD   | Europe          |
+| 🇦🇬 Antigua and Barbuda              | AG   | Caribbean       |
+| 🇦🇱 Albania                          | AL   | Europe          |
+| 🇦🇲 Armenia                          | AM   | Asia            |
+| 🇦🇿 Azerbaijan                       | AZ   | Asia            |
+| 🇧🇦 Bosnia and Herzegovina           | BA   | Europe          |
+| 🇧🇧 Barbados                         | BB   | Caribbean       |
+| 🇧🇩 Bangladesh                       | BD   | Asia            |
+| 🇧🇪 Belgium                          | BE   | Europe          |
+| 🇧🇸 Bahamas                          | BS   | Caribbean       |
+| 🇧🇼 Botswana                         | BW   | Africa          |
+| 🇧🇾 Belarus                          | BY   | Europe          |
+| 🇨🇮 Côte d'Ivoire                    | CI   | Africa          |
+| 🇨🇱 Chile                            | CL   | South America   |
+| 🇨🇷 Costa Rica                       | CR   | Central America |
+| 🇨🇾 Cyprus                           | CY   | Europe          |
+| 🇩🇰 Denmark                          | DK   | Europe          |
+| 🇩🇲 Dominica                         | DM   | Caribbean       |
+| 🇩🇿 Algeria                          | DZ   | Africa          |
+| 🇪🇨 Ecuador                          | EC   | South America   |
+| 🇪🇪 Estonia                          | EE   | Europe          |
+| 🇬🇪 Georgia                          | GE   | Asia            |
+| 🇬🇭 Ghana                            | GH   | Africa          |
+| 🇬🇲 Gambia                           | GM   | Africa          |
+| 🇬🇷 Greece                           | GR   | Europe          |
+| 🇭🇷 Croatia                          | HR   | Europe          |
+| 🇮🇱 Israel                           | IL   | Middle East     |
+| 🇮🇳 India                            | IN   | Asia            |
+| 🇯🇲 Jamaica                          | JM   | Caribbean       |
+| 🇰🇪 Kenya                            | KE   | Africa          |
+| 🇰🇳 Saint Kitts and Nevis            | KN   | Caribbean       |
+| 🇰🇵 North Korea                      | KP   | Asia            |
+| 🇰🇸 Kosovo                           | KS   | Europe          |
+| 🇰🇼 Kuwait                           | KW   | Middle East     |
+| 🇰🇿 Kazakhstan                       | KZ   | Asia            |
+| 🇱🇧 Lebanon                          | LB   | Middle East     |
+| 🇱🇮 Liechtenstein                    | LI   | Europe          |
+| 🇱🇹 Lithuania                        | LT   | Europe          |
+| 🇱🇻 Latvia                           | LV   | Europe          |
+| 🇲🇨 Monaco                           | MC   | Europe          |
+| 🇲🇪 Montenegro                       | ME   | Europe          |
+| 🇲🇰 North Macedonia                  | MK   | Europe          |
+| 🇲🇹 Malta                            | MT   | Europe          |
+| 🇲🇻 Maldives                         | MV   | Asia            |
+| 🇳🇱 Netherlands                      | NL   | Europe          |
+| 🇴🇲 Oman                             | OM   | Middle East     |
+| 🇵🇪 Peru                             | PE   | South America   |
+| 🇵🇭 Philippines                      | PH   | Asia            |
+| 🇵🇱 Poland                           | PL   | Europe          |
+| 🇵🇸 Palestine                        | PS   | Middle East     |
+| 🇵🇹 Portugal                         | PT   | Europe          |
+| 🇵🇾 Paraguay                         | PY   | South America   |
+| 🇷🇸 Serbia                           | RS   | Europe          |
+| 🇷🇺 Russia                           | RU   | Asia/Europe     |
+| 🇸🇦 Saudi Arabia                     | SA   | Middle East     |
+| 🇸🇨 Seychelles                       | SC   | Africa          |
+| 🇸🇮 Slovenia                         | SI   | Europe          |
+| 🇸🇲 San Marino                       | SM   | Europe          |
+| 🇸🇳 Senegal                          | SN   | Africa          |
+| 🇸🇾 Syria                            | SY   | Middle East     |
+| 🇹🇯 Tajikistan                       | TJ   | Asia            |
+| 🇹🇱 Timor-Leste                      | TL   | Asia            |
+| 🇹🇷 Turkey                           | TR   | Asia/Europe     |
+| 🇹🇼 Taiwan                           | TW   | Asia            |
+| 🇺🇬 Uganda                           | UG   | Africa          |
+| 🇺🇾 Uruguay                          | UY   | South America   |
+| 🇻🇦 Vatican City                     | VA   | Europe          |
+| 🇻🇨 Saint Vincent and the Grenadines | VC   | Caribbean       |
+| 🇻🇪 Venezuela                        | VE   | South America   |
+| 🇿🇼 Zimbabwe                         | ZW   | Africa          |
+
+#### Special Territories and Organizations
+
+* **UN** - United Nations Laissez-Passer
+* **ZZ** - Unknown/Test Documents
+
+### Technical Details
+
+#### What is DSC (Document Signer Certificate)?
+
+Document Signer Certificates are used to digitally sign the data stored in electronic passports and identity documents. They ensure the authenticity and integrity of the document data.
+
+#### What is CSCA (Country Signing Certificate Authority)?
+
+The Country Signing Certificate Authority is the root certificate authority for a country's electronic document infrastructure. It issues certificates to Document Signers.
+
+#### Supported Cryptographic Standards
+
+Our system supports various cryptographic algorithms including:
+
+* **Signature Algorithms**: RSA, RSAPSS, ECDSA
+* **Hash Algorithms**: SHA-1, SHA-256, SHA-384, SHA-512
+* **Key Lengths**: 1024-6144 bits for RSA, 224-521 bits for ECDSA
+
+### Data Sources
+
+This information is compiled from our certificate registry:
+
+* [DSC Registry Data](https://raw.githubusercontent.com/selfxyz/self/52dba2742b4c37a957eb5ab8ebee83fdccdcf187/registry/outputs/map_dsc.json)
+* [CSCA Registry Data](https://raw.githubusercontent.com/selfxyz/self/52dba2742b4c37a957eb5ab8ebee83fdccdcf187/registry/outputs/map_csca.json)
+
+### Updates
+
+This list is regularly updated as new countries adopt electronic document standards and as we expand our certificate registry. For the most current information, please check our [Interactive Coverage Map](https://map.self.xyz/).
+
+***
+
+
+# V1 to V2 Migration Guide
+
+This guide helps you migrate from Self Protocol V1 to V2. V2 introduces multi-document support, dynamic configuration, and improved data structures.
+
+## Overview of Changes
+
+### What's New in V2
+
+* **Multi-document support**: E-Passports and EU ID Cards
+* **Dynamic configuration**: Switch configurations without redeployment
+* **Enhanced data formats**: Pre-extracted, human-readable outputs
+* **User context data**: Pass custom data through verification flow
+* **Improved error handling**: Detailed configuration mismatch reporting
+
+### Breaking Changes
+
+* Backend SDK constructor requires new parameters
+* Configuration methods replaced with interface
+* Verification method signature changed
+* Frontend requires disclosures object
+* Smart contract interfaces updated
+
+## Backend Migration
+
+### 1. Update Dependencies
+
+```bash
+npm install @selfxyz/core@latest
+```
+
+### 2. Update Constructor
+
+**V1 (Old):**
+
+```javascript
+const verifier = new SelfBackendVerifier(
+  "my-app-scope",
+  "https://api.example.com/verify",
+  false  // mock mode
+);
+```
+
+**V2 (New):**
+
+```javascript
+import { SelfBackendVerifier, AttestationId, UserIdType, IConfigStorage, AllIds } from '@selfxyz/core';
+
+// Option 1: Use AllIds for all document types (recommended for most cases)
+const allowedIds = AllIds;
+
+// Option 2: Define specific allowed document types
+// const allowedIds = new Map();
+// allowedIds.set(AttestationId.E_PASSPORT, true);  // Accept passports
+// allowedIds.set(AttestationId.EU_ID_CARD, true);  // Accept EU ID cards
+
+// Implement configuration storage
+class ConfigStorage implements IConfigStorage {
+  async getConfig(configId: string) {
+    // Return your verification requirements
+    return {
+      minimumAge: 18,
+      excludedCountries: ['IRN', 'PRK'],
+      ofac: true
+    };
+  }
+  
+  async getActionId(userIdentifier: string, userDefinedData?: string) {
+    // Return config ID based on your logic
+    return 'default_config';
+  }
+}
+
+const verifier = new SelfBackendVerifier(
+  "my-app-scope",
+  "https://api.example.com/verify",
+  false,                        // mock mode
+  allowedIds,                   // NEW: allowed document types
+  new ConfigStorage(),          // NEW: config storage
+  UserIdType.UUID               // NEW: user ID type
+);
+```
+
+### 3. Update Configuration
+
+**V1 (Old):**
+
+```javascript
+// Direct method calls
+verifier.setMinimumAge(18);
+verifier.excludeCountries('Iran', 'North Korea');
+verifier.enablePassportNoOfacCheck();
+verifier.enableNameOfacCheck();
+verifier.enableDobOfacCheck();
+```
+
+**V2 (New):**
+
+```javascript
+// Configuration via IConfigStorage implementation
+class ConfigStorage implements IConfigStorage {
+  async getConfig(configId: string) {
+    // All configuration in one place
+    return {
+      minimumAge: 18,
+      excludedCountries: ['IRN', 'PRK'],  // Use ISO 3-letter codes
+      ofac: true  // Single boolean for all OFAC checks
+    };
+  }
+}
+```
+
+### 4. Update Verification Method
+
+**V1 (Old):**
+
+```javascript
+app.post('/api/verify', async (req, res) => {
+  const { proof, publicSignals } = req.body;
+  
+  try {
+    const isValid = await verifier.verify(proof, publicSignals);
+    res.json({ valid: isValid });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+```
+
+**V2 (New):**
+
+```javascript
+app.post('/api/verify', async (req, res) => {
+  const { attestationId, proof, pubSignals, userContextData } = req.body;
+  
+  try {
+    const result = await verifier.verify(
+      attestationId,      // NEW: 1 for passport, 2 for EU ID
+      proof,
+      pubSignals,
+      userContextData     // NEW: hex-encoded context data
+    );
+    
+    if (result.isValidDetails.isValid) {
+      res.json({
+        status: 'success',
+        result: true,
+        credentialSubject: result.discloseOutput,
+        documentType: attestationId === 1 ? 'passport' : 'eu_id_card'
+      });
+    } else {
+      res.status(400).json({
+        status: 'error',
+        result: false,
+        details: result.isValidDetails
+      });
+    }
+  } catch (error) {
+    if (error.name === 'ConfigMismatchError') {
+      res.status(400).json({
+        status: 'error',
+        message: 'Configuration mismatch',
+        issues: error.issues
+      });
+    } else {
+      res.status(500).json({ error: error.message });
+    }
+  }
+});
+```
+
+### 5. Handle New Response Format
+
+**V1 Response:**
+
+```javascript
+// Simple boolean
+true/false
+```
+
+**V2 Response:**
+
+```javascript
+{
+  attestationId: 1,              // Document type
+  isValidDetails: {
+    isValid: boolean,            // Overall result
+    isOlderThanValid: boolean,   // Age check result
+    isOfacValid: boolean         // OFAC check result
+  },
+  forbiddenCountriesList: [],    // Excluded countries
+  discloseOutput: {              // Pre-extracted data
+    nationality: "USA",
+    minimumAge: "21",
+    name: ["JOHN", "DOE"],
+    dateOfBirth: "01-01-1990",
+    issuingState: "USA",
+    idNumber: "123456789",
+    gender: "M",
+    expiryDate: "01-01-2030",
+    ofac: [true, true, true]
+  },
+  userData: {
+    userIdentifier: "uuid-here",
+    userDefinedData: "custom-data"
+  }
+}
+```
+
+## Frontend Migration
+
+### 1. Update Dependencies
+
+```bash
+npm install @selfxyz/qrcode@latest
+```
+
+### 2. Update QR Code Configuration
+
+**V1 (Old):**
+
+```javascript
+import { SelfAppBuilder } from '@selfxyz/qrcode';
+
+const selfApp = new SelfAppBuilder({
+  appName: "My App",
+  scope: "my-app-scope",
+  endpoint: "https://api.example.com/verify",
+  userId: userId,
+  logoBase64: logo
+}).build();
+```
+
+**V2 (New):**
+
+```javascript
+import { SelfAppBuilder } from '@selfxyz/qrcode';
+
+const selfApp = new SelfAppBuilder({
+  appName: "My App",
+  scope: "my-app-scope",
+  endpoint: "https://api.example.com/verify",
+  userId: userId,
+  logoBase64: logo,
+  version: 2,                          // NEW: Specify V2
+  userDefinedData: "custom-data",      // NEW: Optional custom data
+  disclosures: {                       // NEW: Must match backend config
+    // Verification rules
+    minimumAge: 18,
+    excludedCountries: ['IRN', 'PRK'],
+    ofac: true,
+    // Data fields to reveal
+    name: true,
+    nationality: true,
+    dateOfBirth: true
+  }
+}).build();
+```
+
+### 3. Important: Disclosures Object
+
+The `disclosures` object in V2 contains **both** verification rules and data fields:
+
+```javascript
+disclosures: {
+  // Verification rules (must match backend exactly)
+  minimumAge: 18,                      // Age requirement
+  excludedCountries: ['IRN', 'PRK'],   // ISO 3-letter codes
+  ofac: true,                          // OFAC checking
+  
+  // Data fields to reveal
+  name: true,                          // Full name
+  nationality: true,                   // Nationality
+  dateOfBirth: true,                   // Date of birth
+  issuingState: true,                  // Issuing country
+  idNumber: true,                      // Document number
+  gender: true,                        // Gender
+  expiryDate: true                     // Expiration date
+}
+```
+
+## Smart Contract Migration
+
+### 1. Update Contract Inheritance
+
+**V1 (Old):**
+
+```solidity
+import { IIdentityVerificationHub } from "@selfxyz/contracts/interfaces/IIdentityVerificationHub.sol";
+
+contract MyContract {
+    IIdentityVerificationHub public hub;
+    
+    function verify(/* params */) external {
+        // Direct hub integration
+    }
+}
+```
+
+**V2 (New):**
+
+```solidity
+import { SelfVerificationRoot } from "@selfxyz/contracts/abstract/SelfVerificationRoot.sol";
+
+contract MyContract is SelfVerificationRoot {
+    constructor(
+        address _hub,
+        bytes32 _scope
+    ) SelfVerificationRoot(_hub, _scope) {}
+    
+    // Override to handle verification results
+    function customVerificationHook(
+        GenericDiscloseOutputV2 memory output,
+        bytes memory userData
+    ) internal override {
+        // Your business logic here
+    }
+    
+    // Override to provide configuration ID
+    function getConfigId(
+        bytes32 destinationChainId,
+        bytes32 userIdentifier,
+        bytes memory userDefinedData
+    ) public view override returns (bytes32) {
+        // Generate your config ID at https://tools.self.xyz/
+        // Default config ID: 0x7b6436b0c98f62380866d9432c2af0ee08ce16a171bda6951aecd95ee1307d61
+        return 0x7b6436b0c98f62380866d9432c2af0ee08ce16a171bda6951aecd95ee1307d61;
+    }
+}
+```
+
+### 2. Update Hub Addresses
+
+**V2 Hub Addresses:**
+
+```solidity
+// Celo Mainnet
+address constant HUB_V2 = 0xe57F4773bd9c9d8b6Cd70431117d353298B9f5BF;
+
+// Celo Testnet (Alfajores)
+address constant HUB_V2_STAGING = 0x68c931C9a534D37aa78094877F46fE46a49F1A51;
+```
+
+### 3. Handle New Data Structure
+
+**V1 Structure:**
+
+```solidity
+struct VcAndDiscloseVerificationResult {
+    uint256 attestationId;
+    uint256 scope;
+    uint256 userIdentifier;
+    uint256 nullifier;
+    uint256[3] revealedDataPacked;   // Packed data
+}
+```
+
+**V2 Structure:**
+
+```solidity
+struct GenericDiscloseOutputV2 {
+    bytes32 attestationId;           // Now bytes32
+    uint256 userIdentifier;
+    uint256 nullifier;
+    string issuingState;             // Pre-extracted
+    string[] name;                   // Pre-extracted array
+    string idNumber;                 // Renamed from passportNumber
+    string nationality;              // Pre-extracted
+    string dateOfBirth;              // Pre-extracted format
+    string gender;                   // Pre-extracted
+    string expiryDate;               // Pre-extracted
+    uint256 minimumAge;
+    bool[3] ofac;                    // Bool array
+    uint256[4] forbiddenCountriesListPacked;
+}
+```
+
+## Common Migration Issues
+
+### 1. Configuration Mismatch
+
+**Problem:** Frontend disclosures don't match backend configuration
+
+```
+ConfigMismatchError: Configuration mismatch
+```
+
+**Solution:** Ensure frontend and backend have identical settings:
+
+```javascript
+// Frontend
+disclosures: {
+  minimumAge: 18,
+  excludedCountries: ['IRN', 'PRK'],
+  ofac: true
+}
+
+// Backend (in getConfig)
+return {
+  minimumAge: 18,
+  excludedCountries: ['IRN', 'PRK'],
+  ofac: true
+};
+```
+
+### 2. Missing Attestation ID
+
+**Problem:** Verification fails with missing attestation ID
+
+**Solution:** Frontend must send attestation ID:
+
+```javascript
+const requestBody = {
+  attestationId: 1,  // 1 for passport, 2 for EU ID
+  proof: proof,
+  pubSignals: pubSignals,
+  userContextData: userContextData
+};
+```
+
+### 3. Invalid User Context Data
+
+**Problem:** User context data validation fails
+
+**Solution:** Ensure proper hex encoding:
+
+```javascript
+// Create user context data (256 bytes total)
+const userContextData = '0x' + '0'.repeat(512);  // 512 hex chars = 256 bytes
+```
+
+### 4. Document Type Not Allowed
+
+**Problem:** "Attestation ID is not allowed" error
+
+**Solution:** Add document type to allowedIds:
+
+```javascript
+// Option 1: Use AllIds for all document types
+const allowedIds = AllIds;
+
+// Option 2: Define specific allowed document types
+// const allowedIds = new Map();
+// allowedIds.set(AttestationId.E_PASSPORT, true);  // Add passport
+// allowedIds.set(AttestationId.EU_ID_CARD, true);  // Add EU ID card
+```
+
+## Testing Your Migration
+
+### 1. Test with Mock Passports
+
+```javascript
+// Use staging/testnet for development
+const verifier = new SelfBackendVerifier(
+  "test-scope",
+  "https://test.ngrok.app/verify",
+  true,  // Enable mock mode
+  allowedIds,
+  configStorage,
+  UserIdType.UUID
+);
+
+// Disable OFAC for mock passports
+class ConfigStorage {
+  async getConfig() {
+    return {
+      minimumAge: 18,
+      ofac: false  // Must be false for mock passports
+    };
+  }
+}
+```
+
+### 2. Test Both Document Types
+
+```javascript
+// Test passport verification
+const passportResult = await verifier.verify(
+  AttestationId.E_PASSPORT,  // 1
+  passportProof,
+  passportSignals,
+  userContextData
+);
+
+// Test EU ID card verification
+const idCardResult = await verifier.verify(
+  AttestationId.EU_ID_CARD,  // 2
+  idCardProof,
+  idCardSignals,
+  userContextData
+);
+```
+
+### 3. Verify Configuration Switching
+
+```javascript
+class DynamicConfigStorage {
+  async getConfig(configId: string) {
+    switch(configId) {
+      case 'strict':
+        return { minimumAge: 21, ofac: true };
+      case 'relaxed':
+        return { minimumAge: 18, ofac: false };
+      default:
+        return { minimumAge: 18, ofac: true };
+    }
+  }
+  
+  async getActionId(userIdentifier: string, userDefinedData?: string) {
+    // Select config based on user data
+    return userDefinedData === 'premium' ? 'strict' : 'relaxed';
+  }
+}
+```
+
+## Best Practices
+
+### 1. Configuration Management
+
+* Store configurations in a database for easy updates
+* Version your configurations for rollback capability
+* Use meaningful config IDs (not just hashes)
+* Document configuration requirements
+
+### 2. Error Handling
+
+```javascript
+try {
+  const result = await verifier.verify(/* params */);
+} catch (error) {
+  if (error.name === 'ConfigMismatchError') {
+    // Log detailed issues for debugging
+    console.error('Config issues:', error.issues);
+    // Return user-friendly message
+    return { error: 'Verification configuration error' };
+  }
+  // Handle other errors
+}
+```
+
+### 3. Security Considerations
+
+* Always validate attestation IDs
+* Store and check nullifiers to prevent replay
+* Use appropriate scopes for different use cases
+* Never expose configuration details to frontend
+
+### 4. Performance Optimization
+
+* Cache configuration objects
+* Reuse verifier instances
+* Batch verification requests when possible
+* Use connection pooling for RPC calls
+
+## Resources
+
+* [Quickstart Guide](https://docs.self.xyz/use-self/quickstart) - Basic V2 setup
+* [Basic Integration](https://docs.self.xyz/contract-integration/basic-integration) - Contract examples
+* [Workshop Example](https://github.com/selfxyz/workshop) - Simple implementation
+
+## Need Help?
+
+If you encounter issues during migration:
+
+1. Review example implementations
+2. Report issues at [GitHub Issues](https://github.com/selfxyz/self/issues)
+
+
+# SelfAppBuilder
+
+A builder class for creating Self application configuration objects that define identity verification requirements.
+
+## Constructor
+
+```typescript
+new SelfAppBuilder(config: Partial<SelfApp>)
+```
+
+The `SelfAppBuilder` creates and validates configuration objects that specify verification requirements for Self identity proofs.
+
+### Parameters
+
+| Parameter         | Type                                                           | Required | Description                                                           |
+| ----------------- | -------------------------------------------------------------- | -------- | --------------------------------------------------------------------- |
+| `appName`         | string                                                         | Yes      | The name of your application (shown in Self mobile app)               |
+| `scope`           | string                                                         | Yes      | A unique identifier for your application (max 30 chars)               |
+| `endpoint`        | string                                                         | Yes      | The endpoint that will verify the proof                               |
+| `endpointType`    | `'celo'` \| `'https'` \| `'staging_celo'` \| `'staging_https'` | No       | Whether the endpoint verifies proofs on-chain or off-chain            |
+| `logoBase64`      | string                                                         | No       | Base64-encoded logo or PNG URL to display in the Self app             |
+| `userId`          | string                                                         | Yes      | Unique identifier for the user                                        |
+| `userIdType`      | `'uuid'` \| `'hex'`                                            | No       | `'hex'` for on-chain addresses, `'uuid'` for off-chain identification |
+| `version`         | number                                                         | No       | Protocol version (defaults to `2`)                                    |
+| `userDefinedData` | string                                                         | No       | 64-byte hex string for custom data (defaults to empty)                |
+| `disclosures`     | object                                                         | No       | Disclosure and verification requirements                              |
+| `devMode`         | boolean                                                        | No       | Enable development mode for testing                                   |
+
+### Verification Requirements (disclosures)
+
+The `disclosures` object defines what information to request and verify:
+
+| Option              | Type      | Description                                    | Use Case                                    |
+| ------------------- | --------- | ---------------------------------------------- | ------------------------------------------- |
+| `issuing_state`     | boolean   | Request disclosure of document issuing state   | Country-specific services                   |
+| `name`              | boolean   | Request disclosure of the user's name          | KYC, personalized services                  |
+| `nationality`       | boolean   | Request disclosure of nationality              | Compliance, eligibility checks              |
+| `date_of_birth`     | boolean   | Request disclosure of birth date               | Age verification, compliance                |
+| `passport_number`   | boolean   | Request disclosure of document number          | Unique identification                       |
+| `gender`            | boolean   | Request disclosure of gender                   | Demographic analysis                        |
+| `expiry_date`       | boolean   | Request disclosure of document expiry date     | Document validity                           |
+| `minimumAge`        | number    | Verify the user is at least this age           | Age-gated services (18+, 21+, etc.)         |
+| `excludedCountries` | string\[] | Array of ISO 3-letter country codes to exclude | Sanctions compliance, regional restrictions |
+| `ofac`              | boolean   | Enable OFAC compliance check                   | Financial services, sanctions screening     |
+
+## Methods
+
+### build()
+
+Returns the configured `SelfApp` object.
+
+```typescript
+build(): SelfApp
+```
+
+
+# SelfBackendVerifier
+
+A backend verification class that validates zero-knowledge proofs generated by the Self mobile app.
+
+## Constructor
+
+```typescript
+new SelfBackendVerifier(
+  scope: string,
+  endpoint: string,
+  mockPassport: boolean = false,
+  allowedIds: Map<AttestationId, boolean>,
+  configStorage: IConfigStorage,
+  userIdentifierType: UserIdType
+)
+```
+
+### Parameters
+
+| Parameter          | Type                          | Description                                                                                                |
+| ------------------ | ----------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| scope              | `string`                      | Your application's unique identifier. Must match the scope used in SelfAppBuilder. Max 30 characters.      |
+| endpoint           | `string`                      | Your backend verification endpoint URL. Must be publicly accessible and match your frontend configuration. |
+| mockPassport       | `boolean`                     | `false` for real documents (mainnet), `true` for testing with mock documents (testnet). Default: `false`   |
+| allowedIds         | `Map<AttestationId, boolean>` | Map of allowed document types. Key: attestation ID, Value: allowed status                                  |
+| configStorage      | `IConfigStorage`              | Configuration storage implementation that determines verification requirements                             |
+| userIdentifierType | `UserIdType`                  | Type of user identifier: `'uuid'` or `'hex'` (for blockchain addresses)                                    |
+
+## Methods
+
+### verify()
+
+Validates zero-knowledge proofs from the Self mobile app.
+
+```typescript
+async verify(
+  attestationId: AttestationId,
+  proof: VcAndDiscloseProof,
+  pubSignals: BigNumberish[],
+  userContextData: string
+): Promise<VerificationResult>
+```
+
+#### Parameters
+
+| Parameter       | Type                 | Description                                                        |
+| --------------- | -------------------- | ------------------------------------------------------------------ |
+| attestationId   | `AttestationId`      | Document type identifier (1 = electronic passport, 2 = EU ID card) |
+| proof           | `VcAndDiscloseProof` | Zero-knowledge proof object containing cryptographic proof arrays  |
+| pubSignals      | `BigNumberish[]`     | Public signals from the zero-knowledge proof                       |
+| userContextData | `string`             | Hex-encoded string containing user context and configuration data  |
+
+#### Return Value
+
+The method returns a `VerificationResult` object with comprehensive verification details:
+
+```typescript
+{
+  attestationId: AttestationId;           // Document type that was verified
+  isValidDetails: {
+    isValid: boolean;                     // Overall cryptographic proof validity
+    isOlderThanValid: boolean;            // Age requirement validation
+    isOfacValid: boolean;                 // OFAC sanctions check result
+  };
+  forbiddenCountriesList: string[];      // Countries excluded from the proof
+  discloseOutput: {                       // Disclosed document information
+    nullifier: string;                    // Unique proof identifier (prevents reuse)
+    forbiddenCountriesListPacked: string[];
+    issuingState: string;                 // Country that issued the document
+    name: string;                         // Full name (if disclosed)
+    idNumber: string;                     // Document number
+    nationality: string;                  // Nationality
+    dateOfBirth: string;                  // Date of birth (if disclosed)
+    gender: string;                       // Gender
+    expiryDate: string;                   // Document expiry date
+    olderThan: string;                    // Age verification result
+    ofac: boolean[];                      // OFAC check results [passportNo, nameAndDob, nameAndYob]
+  };
+  userData: {
+    userIdentifier: string;               // User identifier from context
+    userDefinedData: string;              // Custom user data
+  };
+}
+```
+
+#### Error Handling
+
+The method throws `ConfigMismatchError` when verification requirements don't match:
+
+```typescript
+try {
+  const result = await verifier.verify(attestationId, proof, pubSignals, userContextData);
+  // Handle successful verification
+} catch (error: any) {
+  if (error.name === 'ConfigMismatchError') {
+    console.error('Configuration mismatches:', error.issues);
+    // error.issues contains detailed information about what failed
+  } else {
+    console.error('Verification error:', error);
+  }
+}
+```
+
+Common ConfigMismatch Types:
+
+* `InvalidId` - Attestation ID not in allowedIds
+* `InvalidScope` - Proof was generated for a different application
+* `InvalidRoot` - Merkle root not found on blockchain
+* `InvalidForbiddenCountriesList` - Countries don't match configuration
+* `InvalidMinimumAge` - Age requirement mismatch
+* `InvalidTimestamp` - Proof timestamp out of valid range (±1 day)
+* `InvalidOfac` - OFAC check requirements mismatch
+* `ConfigNotFound` - Configuration not found in storage
+
+## Types
+
+### VerificationConfig
+
+```typescript
+{
+  minimumAge?: number;                  // Minimum age requirement
+  excludedCountries?: Country3LetterCode[];  // ISO 3-letter country codes to exclude
+  ofac?: boolean;                       // Enable OFAC sanctions checking
+}
+```
+
+### VcAndDiscloseProof
+
+```typescript
+{
+  a: [BigNumberish, BigNumberish];
+  b: [[BigNumberish, BigNumberish], [BigNumberish, BigNumberish]];
+  c: [BigNumberish, BigNumberish];
+}
+```
+
+### AttestationId
+
+Document type identifiers:
+
+* `1` - Electronic passport
+* `2` - EU ID card
+
+### ConfigMismatch Error Types
+
+* `InvalidId` - Attestation ID not in allowedIds
+* `InvalidUserContextHash` - User context hash mismatch
+* `InvalidScope` - Proof was generated for a different application
+* `InvalidRoot` - Merkle root not found on blockchain
+* `InvalidAttestationId` - Attestation ID mismatch
+* `InvalidForbiddenCountriesList` - Countries don't match configuration
+* `InvalidMinimumAge` - Minimum age requirement mismatch
+* `InvalidTimestamp` - Proof timestamp out of valid range (±1 day)
+* `InvalidOfac` - OFAC check requirements mismatch
+* `ConfigNotFound` - Configuration not found in storage
+
+## Configuration Storage Classes
+
+The IConfigStorage interface is crucial for dynamic verification requirements. It determines what to verify based on user context.
+
+### DefaultConfigStore
+
+Simple static configuration for uniform verification requirements:
+
+```typescript
+import { DefaultConfigStore } from '@selfxyz/core';
+
+const configStore = new DefaultConfigStore({
+  minimumAge: 21,
+  excludedCountries: ['IRN', 'PRK'],
+  ofac: true
+});
+
+// Always returns the same configuration regardless of user or context
+```
+
+### InMemoryConfigStore
+
+Enables different verification rules based on user context:
+
+```typescript
+import { InMemoryConfigStore } from '@selfxyz/core';
+
+const configStore = new InMemoryConfigStore(
+  async (userIdentifier: string, userDefinedData: string) => {
+    // Parse user-defined data to determine requirements
+    const context = JSON.parse(userDefinedData);
+    
+    // Return different config IDs based on context
+    if (context.action === 'high_value_transfer') {
+      return 'strict_verification';
+    } else if (context.action === 'basic_signup') {
+      return 'standard_verification';
+    }
+    return 'default_verification';
+  }
+);
+
+// Set up different verification configurations
+await configStore.setConfig('strict_verification', {
+  minimumAge: 21,
+  excludedCountries: ['IRN', 'PRK', 'CUB'],
+  ofac: true
+});
+
+await configStore.setConfig('standard_verification', {
+  minimumAge: 18,
+  excludedCountries: [],
+  ofac: false
+});
+```
+
+## Best Practices
+
+### Configuration Management
+
+* **Use appropriate config storage**: DefaultConfigStore for simple apps, InMemoryConfigStore for dynamic requirements
+* **Validate attestation IDs**: Ensure the attestation ID is in your allowedIds map
+
+### Error Handling
+
+* **Always catch ConfigMismatchError**: This provides detailed information about verification failures
+* **Validate scope matching**: Ensure frontend and backend scopes match exactly
+
+### Security
+
+* **Store nullifiers**: Track used nullifiers in your database to prevent proof reuse
+* **Validate input**: Always validate all parameters before calling verify()
+
+### Development and Testing
+
+* **Use mockPassport: true**: Enable for development and testing environments
+* **Test different scenarios**: Test with various age requirements, countries, and document types
+
+
+# SelfQRcodeWrapper
+
+A React component wrapper that prevents server-side rendering issues with QR code generation in Next.js applications.
+
+## Props
+
+The `SelfQRcodeWrapper` component accepts the following props:
+
+| Parameter      | Type                                                       | Required | Default         | Description                                           |
+| -------------- | ---------------------------------------------------------- | -------- | --------------- | ----------------------------------------------------- |
+| `selfApp`      | SelfApp                                                    | Yes      | -               | The SelfApp configuration object                      |
+| `onSuccess`    | () => void                                                 | Yes      | -               | Callback function executed on successful verification |
+| `onError`      | (error: { error\_code?: string, reason?: string }) => void | Yes      | -               | Callback function executed on verification error      |
+| `type`         | 'websocket' \| 'deeplink'                                  | No       | 'websocket'     | Type of QR code to generate                           |
+| `websocketUrl` | string                                                     | No       | WS\_DB\_RELAYER | Custom WebSocket URL for verification                 |
+| `size`         | number                                                     | No       | 300             | QR code size in pixels                                |
+| `darkMode`     | boolean                                                    | No       | false           | Enable dark mode styling                              |
+| `children`     | React.ReactNode                                            | No       | -               | Custom children to render                             |
+
+
+# Basic Integration
+
+This document provides an overview and integration guide for our smart contract, available as an npm package. You can install it with:
+
+```bash
+npm install @selfxyz/contracts
+```
+
+## V2 Integration
+
+### Package Structure
+
+The V2 package supports multiple document types with enhanced verification architecture:
+
+```bash
+.
+├── abstract
+│ └── SelfVerificationRoot.sol # Base impl in self verification V2
+├── constants
+│ ├── AttestationId.sol # Unique identifiers for identity documents (E_PASSPORT, EU_ID_CARD)
+│ └── CircuitConstantsV2.sol # V2 indices for public signals in our circuits
+├── interfaces # Interfaces for V2 contracts
+│ ├── IDscCircuitVerifier.sol
+│ ├── IIdentityRegistryV1.sol
+│ ├── IIdentityRegistryIdCardV1.sol # New: EU ID Card registry interface
+│ ├── IIdentityVerificationHubV2.sol # V2 hub interface
+│ ├── IRegisterCircuitVerifier.sol
+│ ├── ISelfVerificationRoot.sol
+│ └── IVcAndDiscloseCircuitVerifier.sol
+├── libraries
+│ ├── SelfStructs.sol # V2 data structures for verification
+│ ├── CustomVerifier.sol # Custom verification logic for different document types
+│ ├── CircuitAttributeHandlerV2.sol # V2 attribute extraction
+│ ├── GenericFormatter.sol # V2 output formatting
+│ └── Formatter.sol # Utility functions (maintained for compatibility)
+└── example
+  ├── HappyBirthday.sol # Updated V2 example supporting both passports and EU ID cards
+  ├── Airdrop.sol # V2 airdrop example
+  └── SelfIdentityERC721.sol # NFT example with identity verification
+```
+
+## Step-by-Step Integration Guide
+
+### Step 1: Install Dependencies
+
+```bash
+npm install @selfxyz/contracts
+```
+
+### Step 2: Create Your Contract
+
+Extend `SelfVerificationRoot` and implement the required methods:
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.28;
+
+import {SelfVerificationRoot} from "@selfxyz/contracts/contracts/abstract/SelfVerificationRoot.sol";
+import {ISelfVerificationRoot} from "@selfxyz/contracts/contracts/interfaces/ISelfVerificationRoot.sol";
+
+/**
+ * @title ProofOfHuman
+ * @notice Simple example showing how to verify human identity using Self Protocol
+ */
+contract ProofOfHuman is SelfVerificationRoot {
+    // Store verification status for each user
+    mapping(address => bool) public verifiedHumans;
+    bytes32 public verificationConfigId;
+    address public lastUserAddress;
+    
+    // Event to track successful verifications
+    event VerificationCompleted(
+        ISelfVerificationRoot.GenericDiscloseOutputV2 output,
+        bytes userData
+    );
+    
+    /**
+     * @notice Constructor for the contract
+     * @param _identityVerificationHubV2Address The address of the Identity Verification Hub V2
+     * @param _scope The scope of the contract
+     * @param _verificationConfigId The configuration ID for the contract
+     */
+    constructor(
+        address _identityVerificationHubV2Address,
+        uint256 _scope,
+        bytes32 _verificationConfigId
+    ) SelfVerificationRoot(_identityVerificationHubV2Address, _scope) {
+        verificationConfigId = _verificationConfigId;
+    }
+
+    /**
+     * @notice Implementation of customVerificationHook
+     * @dev This function is called by onVerificationSuccess after hub address validation
+     * @param output The verification output from the hub
+     * @param userData The user data passed through verification
+     */
+    function customVerificationHook(
+        ISelfVerificationRoot.GenericDiscloseOutputV2 memory _output,
+        bytes memory _userData
+    ) internal override {
+        lastUserAddress = address(uint160(_output.userIdentifier));
+        verifiedHumans[lastUserAddress] = true;
+
+        emit VerificationCompleted(_output, _userData);
+        
+        // Add your custom logic here:
+        // - Mint NFT to verified user
+        // - Add to allowlist
+        // - Transfer tokens
+        // - etc.
+    }
+
+    function getConfigId(
+        bytes32 _destinationChainId,
+        bytes32 _userIdentifier,
+        bytes memory _userDefinedData
+    ) public view override returns (bytes32) {
+        return verificationConfigId;
+    }
+
+    /**
+     * @notice Check if an address is a verified human
+     */
+    function isVerifiedHuman(address _user) external view returns (bool) {
+        return verifiedHumans[_user];
+    }
+
+    function setConfigId(bytes32 _configId) external {
+        verificationConfigId = _configId;
+    }
+}
+```
+
+### Step 3: Generate Configuration ID
+
+Use the [Self Configuration Tools](https://tools.self.xyz/) to easily create your verification configuration and generate a config ID. This tool allows you to configure age requirements, country restrictions, and OFAC checks with a user-friendly interface.
+
+Once you have your config ID from the tool, you can use it in your contract in several ways:
+
+**Option 1: Hard-coded**
+
+```solidity
+function getConfigId(
+    bytes32 _destinationChainId,
+    bytes32 _userIdentifier, 
+    bytes memory _userDefinedData
+) public view override returns (bytes32) {
+    // Replace with your actual config ID from the tool
+    return 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef;
+}
+```
+
+**Option 2: Store and update via setter**
+
+```solidity
+/**
+ * @notice Expose the internal _setScope function for testing
+ * @param newScope The new scope value to set
+ */
+function setScope(uint256 newScope) external {
+    _setScope(newScope);
+}
+```
+
+> **⚠️ Security Note:** In production environments, you should add proper access control to the `setScope` function (e.g., `onlyOwner` modifier) to prevent unauthorized scope modifications. The example above is suitable for testing but should not be deployed without access restrictions.
+
+**Option 3: Dynamic based on user context**
+
+This advanced approach allows your contract to use different verification configurations based on user actions and context. Instead of having a single, fixed config ID, you can dynamically select which verification requirements to apply based on what the user is trying to do.
+
+**Why use dynamic config IDs?**
+
+* Different actions may require different verification levels (e.g., voting vs. general access)
+* External contracts might need specific identity requirements
+* You can support multiple use cases in a single contract
+
+**Example scenario:** Users can join polls (actionType 0) with nationality verification, or get general verification (actionType 1) with basic identity proof.
+
+<details>
+
+<summary><strong>📋 View Complete Implementation</strong></summary>
+
+**How the system works:** The system encodes user intent in the `userData` parameter:
+
+* **Frontend sends:** `actionType + accessCode` (e.g., actionType=0, accessCode=bytes32 value)
+* **Contract receives:** Parsed action (uint8) and access code (bytes32) to determine appropriate config ID
+* **Verification flows:** Different configs = different requirements
+
+**Implementation breakdown:**
+
+1. **Data Structure:** Mappings to connect access codes → contracts → config IDs
+2. **Parsing Logic:** Extract action type and access code from frontend data
+3. **Config Resolution:** Route to appropriate verification configuration
+4. **Action Execution:** Perform different logic based on verification context
+
+```solidity
+// Default config ID for general verifications
+bytes32 private constant DEFAULT_VERIFICATION_CONFIG_ID = 
+    0x7b6436b0c98f62380866d9432c2af0ee08ce16a171bda6951aecd95ee1307d61;
+
+// Core mappings for dynamic config system
+mapping(bytes32 accessCode => address targetContract) public codeToContractAddress;
+mapping(address targetContract => bytes32 configId) public configIds;
+mapping(address participant => bool verified) public isVerified;
+
+// Example interface for external contract interaction
+interface ExternalContract {
+    function addParticipant(address participant, bytes memory nationality) external;
+}
+
+function getConfigId(
+    bytes32 _destinationChainId,
+    bytes32 _userIdentifier,
+    bytes memory _userDefinedData // Format: actionType + accessCode
+) public view override returns (bytes32) {
+    (uint8 actionCode, bytes32 accessCode) = parseUserData(_userDefinedData);
+    
+    if (actionCode == 0) {
+        // External contract interaction - use contract-specific config
+        address contractAddr = codeToContractAddress[accessCode];
+        return configIds[contractAddr];
+    } else if (actionCode == 1) {
+        // General verification - use default config
+        return DEFAULT_VERIFICATION_CONFIG_ID;
+    }
+    
+    revert("Invalid action code");
+}
+
+function customVerificationHook(
+    ISelfVerificationRoot.GenericDiscloseOutputV2 memory _output,
+    bytes memory _userData // Format: actionType + accessCode
+) internal override {
+    (uint8 actionCode, bytes32 accessCode) = parseUserData(_userData);
+    
+    address participant = address(uint160(_output.userIdentifier));
+    
+    if (actionCode == 0) {
+        // External contract interaction: call specific contract with nationality data
+        address contractAddress = codeToContractAddress[accessCode];
+        require(contractAddress != address(0), "Contract not found");
+        
+        ExternalContract externalContract = ExternalContract(contractAddress);
+        externalContract.addParticipant(participant, _output.nationality);
+        
+    } else if (actionCode == 1) {
+        // General verification: mark user as verified
+        isVerified[participant] = true;
+    }
+}
+
+// Enhanced parsing to handle frontend encoding variations
+function parseUserData(bytes memory userData) internal pure returns (uint8 actionCode, bytes32 accessCode) {
+    require(userData.length >= 33, "Invalid userData length");
+    
+    // Handle different encoding formats from frontend
+    uint8 firstByte = uint8(userData[0]);
+    if (firstByte == 0x30) {
+        // ASCII '0' (48 in decimal)
+        actionCode = 0;
+    } else if (firstByte == 0x31) {
+        // ASCII '1' (49 in decimal)
+        actionCode = 1;
+    } else if (firstByte == 0 || firstByte == 1) {
+        // Raw bytes
+        actionCode = firstByte;
+    } else {
+        revert("Invalid action code");
+    }
+    
+    // Extract accessCode from remaining bytes using assembly for efficiency
+    assembly {
+        accessCode := mload(add(userData, 33))
+    }
+    
+    // Handle string-encoded access codes from frontend
+    accessCode = bytes32(parseUint(abi.encodePacked(accessCode)));
+}
+
+function parseUint(bytes memory _b) internal pure returns (uint256 result) {
+    for (uint256 i = 1; i < _b.length; i++) {
+        require(_b[i] >= 0x30 && _b[i] <= 0x39, "Invalid character");
+        result = result * 10 + (uint8(_b[i]) - 48);
+    }
+}
+
+// Admin functions to manage contract mappings
+function setContractMapping(bytes32 _accessCode, address _contractAddress, bytes32 _configId) external {
+    codeToContractAddress[_accessCode] = _contractAddress;
+    configIds[_contractAddress] = _configId;
+}
+
+function removeContractMapping(bytes32 _accessCode) external {
+    address contractAddress = codeToContractAddress[_accessCode];
+    delete codeToContractAddress[_accessCode];
+    delete configIds[contractAddress];
+}
+```
+
+</details>
+
+<details>
+
+<summary><strong>🔧 Frontend-to-Backend Encoding Guide</strong></summary>
+
+**How to encode data from frontend to backend**
+
+**1. Frontend Data Preparation:**
+
+```javascript
+// Frontend prepares userData for verification
+const actionType = 0; // 0 = Join Poll (dynamic config ID), 1 = Register (Default Verification)
+const accessCode = '0x1234567890123456789012345678901234567890123456789012345678901234'; // 32-byte hex string
+
+// Encode userData: actionType (1 byte) + accessCode (32 bytes)
+function encodeUserData(actionType, accessCode) {
+    // Convert actionType to 2-digit hex string (e.g., 0 -> '00', 1 -> '01')
+    const actionHex = actionType.toString(16).padStart(2, '0');
+    
+    // Remove '0x' prefix from accessCode if present
+    const cleanAccessCode = accessCode.replace(/^0x/, '');
+    
+    // Concatenate: actionType (1 byte) + accessCode (32 bytes)
+    return `0x${actionHex}${cleanAccessCode}`;
+}
+
+const userDefinedData = encodeUserData(actionType, accessCode);
+// Result: "0x001234567890123456789012345678901234567890123456789012345678901234"
+```
+
+**2. Backend Parsing Process:**
+
+```solidity
+// The parseUserData function handles different encoding formats:
+
+function parseUserData(bytes memory _userData) internal pure returns (uint8 actionCode, bytes32 accessCode) {
+    require(_userData.length >= 33, "Invalid userData length");
+    
+    // Parse first byte for action type
+    uint8 firstByte = uint8(_userData[0]);
+    if (firstByte == 0x30) {        // ASCII '0' (48)
+        actionCode = 0;
+    } else if (firstByte == 0x31) { // ASCII '1' (49)  
+        actionCode = 1;
+    } else if (firstByte == 0 || firstByte == 1) { // Raw bytes
+        actionCode = firstByte;
+    } else {
+        revert("Invalid action code");
+    }
+    
+    // Extract accessCode from remaining bytes (position 33+)
+    assembly {
+        accessCode := mload(add(_userData, 33))
+    }
+    
+    // Convert string-encoded access code to number
+    accessCode = bytes32(parseUint(abi.encodePacked(accessCode)));
+}
+```
+
+**3. Config ID Resolution:**
+
+* **Action Code 0**: `accessCode → contractAddress → configId`
+* **Action Code 1**: Returns `DEFAULT_VERIFICATION_CONFIG_ID`
+
+</details>
+
+### Step 4: Deploy Your Contract
+
+Deploy with the V2 Hub address:
+
+* **Celo Mainnet:** `0xe57F4773bd9c9d8b6Cd70431117d353298B9f5BF`
+* **Celo Testnet:** `0x68c931C9a534D37aa78094877F46fE46a49F1A51`
+
+### Step 5: Set Up Scope
+
+Your contract needs a proper scope for verification. You have two approaches:
+
+**Option 1: Predict address with CREATE2 (advanced)**
+
+```solidity
+// Calculate scope before deployment using predicted address
+// Use tools.self.xyz to calculate scope with your predicted contract address
+```
+
+**Option 2: Update scope after deployment (easier)**
+
+```solidity
+/**
+ * @notice Expose the internal _setScope function for testing
+ * @param newScope The new scope value to set
+ */
+function setScope(uint256 newScope) external {
+    _setScope(newScope);
+}
+```
+
+After deployment, use the [Self Configuration Tools](https://tools.self.xyz/) to calculate the actual scope with your deployed contract address and update it using the setter function.
+
+### Step 6: Configure Frontend SDK
+
+Set up your frontend with the deployed contract address (see [Frontend Configuration](https://docs.self.xyz/contract-integration/frontend-configuration)).
+
+## Next Steps
+
+* [**Identity Attributes**](https://github.com/selfxyz/self-docs/blob/main/contract-integration/utilize-passport-attributes.md) - Learn how to access verified user data
+* [**Frontend Configuration**](https://docs.self.xyz/contract-integration/frontend-configuration) - Set up your frontend integration
+* [**Example Contracts**](https://docs.self.xyz/contract-integration/airdrop-example) - See complete implementation examples
+
+
+# Frontend Configuration
+
+Configure the frontend SDK for on-chain verification. For basic setup and installation, see the [Quickstart Guide](https://docs.self.xyz/use-self/quickstart).
+
+## Contract-Specific Configuration
+
+When integrating with contracts, configure your SelfApp with these key parameters:
+
+```javascript
+const selfApp = new SelfAppBuilder({
+    // Contract integration settings
+    endpoint: "YOUR_DEPLOYED_CONTRACT_ADDRESS",  // Your SelfVerificationRoot contract
+    endpointType: "staging_celo",               // "staging_celo" or "celo"
+    userIdType: "hex",                          // Use "hex" for wallet addresses
+    version: 2,                                 // Always use V2 for contracts
+    
+    // Your app details
+    appName: "Your App Name",
+    scope: "your-app-scope",                    // Max 30 characters
+    userId: userWalletAddress,
+    
+    // Verification configuration (must match your contract)
+    disclosures: { /* see below */ },
+    userDefinedData: "Hello World",                        // Optional: dynamic data for contract
+}).build();
+```
+
+## Key Configuration for Contracts
+
+**Contract Integration:**
+
+* `endpoint`: Your deployed contract address
+* `endpointType`: `"staging_celo"` (testnet) or `"celo"` (mainnet)
+* `userIdType`: Use `"hex"` for wallet addresses
+
+**Important:** Your `disclosures` configuration must exactly match your contract's verification requirements.
+
+## Disclosures Configuration
+
+Configure what users must verify and what data they reveal:
+
+### Verification Rules
+
+```javascript
+disclosures: {
+    // Age verification
+    minimumAge: 18,                    // Minimum age requirement
+    
+    // Geographic restrictions  
+    excludedCountries: ["USA", "RUS"], // Array of 3-letter country codes
+    
+    // Compliance checking
+    ofac: false,                       // OFAC sanctions list checking
+}
+```
+
+### Data Disclosures
+
+```javascript
+disclosures: {
+    // Personal information
+    name: true,                       // Full name
+    date_of_birth: true,              // Date of birth
+    gender: true,                     // Gender
+    
+    // Document information
+    nationality: true,                // Nationality/citizenship
+    issuing_state: true,              // Document issuing country
+    passport_number: true,            // Passport number
+    expiry_date: true,                // Document expiration date
+}
+```
+
+> **Important:** Your frontend disclosures must match your contract's verification configuration.
+
+### User Defined Data
+
+The `userDefinedData` parameter allows you to pass arbitrary string data through the verification flow to your contract. This data is cryptographically included in the verification process and cannot be tampered with.
+
+**Common Use Cases:**
+
+* **Dynamic Configuration:** Select different verification configs based on user context
+* **Business Logic:** Include application-specific data for custom verification logic
+
+**Data Flow:**
+
+1. Frontend sets `userDefinedData` in SelfAppBuilder
+2. Data flows through mobile app and TEE processing
+3. Contract receives data in both `getConfigId()` and `customVerificationHook()` functions
+
+**Contract Access:**
+
+```solidity
+// In getConfigId - used for configuration selection
+function getConfigId(
+    bytes32 destinationChainId,
+    bytes32 userIdentifier,
+    bytes memory userDefinedData  // ← Your custom data here
+) public view override returns (bytes32) {
+    // Return your configuration ID
+    return YOUR_CONFIG_ID;
+}
+
+// In customVerificationHook - userData contains full context including userDefinedData
+function customVerificationHook(
+    ISelfVerificationRoot.GenericDiscloseOutputV2 memory output,
+    bytes memory userData  // ← First 64 bytes are destChainId+userIdentifier, rest is userDefinedData
+) internal override {
+    bytes memory userDefinedData = userData[64:];  // Extract custom data
+    // Implement your business logic based on userDefinedData
+}
+```
+
+## Common Contract Integration Examples
+
+### Age-Gated Contract (21+)
+
+```javascript
+disclosures: { 
+    minimumAge: 21,
+    date_of_birth: true  // Optional: reveal birth date
+}
+```
+
+### Geographic Restrictions
+
+```javascript
+disclosures: { 
+    excludedCountries: ["USA", "RUS"],
+    nationality: true,      // Required for geo-filtering
+    issuing_state: true     // Optional: additional geo data
+}
+```
+
+### Dynamic Configuration with userDefinedData
+
+```javascript
+// Pass action type for dynamic config selection
+const selfApp = new SelfAppBuilder({
+    endpoint: "YOUR_CONTRACT_ADDRESS",
+    userDefinedData: "0x01",  // Action type for contract routing
+    disclosures: { 
+        minimumAge: 18,
+        nationality: true
+    }
+    // ... other config
+}).build();
+```
+
+
+# Deployed Contracts
+
+What you're looking for if you're implementing the onchain sdk
+
+Deployment addresses for the Self protocol, on Celo mainnet and testnet.
+
+### Celo mainnet — Real passports
+
+<table><thead><tr><th width="374">Contract</th><th>Deployment address</th><th data-hidden></th></tr></thead><tbody><tr><td>IdentityVerificationHub</td><td><a href="https://celoscan.io/address/0xe57F4773bd9c9d8b6Cd70431117d353298B9f5BF">0xe57F4773bd9c9d8b6Cd70431117d353298B9f5BF</a></td><td></td></tr></tbody></table>
+
+### Celo Testnet — Mock passports
+
+<table><thead><tr><th width="374">Contract</th><th>Deployment address</th><th data-hidden></th></tr></thead><tbody><tr><td>IdentityVerificationHub</td><td><a href="https://alfajores.celoscan.io/address/0x68c931C9a534D37aa78094877F46fE46a49F1A51">0x68c931C9a534D37aa78094877F46fE46a49F1A51</a></td><td></td></tr></tbody></table>
+
+
+# Airdrop Example
+
+This example demonstrates V2 contract integration using the [Airdrop contract](https://github.com/selfxyz/self/blob/main/contracts/contracts/example/Airdrop.sol), which supports both E-Passport and EU ID Card verification with registration/claim phases and Merkle tree token distribution.
+
+### Airdrop-Specific Features
+
+This contract demonstrates:
+
+* **Two-phase distribution:** Registration → Claim separation
+* **Merkle tree allocation:** Fair token distribution
+* **Multi-document registration:** Both E-Passport and EU ID cards supported
+* **Anti-duplicate measures:** Nullifier and user identifier tracking
+
+### Registration Logic
+
+The registration phase validates user eligibility and prevents duplicate registrations:
+
+**Key Validations:**
+
+* Registration phase must be open
+* Nullifier hasn't been used (prevents same document registering twice)
+* Valid user identifier provided
+* User identifier hasn't already registered (prevents address reuse)
+
+### State Variables
+
+```solidity
+/// @notice Maps nullifiers to user identifiers for registration tracking
+mapping(uint256 nullifier => uint256 userIdentifier) internal _nullifierToUserIdentifier;
+
+/// @notice Maps user identifiers to registration status
+mapping(uint256 userIdentifier => bool registered) internal _registeredUserIdentifiers;
+
+/// @notice Tracks addresses that have claimed tokens
+mapping(address => bool) public claimed;
+
+/// @notice ERC20 token to be airdropped
+IERC20 public immutable token;
+
+/// @notice Merkle root for claim validation
+bytes32 public merkleRoot;
+
+/// @notice Phase control
+bool public isRegistrationOpen;
+bool public isClaimOpen;
+
+/// @notice Verification config ID for identity verification
+bytes32 public verificationConfigId;
+```
+
+For standard V2 integration patterns (constructor, getConfigId), see [Basic Integration Guide](https://docs.self.xyz/basic-integration#integration-implementation).
+
+**Registration Verification Hook:**
+
+```solidity
+function customVerificationHook(
+    ISelfVerificationRoot.GenericDiscloseOutputV2 memory output,
+    bytes memory /* userData */
+) internal override {
+    // Airdrop-specific validations
+    if (!isRegistrationOpen) revert RegistrationNotOpen();
+    if (_nullifierToUserIdentifier[output.nullifier] != 0) revert RegisteredNullifier();
+    if (output.userIdentifier == 0) revert InvalidUserIdentifier();
+    if (_registeredUserIdentifiers[output.userIdentifier]) revert UserIdentifierAlreadyRegistered();
+
+    // Register user for airdrop
+    _nullifierToUserIdentifier[output.nullifier] = output.userIdentifier;
+    _registeredUserIdentifiers[output.userIdentifier] = true;
+    
+    emit UserIdentifierRegistered(output.userIdentifier, output.nullifier);
+}
+```
+
+### Claim Function Implementation
+
+```solidity
+function claim(uint256 index, uint256 amount, bytes32[] memory merkleProof) external {
+    if (isRegistrationOpen) {
+        revert RegistrationNotClosed();
+    }
+    if (!isClaimOpen) {
+        revert ClaimNotOpen();
+    }
+    if (claimed[msg.sender]) {
+        revert AlreadyClaimed();
+    }
+    if (!_registeredUserIdentifiers[uint256(uint160(msg.sender))]) {
+        revert NotRegistered(msg.sender);
+    }
+
+    // Verify the Merkle proof
+    bytes32 node = keccak256(abi.encodePacked(index, msg.sender, amount));
+    if (!MerkleProof.verify(merkleProof, merkleRoot, node)) revert InvalidProof();
+
+    // Mark as claimed and transfer tokens
+    claimed[msg.sender] = true;
+    token.safeTransfer(msg.sender, amount);
+
+    emit Claimed(index, msg.sender, amount);
+}
+```
+
+### Configuration Management
+
+The contract includes methods for managing verification configuration:
+
+```solidity
+// Set verification config ID
+function setConfigId(bytes32 configId) external onlyOwner {
+    verificationConfigId = configId;
+}
+
+// Override to provide configId for verification
+function getConfigId(
+    bytes32 destinationChainId,
+    bytes32 userIdentifier,
+    bytes memory userDefinedData
+) public view override returns (bytes32) {
+    return verificationConfigId;
+}
+```
+
+### Administrative Functions
+
+```solidity
+// Set Merkle root for claim validation
+function setMerkleRoot(bytes32 newMerkleRoot) external onlyOwner;
+
+// Update verification scope
+function setScope(uint256 newScope) external onlyOwner;
+
+// Phase control
+function openRegistration() external onlyOwner;
+function closeRegistration() external onlyOwner;
+function openClaim() external onlyOwner;
+function closeClaim() external onlyOwner;
+```
+
+### Airdrop Flow
+
+1. **Deploy:** Owner deploys with hub address, scope, and token
+2. **Configure:** Set verification config ID and Merkle root using `setConfigId()` and `setMerkleRoot()`
+3. **Open Registration:** Users prove identity to register
+4. **Close Registration:** Move to claim phase
+5. **Open Claims:** Registered users claim via Merkle proofs
+6. **Distribution Complete:** Tokens distributed to verified users
+
+For verification configuration setup, see [Hub Verification Process](https://docs.self.xyz/verification-in-the-identityverificationhub#v2-enhanced-verifications).
+
+## Related Documentation
+
+* [Basic Integration Guide](https://docs.self.xyz/contract-integration/basic-integration) - Core V2 integration patterns
+* [Hub Verification Process](https://docs.self.xyz/verification-in-the-identityverificationhub) - Verification configuration
+* [Identity Attributes](https://docs.self.xyz/contract-integration/broken-reference) - Working with verified data
+* [Happy Birthday Example](https://docs.self.xyz/contract-integration/happy-birthday-example) - Date-based verification example
+
+
+# Happy Birthday Example
+
+This example demonstrates the V2 [Happy Birthday contract](https://github.com/selfxyz/self/blob/main/contracts/contracts/example/HappyBirthday.sol) that distributes USDC to users on their birthday, with document type bonuses and support for both E-Passport and EU ID Card verification.
+
+## Birthday-Specific Features
+
+* **Birthday Window Validation:** Configurable time window around user's birthday
+* **Document Type Bonuses:** Different reward multipliers for E-Passport vs EU ID cards
+* **Date Processing:** Simplified handling of pre-extracted V2 date attributes
+* **One-time Claims:** Nullifier prevents multiple birthday claims
+
+For standard V2 integration patterns, see [Basic Integration Guide](https://docs.self.xyz/basic-integration#integration-implementation).
+
+### State Variables
+
+```solidity
+/// @notice USDC token contract
+IERC20 public immutable usdc;
+
+/// @notice Default: 50 USDC (6 decimals)
+uint256 public claimableAmount = 50e6;
+
+/// @notice Bonus multiplier for EU ID card users (in basis points)
+uint256 public euidBonusMultiplier = 200; // 200% = 2x bonus
+
+/// @notice Bonus multiplier for E-Passport users (in basis points) 
+uint256 public passportBonusMultiplier = 150; // 150% = 1.5x bonus
+
+/// @notice Birthday claim window (default: 1 day)
+uint256 public claimableWindow = 1 days;
+
+/// @notice Tracks users who have claimed to prevent double claims
+mapping(uint256 nullifier => bool hasClaimed) public hasClaimed;
+
+/// @notice Verification config ID for identity verification
+bytes32 public verificationConfigId;
+
+uint256 public constant BASIS_POINTS = 10000;
+```
+
+### Birthday Verification Logic
+
+The core birthday validation uses V2's pre-extracted date format:
+
+**Birthday Verification Hook:**
+
+```solidity
+function customVerificationHook(
+    ISelfVerificationRoot.GenericDiscloseOutputV2 memory output,
+    bytes memory /* userData */
+) internal override {
+    // Birthday-specific validations
+    if (hasClaimed[output.nullifier]) revert AlreadyClaimed();
+    if (!_isWithinBirthdayWindow(output.attestationId, output.dateOfBirth)) {
+        revert NotWithinBirthdayWindow();
+    }
+
+    // Calculate bonus based on document type
+    uint256 finalAmount = claimableAmount;
+    if (output.attestationId == AttestationId.EU_ID_CARD) {
+        finalAmount = (claimableAmount * euidBonusMultiplier) / BASIS_POINTS;
+    } else if (output.attestationId == AttestationId.E_PASSPORT) {
+        finalAmount = (claimableAmount * passportBonusMultiplier) / BASIS_POINTS;
+    }
+
+    // Process birthday claim
+    hasClaimed[output.nullifier] = true;
+    address recipient = address(uint160(output.userIdentifier));
+    usdc.safeTransfer(recipient, finalAmount);
+    
+    emit USDCClaimed(recipient, finalAmount, output.attestationId);
+}
+```
+
+### V2 Simplified Birthday Verification
+
+The V2 implementation dramatically simplifies birthday verification by using pre-extracted date attributes:
+
+```solidity
+function _isWithinBirthdayWindow(
+    bytes32 attestationId, 
+    string memory dobFromProof
+) internal view returns (bool) {
+    // DOB comes in format "DD-MM-YY" from the V2 proof system
+    bytes memory dobBytes = bytes(dobFromProof);
+    require(dobBytes.length == 8, "Invalid DOB format"); // "DD-MM-YY" = 8 chars
+
+    // Extract day and month from "DD-MM-YY" format
+    string memory day = Formatter.substring(dobFromProof, 0, 2);   // DD
+    string memory month = Formatter.substring(dobFromProof, 3, 5); // MM (skip hyphen)
+
+    // Create birthday in current year (format: YYMMDD)
+    string memory dobInThisYear = string(abi.encodePacked("25", month, day));
+    uint256 dobInThisYearTimestamp = Formatter.dateToUnixTimestamp(dobInThisYear);
+
+    uint256 currentTime = block.timestamp;
+    uint256 timeDifference;
+
+    if (currentTime > dobInThisYearTimestamp) {
+        timeDifference = currentTime - dobInThisYearTimestamp;
+    } else {
+        timeDifference = dobInThisYearTimestamp - currentTime;
+    }
+
+    return timeDifference <= claimableWindow;
+}
+```
+
+### Document Type Bonuses
+
+The V2 implementation provides different bonuses based on document type:
+
+```solidity
+// EU ID Card users get 2x bonus
+if (output.attestationId == AttestationId.EU_ID_CARD) {
+    finalAmount = (claimableAmount * 200) / 10000; // 200% = 2x
+}
+// E-Passport users get 1.5x bonus  
+else if (output.attestationId == AttestationId.E_PASSPORT) {
+    finalAmount = (claimableAmount * 150) / 10000; // 150% = 1.5x
+}
+```
+
+### Administrative Functions
+
+```solidity
+// Update claimable amount
+function setClaimableAmount(uint256 newAmount) external onlyOwner {
+    uint256 oldAmount = claimableAmount;
+    claimableAmount = newAmount;
+    emit ClaimableAmountUpdated(oldAmount, newAmount);
+}
+
+// Update birthday claim window
+function setClaimableWindow(uint256 newWindow) external onlyOwner {
+    uint256 oldWindow = claimableWindow;
+    claimableWindow = newWindow;
+    emit ClaimableWindowUpdated(oldWindow, newWindow);
+}
+
+// Update EU ID bonus multiplier
+function setEuidBonusMultiplier(uint256 newMultiplier) external onlyOwner {
+    uint256 oldMultiplier = euidBonusMultiplier;
+    euidBonusMultiplier = newMultiplier;
+    emit EuidBonusMultiplierUpdated(oldMultiplier, newMultiplier);
+}
+
+// Set verification config ID
+function setConfigId(bytes32 configId) external onlyOwner {
+    verificationConfigId = configId;
+}
+
+// Withdraw USDC from contract
+function withdrawUSDC(address to, uint256 amount) external onlyOwner {
+    usdc.safeTransfer(to, amount);
+}
+```
+
+### Birthday Contract Benefits
+
+**V2 Date Simplification:** Direct access to `output.dateOfBirth` eliminates complex parsing **Multi-Document Rewards:** Different bonus structures for passport vs EU ID card users **Flexible Windows:** Configurable birthday claim periods **Admin Controls:** Owner can adjust amounts, windows, and bonuses
+
+For verification configuration setup, see [Hub Verification Process](https://docs.self.xyz/verification-in-the-identityverificationhub#v2-enhanced-verifications).
+
+### Configuration Management
+
+The contract includes methods for managing verification configuration:
+
+```solidity
+// Override to provide configId for verification
+function getConfigId(
+    bytes32 destinationChainId,
+    bytes32 userIdentifier,
+    bytes memory userDefinedData
+) public view override returns (bytes32) {
+    return verificationConfigId;
+}
+```
+
+### Example Usage
+
+1. **Deploy Contract:** With hub address, scope, and USDC token address
+2. **Set Configuration:** Call `setConfigId()` with your verification config ID or use `setupVerificationConfig()` pattern
+3. **Fund Contract:** Transfer USDC to contract for distribution
+4. **User Claims:** Users verify identity and automatically receive birthday bonus
+5. **Document Bonuses:** EU ID card users get 2x, passport users get 1.5x the base amount
+
+## Related Documentation
+
+* [Basic Integration Guide](https://docs.self.xyz/contract-integration/basic-integration) - Core V2 integration patterns
+* [Identity Attributes](https://docs.self.xyz/contract-integration/broken-reference) - Date handling and attribute access
+* [Airdrop Example](https://docs.self.xyz/contract-integration/airdrop-example) - Registration-based verification example
+* [Hub Verification Process](https://docs.self.xyz/verification-in-the-identityverificationhub) - Verification configuration
+
+
+# Utilize Identity Attributes
+
+> **V2 Simplified Access**: V2 provides direct access to verified attributes through the `GenericDiscloseOutputV2` structure, eliminating the need for complex data extraction in most cases.
+
+Self Protocol supports multiple identity document types, each providing rich identity attributes. This guide shows how to access and utilize verified identity data from supported documents:
+
+* **E\_PASSPORT**: International passports with machine-readable zones
+* **EU\_ID\_CARD**: European Union national identity cards
+
+All document types provide standardized access to core identity attributes through a unified interface.
+
+## V2 Direct Access (Recommended)
+
+V2 provides structured identity data directly through `GenericDiscloseOutputV2`. All supported document types use the same unified interface:
+
+```solidity
+function customVerificationHook(
+    ISelfVerificationRoot.GenericDiscloseOutputV2 memory output,
+    bytes memory userData
+) internal override {
+    // Universal identity attributes (available for all document types)
+    string memory userNationality = output.nationality;
+    string[] memory userName = output.name; // [first, middle, last]
+    string memory documentNumber = output.idNumber; // Document number (passport/ID)
+    string memory issuingCountry = output.issuingState;
+    string memory birthDate = output.dateOfBirth; // DD-MM-YY format
+    string memory gender = output.gender;
+    string memory expiryDate = output.expiryDate;
+    uint256 verifiedAge = output.olderThan;
+    
+    // OFAC verification results
+    bool documentOfacClear = output.ofac[0]; // Document number OFAC check
+    bool nameAndDobOfacClear = output.ofac[1]; // Name + DOB OFAC check
+    bool nameAndYobOfacClear = output.ofac[2]; // Name + YOB OFAC check
+    
+    // Document type-specific handling
+    if (output.attestationId == AttestationId.E_PASSPORT) {
+        // Passport-specific business logic
+        // All three OFAC modes available for passports
+        handlePassportVerification(output);
+    } else if (output.attestationId == AttestationId.EU_ID_CARD) {
+        // EU ID card-specific business logic
+        // Only nameAndDobOfac and nameAndYobOfac available (documentOfacClear = false)
+        handleEuIdCardVerification(output);
+    }
+}
+```
+
+### Document Type Support
+
+| Feature                 | E\_PASSPORT     | EU\_ID\_CARD    |
+| ----------------------- | --------------- | --------------- |
+| Identity Attributes     | ✅ All available | ✅ All available |
+| Document Number OFAC    | ✅ Supported     | ❌ Not available |
+| Name + DOB OFAC         | ✅ Supported     | ✅ Supported     |
+| Name + YOB OFAC         | ✅ Supported     | ✅ Supported     |
+| Geographic Restrictions | ✅ Supported     | ✅ Supported     |
+| Age Verification        | ✅ Supported     | ✅ Supported     |
+
+## Advanced Usage
+
+### Direct Circuit Data Access
+
+For advanced use cases requiring direct access to circuit outputs, you can extract attributes from the underlying `PassportOutput` or `EuIdOutput` structures:
+
+```solidity
+// Extract attributes directly from circuit data
+function extractAdvancedAttributes(
+    bytes32 attestationId,
+    bytes memory revealedDataPacked
+) internal pure returns (
+    string memory issuingState,
+    string[] memory name,
+    string memory documentNumber,
+    string memory nationality,
+    string memory dateOfBirth,
+    string memory gender,
+    string memory expiryDate
+) {
+    // Works for both E_PASSPORT and EU_ID_CARD
+    issuingState = CircuitAttributeHandlerV2.getIssuingState(attestationId, revealedDataPacked);
+    name = CircuitAttributeHandlerV2.getName(attestationId, revealedDataPacked);
+    documentNumber = CircuitAttributeHandlerV2.getDocumentNumber(attestationId, revealedDataPacked);
+    nationality = CircuitAttributeHandlerV2.getNationality(attestationId, revealedDataPacked);
+    dateOfBirth = CircuitAttributeHandlerV2.getDateOfBirth(attestationId, revealedDataPacked);
+    gender = CircuitAttributeHandlerV2.getGender(attestationId, revealedDataPacked);
+    expiryDate = CircuitAttributeHandlerV2.getExpiryDate(attestationId, revealedDataPacked);
+}
+```
+
+### OFAC Compliance Checking
+
+```solidity
+// Document-specific OFAC verification
+function checkOfacCompliance(
+    bytes32 attestationId,
+    bytes memory revealedDataPacked
+) internal pure returns (bool[3] memory ofacResults) {
+    if (attestationId == AttestationId.E_PASSPORT) {
+        // Passports: All three OFAC modes available
+        ofacResults[0] = CircuitAttributeHandlerV2.getDocumentNoOfac(attestationId, revealedDataPacked);
+        ofacResults[1] = CircuitAttributeHandlerV2.getNameAndDobOfac(attestationId, revealedDataPacked);
+        ofacResults[2] = CircuitAttributeHandlerV2.getNameAndYobOfac(attestationId, revealedDataPacked);
+    } else if (attestationId == AttestationId.EU_ID_CARD) {
+        // EU ID cards: Only name-based OFAC checks
+        ofacResults[0] = false; // Document number OFAC not supported
+        ofacResults[1] = CircuitAttributeHandlerV2.getNameAndDobOfac(attestationId, revealedDataPacked);
+        ofacResults[2] = CircuitAttributeHandlerV2.getNameAndYobOfac(attestationId, revealedDataPacked);
+    }
+}
+```
+
+## CircuitAttributeHandlerV2 Library Reference
+
+The `CircuitAttributeHandlerV2` library provides functions for extracting and validating identity attributes from circuit data for all supported document types:
+
+### Identity Attribute Extraction
+
+| Function                                 | Description                            | Support       |
+| ---------------------------------------- | -------------------------------------- | ------------- |
+| `getIssuingState(attestationId, data)`   | Document issuing country/state         | All documents |
+| `getName(attestationId, data)`           | Full name array \[first, middle, last] | All documents |
+| `getDocumentNumber(attestationId, data)` | Document number (passport/ID)          | All documents |
+| `getNationality(attestationId, data)`    | Holder's nationality                   | All documents |
+| `getDateOfBirth(attestationId, data)`    | Birth date (DD-MM-YY format)           | All documents |
+| `getGender(attestationId, data)`         | Gender information                     | All documents |
+| `getExpiryDate(attestationId, data)`     | Document expiry date                   | All documents |
+
+### OFAC Verification Functions
+
+| Function                                     | Description                | E\_PASSPORT | EU\_ID\_CARD |
+| -------------------------------------------- | -------------------------- | ----------- | ------------ |
+| `getDocumentNoOfac(attestationId, data)`     | Document number OFAC check | ✅           | ❌            |
+| `getNameAndDobOfac(attestationId, data)`     | Name + DOB OFAC check      | ✅           | ✅            |
+| `getNameAndYobOfac(attestationId, data)`     | Name + YOB OFAC check      | ✅           | ✅            |
+| `compareOfac(attestationId, data, modes...)` | Multi-mode OFAC validation | ✅           | ✅ Partial    |
+
+### Validation Functions
+
+* **`compareOlderThan(attestationId, data, age)`** - Validates minimum age requirement
+* **`compareOfac(attestationId, data, modes...)`** - Validates OFAC compliance across multiple modes
+
+> **Note**: All functions require `attestationId` parameter to handle document type differences correctly.
+
+
+# Verification in the IdentityVerificationHub
+
+The IdentityVerificationHub V2 is the core verification engine that processes zero-knowledge proofs and executes identity verification workflows.
+
+## How the Hub Works
+
+The Hub operates as a central verification coordinator that:
+
+* **Receives Verification Requests** from contracts implementing `ISelfVerificationRoot`
+* **Processes ZK Proofs** using specialized circuit verifiers
+* **Applies Verification Rules** based on stored configurations
+* **Returns Structured Results** to the calling contract
+
+## Complete Verification Flow
+
+### 1. Request Initiation
+
+```solidity
+// User contract calls Hub with proof data
+function verifySelfProof(bytes calldata proofPayload, bytes calldata userContextData) external;
+```
+
+**What happens:**
+
+#### TEE Proof Generation (Gas-Free for Users)
+
+* **User Input**: User scans passport/ID with mobile app
+* **TEE Processing**: Trusted Execution Environment securely processes identity data
+* **ZK Proof Creation**: TEE generates zero-knowledge proof without revealing raw identity data
+
+#### Relayer (Sponsored Transactions)
+
+* **Proof Relay**: Relayer receives ZK proof from TEE
+* **Gas Sponsorship**: Relayer pays all transaction gas fees on behalf of user
+* **Onchain Submission**: Relayer submits proof to user's contract via blockchain transaction
+* **User Experience**: User gets verified identity without any crypto/gas requirements
+
+#### Contract Processing
+
+* Contract receives ZK proof from TEE/Relayer
+* Calls Hub's `verifySelfProof` with proof + user context data
+* Hub begins processing the verification request
+
+### 2. Input Decoding & Context Processing
+
+```solidity
+// Hub internal: _decodeInput() and _decodeUserContextData()
+(HubInputHeader memory header, bytes calldata proofData) = _decodeInput(baseVerificationInput);
+(configId, destChainId, userIdentifier, remainingData) = _decodeUserContextData(userContextData);
+```
+
+**What happens:**
+
+* **Header Extraction**: Gets contract version, scope, attestation ID
+* **Context Parsing**: Extracts config ID, destination chain, user identifier
+* **Data Preparation**: Prepares proof data for verification
+
+### 3. Configuration Retrieval
+
+```solidity
+// Hub loads verification configuration by configId
+VerificationConfigV2 memory config = $v2._v2VerificationConfigs[configId];
+```
+
+**What happens:**
+
+* Hub looks up stored verification configuration using configId
+* Configuration contains all verification rules (age, countries, OFAC, etc.)
+* If config doesn't exist, verification fails
+
+### 4. Document Type Detection & Routing
+
+```solidity
+// Based on attestationId in header
+if (attestationId == AttestationId.E_PASSPORT) {
+    // Route to passport verification logic
+} else if (attestationId == AttestationId.EU_ID_CARD) {
+    // Route to EU ID card verification logic
+}
+```
+
+**What happens:**
+
+* Hub identifies document type from attestation ID
+* Routes to appropriate verification pipeline
+* Uses document-specific circuit verifiers
+
+### 5. Basic Verification (\_basicVerification)
+
+**Purpose:** Validates the **cryptographic correctness** and **security** of the ZK proof itself.
+
+```solidity
+// Hub performs 4 core verification steps
+bytes memory proofOutput = _basicVerification(
+    header,
+    vcAndDiscloseProof,
+    userContextData,
+    userIdentifier
+);
+```
+
+**What happens (4 verification scopes):**
+
+#### Scope 1: Contract Validation
+
+* **Scope Check**: Ensures proof was generated for the correct contract
+* **User Identifier Check**: Validates user identity consistency
+
+#### Scope 2: Registry & Timestamp Validation
+
+* **Root Check**: Validates against Merkle tree in identity registry
+* **Current Date Check**: Ensures proof is within valid time window
+
+#### Scope 3: Cryptographic Proof Verification
+
+* **Groth16 Proof Verification**: Validates ZK proof using circuit verifier
+* **Public Signals Validation**: Verifies proof inputs/outputs match expectations
+
+#### Scope 4: Raw Data Extraction
+
+* **Output Generation**: Creates `PassportOutput` or `EuIdOutput` with raw field data
+* **Data Preparation**: Prepares extracted data for business logic verification
+
+**Output:** Raw identity data (`PassportOutput`/`EuIdOutput`) ready for custom verification.
+
+### 6. Custom Verification (CustomVerifier.customVerify)
+
+**Purpose:** Applies **business logic rules** and validates **identity attributes** against configuration requirements.
+
+```solidity
+// Hub applies custom verification logic
+GenericDiscloseOutputV2 memory output = CustomVerifier.customVerify(
+    header.attestationId,
+    config,
+    proofOutput
+);
+```
+
+**What happens:**
+
+* **Document Type Routing**: Routes to passport vs ID card specific verification
+* **Business Rule Application**: Applies age, geographic, and sanctions requirements
+* **Identity Data Extraction**: Converts raw data to structured, human-readable format
+* **Final Validation**: Ensures all configuration requirements are met
+
+**Output:** Structured identity data (`GenericDiscloseOutputV2`) with verification results.
+
+#### Age Verification (olderThanEnabled)
+
+```solidity
+if (verificationConfig.olderThanEnabled) {
+    if (!CircuitAttributeHandlerV2.compareOlderThan(
+        attestationId, 
+        passportOutput.revealedDataPacked, 
+        verificationConfig.olderThan
+    )) {
+        revert InvalidOlderThan();
+    }
+}
+```
+
+* Validates user meets minimum age requirement
+* Uses circuit-extracted age data for verification
+* Example: config requires 18+, user is 20 → ✅ passes
+* Example: config requires 21+, user is 18 → ❌ fails
+
+#### Geographic Restrictions (forbiddenCountriesEnabled)
+
+```solidity
+if (verificationConfig.forbiddenCountriesEnabled) {
+    for (uint256 i = 0; i < 4; i++) {
+        if (passportOutput.forbiddenCountriesListPacked[i] != 
+            verificationConfig.forbiddenCountriesListPacked[i]) {
+            revert InvalidForbiddenCountries();
+        }
+    }
+}
+```
+
+* Validates forbidden countries list matches exactly
+* Uses packed representation for gas efficiency (4 uint256 array)
+* Order in config must match proof's forbidden countries list
+
+#### OFAC Sanctions Verification
+
+```solidity
+if (verificationConfig.ofacEnabled[0] || 
+    verificationConfig.ofacEnabled[1] || 
+    verificationConfig.ofacEnabled[2]) {
+    if (!CircuitAttributeHandlerV2.compareOfac(
+        attestationId,
+        passportOutput.revealedDataPacked,
+        verificationConfig.ofacEnabled[0], // passport number
+        verificationConfig.ofacEnabled[1], // name + DOB
+        verificationConfig.ofacEnabled[2]  // name + YOB
+    )) {
+        revert InvalidOfacCheck();
+    }
+}
+```
+
+* **Mode 0**: OFAC check using passport number
+* **Mode 1**: OFAC check using name + date of birth
+* **Mode 2**: OFAC check using name + year of birth
+* Each mode can be independently enabled/disabled
+* Uses circuit-provided OFAC verification results
+
+### 7. Output Formatting & Generation
+
+```solidity
+// Hub formats verification results into structured output
+output = _formatVerificationOutput(header.contractVersion, genericDiscloseOutput);
+```
+
+**What happens:**
+
+* Raw proof signals converted to human-readable data
+* Structured identity information extracted
+* Verification results (age, OFAC, etc.) included
+
+### 8. Result Delivery
+
+```solidity
+// Hub calls back to the original contract
+ISelfVerificationRoot(callingContract).onVerificationSuccess(
+    abi.encode(output), 
+    userData
+);
+```
+
+**What happens:**
+
+* Hub calls `onVerificationSuccess` on the requesting contract
+* Passes structured output + user-defined data
+* Contract can then execute its custom business logic
+
+## Data Structures
+
+### VerificationConfigV2
+
+```solidity
+struct VerificationConfigV2 {
+    bool olderThanEnabled;                    // Enable age verification
+    uint256 olderThan;                        // Minimum age requirement  
+    bool forbiddenCountriesEnabled;           // Enable country restrictions
+    uint256[4] forbiddenCountriesListPacked;  // Packed forbidden countries
+    bool[3] ofacEnabled;                      // OFAC verification modes
+}
+```
+
+### GenericDiscloseOutputV2 (Verification Result)
+
+```solidity
+struct GenericDiscloseOutputV2 {
+    bytes32 attestationId;                    // E_PASSPORT or EU_ID_CARD
+    uint256 userIdentifier;                   // User's unique identifier
+    uint256 nullifier;                        // Anti-replay nullifier
+    uint256[4] forbiddenCountriesListPacked;  // Forbidden countries used
+    
+    // Disclosed identity information
+    string issuingState;                      // Document issuing country
+    string[] name;                            // [first, middle, last] names
+    string idNumber;                          // Passport/ID number
+    string nationality;                       // User's nationality
+    string dateOfBirth;                       // Birth date (DD-MM-YY)
+    string gender;                            // User's gender
+    string expiryDate;                        // Document expiry date
+    
+    // Verification results
+    uint256 olderThan;                        // Verified minimum age
+    bool[3] ofac;                             // OFAC results [passport, name+dob, name+yob]
+}
+```
+
+## Key V2 Improvements
+
+### Multi-Document Support
+
+* Automatic routing for E\_PASSPORT vs EU\_ID\_CARD
+* Document-specific verification pipelines
+* Unified interface for different document types
+
+### Structured Output
+
+* Rich `GenericDiscloseOutputV2` with pre-extracted attributes
+* No more manual parsing of raw field elements
+* Type-safe access to identity data
+
+### Flexible Configuration Management
+
+* Reusable `VerificationConfigV2` stored in Hub
+* Create configurations without contract redeployment
+* Use [Self Configuration Tools](https://tools.self.xyz/) to register configs
+
+### Enhanced Security
+
+* Separate verification logic for each document type
+* Improved timestamp and replay protection
+* Gas-optimized verification checks
+
+
+# Overview
+
+An in-depth overview of the Self protocol.
+
+### Introduction
+
+The Self protocol is an identity protocol designed to let people use their real-world attestation in a permissionless way, for Sybil resistance and selective disclosure. Our core thesis is that web-of-trust systems are hard to scale securely, and biometric verification à la Worldcoin has a long way to go, so bootstrapping from existing sources of trust like institutions is the most pragmatic way to verify identities securely today and in a privacy preserving way. We’re starting with passports, and national IDs.
+
+Self has **three** main components:
+
+* A mobile app that lets users easily scan the NFC chip in their passport. The mobile app operates both on iOS and Android, and performs the authentication mechanisms required by the passport to read the content of its chip (BAC/PACE).
+* Zero-knowledge circuits that can be used to verify the validity of certificates and passports, generate identity commitments and selectively disclose attributes.
+* Smart contracts that verify proofs, manage a merkle tree of identity commitments and allow for onchain disclosure of data while guaranteeing the permissionless aspect of the protocol.
+
+### Background on Biometric Passports
+
+Biometric passports were introduced in the 2000s as a way to streamline border control and reduce the risk of passport forgery. They are now issued in more than 170 countries, and their specifications are established by the ICAO (International Civil Aviation Organisation) and made available in Document 9303[ on their website](https://www.icao.int/publications/pages/publication.aspx?docnum=9303).
+
+Each biometric passport contains an embedded microchip that can be read by any NFC reader. It stores multiple datagroups (up to 16) along with a SOD (Document Security Object) that can be used to verify the integrity of the passport. The SOD contains hashes of all datagroups, a signature attesting to the validity of the passport, information on which hash functions and signature algorithms were used, and the certificate that signed the passport.
+
+All possible datagroups and their content can be found in the image below. DG1 and DG2 are mandatory, the rest is optional.\\
+
+<figure><img src="https://lh7-rt.googleusercontent.com/docsz/AD_4nXe4cgL2Q2UTAEroxDDJvjRn236hS6Cco-RDKcfIVbirrIuP7U2xx03gW_c-D6YINP5xWHD9_ktPTurewHPFMBLRmovwtiGBXasgpuHoqTUpnR1R4GDLgFF8yE-97refxe91Xdxu?key=zXb3nihNyp9ChW3RfTALsL42" alt=""><figcaption></figcaption></figure>
+
+In particular:
+
+* <mark style="color:green;">`DG1`</mark> has the same content as the machine readable zone, and is the source of all the information we care to verify.
+
+<figure><img src="https://lh7-rt.googleusercontent.com/docsz/AD_4nXfz3oE4332kG4YA0NfK4Svdz-Z1vLsZ-jIoJ7l1Fhzi_cSMdTuSpRQACair9_EG4VIBijrlhn4_seQdLyE8yV5SKfHZBs93Yl5H7FhB61ZT9xU3tNLwnZNN6GiPXs7ADQ8YarH7bA?key=zXb3nihNyp9ChW3RfTALsL42" alt=""><figcaption></figcaption></figure>
+
+* <mark style="color:green;">`DG2`</mark> contains the person’s photo. Because it contains a lot of entropy, it makes sure that the final signature can’t be dictionary-attacked starting with some of the person’s information.
+* <mark style="color:green;">`DG15`</mark> (optional) is the public key corresponding to the passport’s Active Authentication private key. We plan to use it to improve security in the future.
+
+<figure><img src="https://lh7-rt.googleusercontent.com/docsz/AD_4nXfSyDl3ZNPMRj8tWolIwlDKp9JhSId0Wf42vsEfA3Z5LJp7jWoo5CvXgpt6tPIdiYARyl4ALIx8CCdMTLhZlJEVQQuzNSdzp0JtKH-_7S4JazjMFUTd4dBmz0SUp4OABH86XH4uKw?key=zXb3nihNyp9ChW3RfTALsL42" alt="" width="188"><figcaption></figcaption></figure>
+
+The passport data groups are hashed and process, and the resulting final hash is signed by a Document Signing Certificate (DSC), which is itself signed by a Country Signing Certificate Authority (CSCA) as part of a certificate chain. The DSC can be read from the passport's chip and the CSCA can be looked up on international registries such as the ICAO masterlist.
+
+The <mark style="color:green;">`eContent`</mark> consists of the concatenation of all DG hashes, while the <mark style="color:green;">`signedAttr`</mark> is the final message signed by the issuing country. Sometimes, different hashing algorithms are used at each step.
+
+According to the specifications, each DSC should sign up to 100k passports, each CSCA should rotate every 3-5 years, and a country should always have at minimum 2 valid CSCA at the same time.\\
+
+
+# Architecture
+
+## High level Architecture
+
+Usage of the Self protocol involves two main steps: registration and disclosure. This design is somewhat similar to identity mixers such as Semaphore.
+
+<figure><img src="https://lh7-rt.googleusercontent.com/docsz/AD_4nXfGhkaTL8E0BZjO90mM7zUu0ZrhWswbbcfmbeqNXaJEOi225_GzefTZ1pmI1vDuuhNlj6rOcbjY9BWl1dcckiN65GFjMVw8CyUTRo5VBDTvWCcnZGPQVdRjr2xlR8QlDASDEddW?key=zXb3nihNyp9ChW3RfTALsL42" alt=""><figcaption></figcaption></figure>
+
+First, users prove they own a valid identity document (passport or EU ID card) by generating a zero-knowledge proof of validity. This is done by proving the existence of a valid certificate authority chain for the user's document data. This proof is generated in a TEE rather than on the user's mobile phone for performance reasons. To ensure that the TEE doesn't save or leak the user's personal information, the mobile app will connect to the TEE only after it verifies the TEE attestation which can verify the code that is running on the TEE.
+
+<figure><img src="https://lh7-rt.googleusercontent.com/docsz/AD_4nXcd613h-jB86X20eiivmvD8aVQF6XheqW9bYz-k78x5s8Gg0xn_ws1NIoFT-7VWGsAX6HiKRaMs3p3d8NyXOcRpoG-uCuPuBWT1mFziq9-GOXSqDiklo9FRgin0Y6IqObSZg63IOQ?key=zXb3nihNyp9ChW3RfTALsL42" alt=""><figcaption></figcaption></figure>
+
+The resulting zk proof is then verified onchain and their identity commitment is added to the identity registry. The registry is in the form of a merkle tree, whereas the identity commitment is a hash of several of the passport’s key information points, along with a user-generated secret. We call the registry the identity pool.
+
+Subsequently, every time an application needs to check a user’s identity, the user can generate another zero-knowledge proof, the disclosure proof, that shows that they know how to reconstruct a commitment which is part of the identity pool. In particular, they need both the secret that was used when registering, and the passport data. In the proof, they are free to disclose information related to their identity using the DG1 information present in the commitment, while redacting any information they want to keep private.
+
+\
+For example, such disclosure proofs can prove that a user is over a certain age, that they are a citizen of a certain country, that they are not a citizen of a set of countries, and that they are not on the OFAC list. These statements can be linked to an user's wallet address in the proof, which can be shared with third party applications or onchain protocols. Disclosure proofs can be requested by third party applications using the Web SDK.
+
+The goal of splitting registration and disclosure proving is two-fold:
+
+* First, it creates a level of indirection between registration and disclosure. As detailed below in the Nullifier section, a country storing all attestations or an attacker stealing an attestation could identify users with their nullifiers. Thus, such an attacker could see which users have registered, but thanks to this level of indirection, they would not be able to see which actions the user has carried out (ie the user's disclosure proofs).
+* Disclosure proofs are mainly Poseidon hashes, so they are cheap enough to be generated client side easily, whereas proving the passport validity involves much larger circuits.
+
+As mentioned above, proofs are currently generated on Secure Enclaves. Additionally, all proofs are relayed onchain using our relayer so users don’t have to manage gas.
+
+We’ll now detail some of the main design choices we made while building Self protocol.
+
+### Nullifiers
+
+Self uses two nullifiers: attestation nullifiers and action nullifiers. Attestation nullifiers prevent the creation of multiple identities with one passport. Action nullifiers prevent performing an action multiple times with the same identity.
+
+#### Attestation Nullifiers
+
+Attestation nullifiers are derived by hashing the passport’s signed attributes (signed\_attr in the circuits) using poseidon. Signed attributes is the final message signed by the DSC certificate. It incorporates enough entropy from previous datagroups like DG2 (the photo) so that it’s not vulnerable to glossary attacks. We used to hash the final signature instead of signed\_attr, but signing signed\_attr is simpler and prevents any kind of malleability attack on ECDSA signatures.
+
+Because it’s derived deterministically from the passport’s passive attestation, an issuer keeping records of all signatures, or an attacker obtaining the passport’s attestation, can identify if a user registered. But thanks to the level of indirection between registration and disclosure, they can’t identify which actions the user took.
+
+In such an attack, the user and the issuer/attacker have exactly the same information, so it’s not possible to distinguish them easily without adding additional mechanisms like trust relying on biometrics.
+
+We explored designs such as keeping a salt in a TEE or a threshold secret using MPC and using an OPRF so salt attestation nullifiers. However, those solutions add assumptions on the absence of censorship, because losing access to this salt or preventing people from accessing the OPRF would prevent deduplication forever. This goes against our philosophy of keeping registration permissionless. We believe that knowing if the user registered is not very useful for attackers, as our goal is to host many applications, and given appropriate delays, the anonymity set can be large enough to guarantee privacy.
+
+Another possible path would have been to use Active Authentication when available (detailed below) to derive deterministic nullifiers that an attacker couldn’t derive with the passport’s passive attestation. This would have been done by having the private key embedded in the passport to sign a fixed, universal message that would always give the same nullifier. However, even when the Active Auth signatures use RSA, a salt is always added by the chip to the challenge signed, because the challenge is only 8 bytes long. This is done to prevent an attacker from bypassing Active Auth by presigning all challenges. This means in practice, Active Auth cannot be used to generate such a nullifier.
+
+#### Action Nullifiers
+
+Action nullifiers are derived by hashing the user’s secret along with a scope using Poseidon. The scope is a unique identifier of the application requesting a proof (i.e. an airdrop, or a website). The scope will be generated deterministically from the DNS of the application requesting the disclosure proof. This information will be verified in the mobile app to prevent applications from extracting a nullifier that the user has already used.
+
+### Commitment
+
+During registration, the user’s commitment is added as a new leaf of the commitment merkle tree. This tree is deployed onchain and uses @zk-kit's[ lean-imt](https://github.com/privacy-scaling-explorations/zk-kit.solidity/tree/main/packages/lean-imt) library to ensure a scalable design.
+
+The commitment is a hash of several passport related data. Some of them are not used in this first version of the protocol, but as we want to build this privacy pool over the time and let the commitment structure untouched, we already include them.
+
+The values hashed to generate the commitment are:
+
+* <mark style="color:green;">`secret`</mark> only known by users, brings entropy and is used to generate <mark style="color:green;">`action nullifiers`</mark>
+* <mark style="color:green;">`dg1`</mark> the hash of the first DG, used for selective disclosure
+* <mark style="color:green;">`eContent`</mark> contains the hash of all the DG present in the passport. If we want to use D15 for active authentication or DG2 for zkML face matching we’ll just have to unfold eContent to use the DGs.
+* <mark style="color:green;">`DSC`</mark> certificate signing the passport. If one gets leaked, we will want to do a proof of non inclusion of a DSC hash.
+* <mark style="color:green;">`CSCA`</mark> certificate signing the DSC, recorded for the same reason.
+
+### DSC and CSCA trees
+
+As mentioned above, verifying the validity of a passport involves two steps: checking it’s been signed by a DSC, and checking that the DSC has been signed by a CSCA. But proving those two steps for every registration would be expensive, and each DSC signs many passports. So every time we encounter a new DSC, we do a proof that it’s been signed by a CSCA and whitelist it by adding its hash to the DSC merkle tree. That way, at registration, users just have to prove that their passports has been signed by a certificate in the DSC tree.
+
+#### CSCA tree
+
+The CSCA tree is built from the ICAO masterlist registry using the scripts in[ /registry](https://github.com/zk-passport/openpassport/tree/main/registry). Each leaf is constructed as follows:
+
+```
+csca_leaf = poseidon2([csca_hash, csca_actual_length])
+```
+
+white <mark style="color:green;">`csca_hash`</mark> being the raw CSCA padded with zeros to 1792 bytes, packed and hashed with poseidon. We pad certificates with 0s so we have a common length for them, as dynamic length poseidon hashing is hard to implement in circom. We chose 1792 because the longest certificate present in the masterlist is <mark style="color:green;">`1591`</mark> bytes long. We have to commit to the actual size of the certificate so when doing a proof, it’s not possible to point to the position of the certificate public key in the zero padding.
+
+Currently, the CSCA merkle tree root is managed by the owner account. We only update the root of the tree in a smart-contract, and give access to the whole tree offchain. The tree construction is fully auditable by running the scripts in[ /registry](https://github.com/zk-passport/openpassport/tree/main/registry). In the future, we can make sure the client rebuilds the CSCA tree to make sure it’s formed correctly, in the same way that we made proof verification transparent for the[ New American Primary](https://newdemocraticprimary.org/results). We also plan on decentralising the management of the CSCA tree in the future, most likely using multisigs or oracles.
+
+The size of the CSCA tree is set to 12, which represents more than 4k leaves. There’s currently \~500 CSCA present in the ICAO Masterlist.
+
+#### DSC tree
+
+At registration, users prove that their passport has been signed by a DSC present in the DSC merkle tree. Each leaf of this tree is computed as the following:
+
+```
+dsc_leaf = poseidon2([
+    poseidon2([dsc_hash, dsc_actual_length])
+    poseidon2([csca_hash, csca_actual_length]) // this is also csca_leaf
+])
+```
+
+Same as before, the <mark style="color:green;">`dsc_hash`</mark> is built by padding the raw DSC up to 1792 bytes. For technical reasons, the DSC is not just padded with 0s but with the sha padding, which includes a 128 bytes after the content and the actual size of the certificate after a certain number of blocks. This is because certificate signatures are checked with a dynamic sha in the <mark style="color:green;">`dsc.circom`</mark> circuit, so we pad the certificates outside the circuit.
+
+Adding leafs to this tree is permissionless, meanings that anyone proving that a given DSC has been signed by a CSCA can add the corresponding leaf.
+
+This tree is deployed onchain, and just like for the commitment merkle tree, we use <mark style="color:green;">`@zk-kit`</mark>'s[ lean-imt](https://github.com/privacy-scaling-explorations/zk-kit.solidity/tree/main/packages/lean-imt) library for scalability.
+
+The reason we keep information about the CSCA in those leafs is so that they can be passed to the commitment in the registration proofs. That way, we can keep track in commitments of which CSCA was responsible for this commitment being added, and if a CSCA is compromised, potentially blacklist all commitments generated from it.
+
+Each time a user scans their passport, the mobile application reads the DSC from the passport and checks its presence in the DSC merkle tree. If it’s not there, it sends the DSC to the TEE that will generate the DSC proof and relay it onchain.
+
+We set the maximal depth of the DSC tree to 21 in the circuits which allows having more than 2M leaves. As the onchain tree is incremental, if this value is exceeded (unlikely in the next 10 years), we’ll have to build new circuits.
+
+### Secret Management and Recovery
+
+When registering an identity commitment, the user generates a secret. This prevents someone else that would access their passport from impersonating them, and brings the entropy necessary to generate application nullifiers that can’t be linked to passports. It also allows disclosure proofs to be done on the fly, instead of having to prove the whole passport validity every time.
+
+Just like with wallets, it’s important that users don’t lose access to their secret, otherwise they can’t generate disclosure proofs. We prevent that with multiple mechanisms:
+
+First, the secret is stored in the user’s keychain on their app. This allows the user to store it and retrieve it even if they uninstall and reinstall the app. Depending on whether the user uses iOS or Android, and has keychain cloud backups enabled, they can also retrieve it from other devices. When this is turned on by the user, this places a trust assumption on Apple/Google, that we think is acceptable for most users. We also let users store their secret themselves by showing them the BIP39 seed phrase associated with their secret, so that they can manage it themselves if they don’t trust Apple or Google.
+
+Second, we prompt users to do an extra backup on cloud services, which are iCloud for iOS and Google Drive for Android. This is similar to what many wallets do, and provide an extra level of backup with the same trust assumptions mentioned above. Cloud backups are less sensitive than wallet seed phrases, because passport data is still necessary to use the identity, whereas with wallets funds can be spent directly.
+
+Third, we designed the architecture so that it’s possible to add a recovery mechanism for identities. One central attack vector is that, while committing to a secret prevents someone else accessing the passport to do disclosure proofs, it also allows an attacker to register before the user if they get access to their passport. The way recovery could work is the following: the user initiates recovery by proving that they have a passport that corresponds to an existing nullifier, and after a delay, if the previous owner does not intervene, they get to replace the commitment corresponding to this nullifier with a new one with a new secret. This is not very practical with Passive Authentication, as passive attestations can be stored, but becomes way better when using Active Authentication, as being in physical possession of the passport is required, and a signature of a recent blockhash can be asked for, so it’s not possible for an attacker to access the passport once then initiate recovery over and over. More details on Active Authentication below.
+
+In this last case, recovering an identity lets someone register a new commitment with a new secret while disabling the previous one. So that users can't use both commitments to do disclosure proofs, we can keep track of commitments that were disabled in a list or a sparse merkle tree, and require disclosure proofs to prove their commitment is not part of this tree. It’s possible to add that to our design before our contracts are upgradeable and it wouldn’t have to change the format of the commitment, although new circuits and trusted setups would be required.
+
+Just like wallets do, we aim at being transparent in the app UI that backing up the secret is important, and that losing it entails not being able to do proofs with this identity document, at least before we ship a recovery mechanism for identities that lets people add commitment with a new secret.
+
+### Trusted Setup
+
+We ran the trusted setup ceremony on [ceremony.pse.dev](https://ceremony.pse.dev/projects/Self%20ZK%20Passport%20Ceremony). Thanks to the p0tion team at PSE for making this happen!
+
+p0tion manages coordination between contributors by letting them connect with Github, get in a queue, and contribute to each circuit. It doesn’t add trust assumption, as contributors choose which hardware they want to use to contribute, and can add extra randomness to their toxic waste. In the past, we ran our own p0tion infra for the[ New Democratic Primary](https://newdemocraticprimary.org/results) we organized, but this time we got approval from PSE to run it on their p0tion infra, which simplifies things for us, for instance because it manages storing and distributing zkeys. p0tion also provides full auditability by publishing all intermediate zkeys and metadata regarding contributions, so anyone can verify the whole ceremony.
+
+Our trusted setup seems to be one of the largest to be done with Groth16, with around 38 circuits ranging from 143k to 10.6M circom constraints. We will continue running setups when adding support for more countries.
+
+### Zero-knowledge proof stack
+
+We choose Circom with Groth16 for multiple reasons:
+
+* Because it’s the oldest stack, it’s been examined carefully and has been used in production in a variety of applications. More recent stacks like Noir are easier to start with, but have not been audited and are not ready for production use.
+* Fully succinct proofs with cheap onchain verification gas costs.
+* An optimized proving stack with[ https://github.com/0xPolygonID/witnesscalc](https://github.com/0xPolygonID/witnesscalc) and[ https://github.com/iden3/rapidsnark](https://github.com/iden3/rapidsnark), along with tooling like[ https://github.com/privacy-scaling-explorations/p0tion](https://github.com/privacy-scaling-explorations/p0tion), which yields fast proving time.
+
+The main downsides of Groth16 for us are the following:
+
+* Circuit-specific trusted setups
+* Large proving key
+
+For the next iterations of Self, we’re excited by newer proving stacks that break those tradeoffs.
+
+### Timing Attack prevention
+
+The register and disclosure flow of the Self protocol resembles the Tornado Cash design. It functions as an identity mixer, and is susceptible to the same vulnerability known as a timing attack.
+
+Here's how it works: A user registers by generating a commitment and adding it to the tree. If they generate their first disclosure proof and verify it onchain shortly after, linking the disclosure proof to their user identifier, an observer monitoring chain activity can reasonably assume it's the same person. If this observer has access to passport data, either because it’s the issuing country or because it accessed it in the past, they link the person’s identity to their identifier by deriving their nullifier. For onchain applications, the user identifier is most of the time their address.
+
+There are two scenarios to consider here:
+
+1. The disclosure proof is verified offchain by an application that does not publish proofs. In this case, the application would have to collude with an issuer or an attacker to link identities to their address.
+2. The disclosure proof is verified onchain, or published by an application that verifies it offchain. In this case, if no delay has been introduced, it’s possible to look at which merkle root was used to do the disclosure proof, and infer that the person registered just before.
+
+Our main mitigation is to communicate clearly with the user when they could be exposed to a timing attack. When they first register, they are prompted not to do a disclosure proof right away, but to wait until a delay has passed. We can balance security and user experience by sending a notification to users after a random time that invites them to generate their disclosure proof. This random time interval can be chosen according to the number of registration happening, so as to keep the anonymity set reasonable.
+
+### Active Authentication
+
+We currently use Passive Authentication, which involves verifying the attestation that issuers store on chips. More recently, new security mechanisms such as Active Authentication (AA) and Chip Authentication (CA) have been adopted by some countries. In both mechanisms, the passport’s chip is equipped with an embedded private key.
+
+In AA, the passport signs an 8 bytes challenge provided by the reader. The public key of the passport can be found in DG15, and the integrity of DG15 can be verified with the passive attestation.
+
+In CA, the passport and the reader perform DH key exchange and derive a symmetric key. The public key of the passport can be found in DG14.
+
+[Support for AA and CA varies by countries.](https://www.inverid.com/blog/cloning-detection-identity-documents)
+
+CA can’t be used to craft signatures because its all messages are repudiable, but AA can. Although we don’t support registration with Active Authentication currently, we designed Self so that it can be added easily in the future. The logic would be the following:
+
+* In the registration circuit, check if DG15 is present.
+  * If it is not, register with the passive attestation.
+  * If it is, the circuit requires the prover to provide a valid signature of a fixed message that matches the public key in DG15.
+
+To prevent issuers or attackers from pre-signing messages using AA when they have access to the passport, we can require the message to be a recent blockhash, for instance of the Ethereum blockchain. Assuming it’s infeasible to predict them and it’s impractical to extract private keys from secure chips, it would guarantee that the person registering is in physical possession of the passport.
+
+\\
+
+<figure><img src="https://lh7-rt.googleusercontent.com/docsz/AD_4nXdQdcMtkAcMZZNEMANBY7vN-9Z26GXxesQ8VzgXhm-zwroGDcBzLMVRODhTGhQ_1LBVUF_YasngAVR_g0quhOr0zDuqw447B92XEx5uQwNmB_sijSMedSk-XFIKPsmcXlF7Pk0Lpg?key=zXb3nihNyp9ChW3RfTALsL42" alt="" width="563"><figcaption></figcaption></figure>
+
+We are optimistic on the benefits of adding support for Active Authentication for the passports that support it, and we believe our architecture will requires little change to do so.
+
+### Adding back client-side proving
+
+Up until recently, we used to use only client-side proving, but we recently switched to using Secure Enclaves. This is due both to the compute requirements of proving for some signature algorithms such as ECDSA, and proving key size. However, we devised a way to add back enough client-side proving so that there would be no trust assumption on Secure Enclaves for privacy. We can still offload some of the computation to a server/trusted enclave by only leaking which DSC was used to sign the passport. The way we can it is the following:
+
+* For registration proofs, we split the process between a small proof generated client side that just hashes DG1, and a larger proof generated server-side that includes the rest of the registration logic. Both proofs output a blinded commitment of DG1 that can be checked to make sure they refer to the same passport.
+* For disclosure proofs, they are very light so they can be generated locally.
+
+We estimate the maximal size of the proving key for this new registration circuit to be around 30mb zipped, which should be manageable for most devices, even with poor bandwidth.
+
+\
+\\
+
+
+# attestation IDs
+
+Attestation IDs are numeric identifiers that specify which type of identity document is being verified in the Self Protocol. They are a core concept in V2 and are used throughout the verification flow.
+
+### Current Attestation Types
+
+| ID | Document Type       | Description                                     |
+| -- | ------------------- | ----------------------------------------------- |
+| 1  | Electronic Passport | NFC-enabled passports with biometric chip       |
+| 2  | EU ID Card          | European Union national identity cards with NFC |
+
+### Usage in Backend
+
+#### Configuring Allowed Attestation Types
+
+```typescript
+import { SelfBackendVerifier, AttestationId, AllIds } from '@selfxyz/core';
+
+// Option 1: Accept all supported document types
+const verifier = new SelfBackendVerifier(
+  scope,
+  endpoint,
+  false,
+  AllIds, // Includes all supported attestation types
+  configStorage,
+  'uuid'
+);
+
+// Option 2: Accept only passports
+const allowedIds = new Map<AttestationId, boolean>();
+allowedIds.set(1, true); // Only passports
+
+const verifier = new SelfBackendVerifier(
+  scope,
+  endpoint,
+  false,
+  allowedIds,
+  configStorage,
+  'uuid'
+);
+
+// Option 3: Accept both passports and EU ID cards
+const allowedIds = new Map<AttestationId, boolean>();
+allowedIds.set(1, true); // Passports
+allowedIds.set(2, true); // EU ID cards
+```
+
+#### Verification with Attestation ID
+
+The attestation ID is passed as the first parameter to the verify method:
+
+```typescript
+const result = await verifier.verify(
+  attestationId,    // 1 for passport, 2 for EU ID
+  proof,
+  pubSignals,
+  userContextData
+);
+
+// The result includes which document type was verified
+console.log(`Verified document type: ${result.attestationId}`);
+```
+
+### Usage in Smart Contracts
+
+In V2 smart contracts, attestation IDs are used to determine verification parameters:
+
+```solidity
+// Example from the V2 contract architecture
+function getConfigId(
+    uint256 destinationChainId,
+    address userIdentifier,
+    bytes calldata userDefinedData,
+    uint256 attestationId  // Document type identifier
+) public view returns (bytes32) {
+    // Different configurations based on document type
+    if (attestationId == 1) {
+        // Passport-specific logic
+        return keccak256(abi.encodePacked("passport_config"));
+    } else if (attestationId == 2) {
+        // EU ID card specific logic
+        return keccak256(abi.encodePacked("eu_id_config"));
+    }
+}
+```
+
+### Attestation-Specific Features
+
+Different attestation types may have different capabilities:
+
+#### Passport (ID: 1)
+
+* Full biometric data access
+* Global coverage
+* Longer validity periods
+* More extensive OFAC checking capabilities
+
+#### EU ID Card (ID: 2)
+
+* Limited to EU citizens
+* May have shorter validity periods
+* Different data fields available
+* Region-specific compliance requirements
+
+### Handling Multiple Attestation Types
+
+#### Dynamic Configuration Based on Attestation Type
+
+```typescript
+class AttestationAwareConfigStore implements IConfigStorage {
+  async getActionId(userIdentifier: string, userDefinedData: string): Promise<string> {
+    const data = JSON.parse(Buffer.from(userDefinedData, 'hex').toString());
+    
+    // Different configs for different document types
+    if (data.attestationId === 1) {
+      return 'passport_verification';
+    } else if (data.attestationId === 2) {
+      return 'eu_id_verification';
+    }
+    
+    return 'default_verification';
+  }
+  
+  async getConfig(configId: string): Promise<VerificationConfig> {
+    switch (configId) {
+      case 'passport_verification':
+        return {
+          olderThan: 18,
+          excludedCountries: ['IRN', 'PRK'],
+          ofac: true
+        };
+      
+      case 'eu_id_verification':
+        return {
+          olderThan: 18,
+          excludedCountries: [], // EU IDs might have different restrictions
+          ofac: false
+        };
+      
+      default:
+        return { olderThan: 18 };
+    }
+  }
+}
+```
+
+#### Frontend Considerations
+
+While the frontend doesn't directly specify the attestation ID (the user's document type determines this), you can design your UI to handle different document types:
+
+```javascript
+function VerificationComponent({ acceptedDocuments }) {
+  const selfApp = new SelfAppBuilder({
+    // ... other config
+    disclosures: {
+      // These apply regardless of document type
+      minimumAge: 18,
+      nationality: true
+    }
+  }).build();
+  
+  return (
+    <div>
+      <h2>Accepted Documents:</h2>
+      <ul>
+        {acceptedDocuments.includes(1) && <li>✓ Electronic Passports</li>}
+        {acceptedDocuments.includes(2) && <li>✓ EU ID Cards</li>}
+      </ul>
+      <SelfQRcodeWrapper selfApp={selfApp} onSuccess={handleSuccess} />
+    </div>
+  );
+}
+```
+
+### Error Handling
+
+When a user tries to verify with a document type that's not allowed:
+
+```typescript
+try {
+  const result = await verifier.verify(attestationId, proof, pubSignals, userContextData);
+} catch (error) {
+  if (error.name === 'ConfigMismatchError') {
+    const invalidIdIssue = error.issues.find(
+      issue => issue.type === 'InvalidId'
+    );
+    
+    if (invalidIdIssue) {
+      console.error(`Document type ${attestationId} is not accepted`);
+      // Show appropriate error to user
+    }
+  }
+}
+```
+
+### Future Extensibility
+
+The attestation ID system is designed to be extensible. Future document types might include:
+
+* National ID cards from other regions
+* Driver's licenses with NFC
+* Residence permits
+* Other government-issued identity documents
+
+Each new document type would receive a unique attestation ID and could have its own:
+
+* Verification circuits
+* Data fields
+* Compliance requirements
+* Geographic restrictions
+
+### Best Practices
+
+1. **Always validate attestation IDs** in your backend before processing
+2. **Configure appropriate restrictions** based on your compliance requirements
+3. **Provide clear user feedback** about which document types are accepted
+4. **Test with both document types** if you accept multiple
+5. **Log attestation types** for audit and analytics purposes
+6. **Consider regional requirements** when accepting different document types
+
+### Integration with Verification Flow
+
+The complete flow with attestation IDs:
+
+1. User scans QR code with Self app
+2. App detects document type (passport or EU ID)
+3. App generates proof with appropriate attestation ID
+4. Backend receives attestation ID with proof
+5. Backend validates attestation ID is allowed
+6. Backend applies document-specific verification logic
+7. Result includes which document type was verified
+
+This system ensures flexibility while maintaining security and compliance across different identity document types.
+
+
+# Config Storage
+
+## IConfigStorage Interface
+
+The IConfigStorage interface is a key component of the Self Protocol V2 architecture that enables dynamic, context-aware verification configurations. It replaces the static configuration methods from V1 with a flexible storage pattern.
+
+### Overview
+
+IConfigStorage allows your application to:
+
+* Store multiple verification configurations
+* Select configurations dynamically based on user context
+* Implement custom logic for configuration management
+* Support A/B testing and gradual rollouts
+
+### Interface Definition
+
+```typescript
+interface IConfigStorage {
+  // Get a verification configuration by ID
+  getConfig(configId: string): Promise<VerificationConfig>;
+  
+  // Store or update a configuration
+  setConfig(configId: string, config: VerificationConfig): Promise<boolean>;
+  
+  // Determine which configuration to use based on context
+  getActionId(userIdentifier: string, userDefinedData: string): Promise<string>;
+}
+```
+
+#### VerificationConfig Type
+
+```typescript
+interface VerificationConfig {
+  olderThan?: number;              // Minimum age requirement
+  excludedCountries?: string[];    // ISO 3-letter country codes to exclude
+  ofac?: boolean;                  // Enable OFAC sanctions checking
+}
+```
+
+### Built-in Implementations
+
+#### DefaultConfigStore
+
+A simple implementation that uses a single configuration for all verifications:
+
+```typescript
+import { DefaultConfigStore } from '@selfxyz/core';
+
+const configStore = new DefaultConfigStore({
+  olderThan: 18,
+  excludedCountries: ['IRN', 'PRK'],
+  ofac: true
+});
+```
+
+#### InMemoryConfigStore
+
+A more flexible implementation that stores multiple configurations in memory:
+
+```typescript
+import { InMemoryConfigStore } from '@selfxyz/core';
+
+const configStore = new InMemoryConfigStore(
+  // Function to determine config ID from context
+  async (userIdentifier: string, userDefinedData: string) => {
+    const data = JSON.parse(Buffer.from(userDefinedData, 'hex').toString());
+    return data.action === 'high_value' ? 'strict' : 'standard';
+  }
+);
+
+// Set up different configurations
+await configStore.setConfig('standard', {
+  olderThan: 18,
+  ofac: false
+});
+
+await configStore.setConfig('strict', {
+  olderThan: 21,
+  excludedCountries: ['IRN', 'PRK', 'CUB'],
+  ofac: true
+});
+```
+
+### Custom Implementations
+
+#### Database-Backed Storage
+
+```typescript
+class DatabaseConfigStore implements IConfigStorage {
+  constructor(private db: Database) {}
+  
+  async getConfig(configId: string): Promise<VerificationConfig> {
+    const config = await this.db.query(
+      'SELECT * FROM verification_configs WHERE id = ?',
+      [configId]
+    );
+    
+    if (!config) {
+      throw new Error(`Config ${configId} not found`);
+    }
+    
+    return {
+      olderThan: config.minimum_age,
+      excludedCountries: JSON.parse(config.excluded_countries),
+      ofac: config.ofac_enabled
+    };
+  }
+  
+  async setConfig(configId: string, config: VerificationConfig): Promise<boolean> {
+    await this.db.execute(
+      `INSERT INTO verification_configs (id, minimum_age, excluded_countries, ofac_enabled) 
+       VALUES (?, ?, ?, ?) 
+       ON DUPLICATE KEY UPDATE 
+       minimum_age = VALUES(minimum_age),
+       excluded_countries = VALUES(excluded_countries),
+       ofac_enabled = VALUES(ofac_enabled)`,
+      [
+        configId,
+        config.olderThan || null,
+        JSON.stringify(config.excludedCountries || []),
+        config.ofac || false
+      ]
+    );
+    return true;
+  }
+  
+  async getActionId(userIdentifier: string, userDefinedData: string): Promise<string> {
+    // Decode the user-defined data
+    const decodedData = Buffer.from(userDefinedData, 'hex').toString();
+    
+    try {
+      const data = JSON.parse(decodedData);
+      
+      // Custom logic based on your application needs
+      if (data.action === 'withdraw' && data.amount > 10000) {
+        return 'high_value_withdrawal';
+      }
+      
+      if (data.action === 'create_account') {
+        return 'new_user_onboarding';
+      }
+      
+      return 'default_config';
+    } catch {
+      return 'default_config';
+    }
+  }
+}
+```
+
+#### Redis-Backed Storage with Caching
+
+```typescript
+class RedisConfigStore implements IConfigStorage {
+  constructor(
+    private redis: RedisClient,
+    private cacheTTL: number = 300 // 5 minutes
+  ) {}
+  
+  async getConfig(configId: string): Promise<VerificationConfig> {
+    const cached = await this.redis.get(`config:${configId}`);
+    
+    if (cached) {
+      return JSON.parse(cached);
+    }
+    
+    // Fetch from primary storage if not cached
+    const config = await this.fetchFromDatabase(configId);
+    
+    // Cache for future requests
+    await this.redis.setex(
+      `config:${configId}`,
+      this.cacheTTL,
+      JSON.stringify(config)
+    );
+    
+    return config;
+  }
+  
+  async setConfig(configId: string, config: VerificationConfig): Promise<boolean> {
+    // Update primary storage
+    await this.updateDatabase(configId, config);
+    
+    // Invalidate cache
+    await this.redis.del(`config:${configId}`);
+    
+    return true;
+  }
+  
+  async getActionId(userIdentifier: string, userDefinedData: string): Promise<string> {
+    // Check for user-specific overrides
+    const override = await this.redis.get(`user:${userIdentifier}:config`);
+    if (override) {
+      return override;
+    }
+    
+    // Default logic
+    const data = Buffer.from(userDefinedData, 'hex').toString();
+    const parsed = JSON.parse(data);
+    
+    return parsed.configId || 'default';
+  }
+}
+```
+
+#### A/B Testing Implementation
+
+```typescript
+class ABTestConfigStore implements IConfigStorage {
+  constructor(
+    private defaultConfig: VerificationConfig,
+    private testConfig: VerificationConfig,
+    private testPercentage: number = 10 // 10% get test config
+  ) {}
+  
+  async getConfig(configId: string): Promise<VerificationConfig> {
+    return configId === 'test' ? this.testConfig : this.defaultConfig;
+  }
+  
+  async setConfig(configId: string, config: VerificationConfig): Promise<boolean> {
+    if (configId === 'test') {
+      this.testConfig = config;
+    } else {
+      this.defaultConfig = config;
+    }
+    return true;
+  }
+  
+  async getActionId(userIdentifier: string, userDefinedData: string): Promise<string> {
+    // Use consistent hashing to ensure same user always gets same config
+    const hash = crypto
+      .createHash('sha256')
+      .update(userIdentifier)
+      .digest('hex');
+    
+    const hashValue = parseInt(hash.substring(0, 8), 16);
+    const isTestGroup = (hashValue % 100) < this.testPercentage;
+    
+    return isTestGroup ? 'test' : 'default';
+  }
+}
+```
+
+### Integration with Frontend
+
+The `userDefinedData` parameter in the frontend's SelfAppBuilder is passed to your `getActionId` method:
+
+```javascript
+// Frontend
+const selfApp = new SelfAppBuilder({
+  // ... other config
+  version: 2,
+  userDefinedData: "0x" + Buffer.from(JSON.stringify({
+    action: "high_value_transaction",
+    amount: 50000,
+    merchant: "merchant_123"
+  })).toString('hex'),
+  // ...
+}).build();
+
+// Backend - getActionId receives this data
+async getActionId(userIdentifier: string, userDefinedData: string): Promise<string> {
+  const data = JSON.parse(Buffer.from(userDefinedData, 'hex').toString());
+  
+  if (data.action === 'high_value_transaction' && data.amount > 10000) {
+    return 'strict_verification';
+  }
+  
+  return 'standard_verification';
+}
+```
+
+### Best Practices
+
+1. **Keep Configurations Consistent**: Ensure frontend disclosures match backend configurations
+2. **Handle Errors Gracefully**: Always have a fallback configuration
+3. **Cache Appropriately**: Balance performance with configuration freshness
+4. **Version Your Configs**: Consider adding version fields for easier migrations
+5. **Audit Configuration Changes**: Log all configuration updates for compliance
+6. **Test Thoroughly**: Verify configuration selection logic with unit tests
+
+### Migration from V1
+
+Moving from V1's static configuration to V2's IConfigStorage:
+
+```typescript
+// V1 Pattern (No longer supported)
+const verifier = new SelfBackendVerifier(scope, endpoint);
+verifier.setMinimumAge(18);
+verifier.excludeCountries('Iran', 'North Korea');
+verifier.enableOfacCheck();
+
+// V2 Pattern with IConfigStorage
+const configStore = new DefaultConfigStore({
+  olderThan: 18,
+  excludedCountries: ['IRN', 'PRK'],
+  ofac: true
+});
+
+const verifier = new SelfBackendVerifier(
+  scope,
+  endpoint,
+  false,
+  allowedIds,
+  configStore,
+  'uuid'
+);
+```
+
+### Common Patterns
+
+#### Multi-tenant Configuration
+
+```typescript
+class TenantConfigStore implements IConfigStorage {
+  async getActionId(userIdentifier: string, userDefinedData: string): Promise<string> {
+    const data = JSON.parse(Buffer.from(userDefinedData, 'hex').toString());
+    return `tenant_${data.tenantId}_config`;
+  }
+  
+  async getConfig(configId: string): Promise<VerificationConfig> {
+    // Extract tenant ID and fetch their specific config
+    const [, tenantId] = configId.match(/tenant_(\w+)_config/) || [];
+    return this.fetchTenantConfig(tenantId);
+  }
+}
+```
+
+#### Time-based Configuration
+
+```typescript
+class TimeBasedConfigStore implements IConfigStorage {
+  async getActionId(userIdentifier: string, userDefinedData: string): Promise<string> {
+    const hour = new Date().getHours();
+    
+    // Stricter verification during night hours
+    if (hour >= 22 || hour < 6) {
+      return 'nighttime_strict';
+    }
+    
+    return 'daytime_standard';
+  }
+}
+```
+
+This flexible configuration system enables sophisticated verification flows while maintaining security and compliance requirements.
+
+
+# User context data
+
+## User Context Data
+
+User Context Data is a hex-encoded string that carries contextual information from the frontend to the backend during the Self Protocol verification flow. It's a key component of V2 that enables dynamic verification configurations.
+
+### Structure
+
+User Context Data is a 256-byte hex string containing:
+
+* **First 32 bytes**: Reserved for protocol use
+* **Next 32 bytes**: User identifier (UUID or hex address)
+* **Last 64 bytes**: User-defined data from frontend
+
+```
+0x[reserved_32_bytes][user_identifier_32_bytes][user_defined_data_64_bytes]
+```
+
+### Components
+
+#### User Identifier (32 bytes)
+
+The user identifier portion depends on the `userIdentifierType`:
+
+```typescript
+// For UUID type
+const userId = uuidv4(); // "123e4567-e89b-12d3-a456-426614174000"
+// Encoded as 32 bytes in the context data
+
+// For hex type (blockchain addresses)
+const userId = "0x742d35Cc6634C0532925a3b844Bc9e7595f1234";
+// Padded to 32 bytes in the context data
+```
+
+#### User Defined Data (64 bytes)
+
+This is the custom data you specify in the frontend:
+
+```javascript
+// Frontend: Creating user defined data
+const actionData = {
+  action: "withdraw",
+  amount: 10000,
+  sessionId: "xyz123"
+};
+
+const userDefinedData = "0x" + Buffer.from(
+  JSON.stringify(actionData)
+).toString('hex').padEnd(128, '0'); // 128 hex chars = 64 bytes
+```
+
+### Frontend Usage
+
+Set user-defined data when building the Self app configuration:
+
+```javascript
+const selfApp = new SelfAppBuilder({
+  appName: "My App",
+  scope: "my-app",
+  endpoint: "https://api.myapp.com/verify",
+  userId: uuidv4(),
+  version: 2,
+  userDefinedData: "0x" + Buffer.from(JSON.stringify({
+    action: "create_account",
+    referralCode: "SUMMER2024",
+    tier: "premium"
+  })).toString('hex').slice(0, 128), // Ensure exactly 64 bytes
+  disclosures: { /* ... */ }
+}).build();
+```
+
+### Backend Usage
+
+The backend receives the full user context data and can extract components:
+
+```typescript
+class ConfigStorage implements IConfigStorage {
+  async getActionId(userIdentifier: string, userDefinedData: string): Promise<string> {
+    // userIdentifier is already extracted for you
+    console.log('User ID:', userIdentifier);
+    
+    // Decode the user-defined portion
+    const decoded = Buffer.from(userDefinedData, 'hex').toString();
+    
+    try {
+      const data = JSON.parse(decoded);
+      
+      // Use the data to determine configuration
+      if (data.action === 'withdraw' && data.amount > 10000) {
+        return 'high_value_config';
+      }
+      
+      return 'standard_config';
+    } catch {
+      // Handle non-JSON data
+      return 'default_config';
+    }
+  }
+}
+```
+
+### Common Patterns
+
+#### Action-Based Configuration
+
+```javascript
+// Frontend
+userDefinedData: "0x" + Buffer.from(JSON.stringify({
+  action: "transfer",
+  recipient: "0x123...",
+  amount: 50000
+})).toString('hex').padEnd(128, '0')
+
+// Backend
+async getActionId(userIdentifier: string, userDefinedData: string): Promise<string> {
+  const data = JSON.parse(Buffer.from(userDefinedData, 'hex').toString());
+  
+  switch (data.action) {
+    case 'transfer':
+      return data.amount > 10000 ? 'transfer_high' : 'transfer_low';
+    case 'login':
+      return 'login_config';
+    case 'register':
+      return 'registration_config';
+    default:
+      return 'default_config';
+  }
+}
+```
+
+#### Session-Based Configuration
+
+```javascript
+// Frontend - Include session information
+userDefinedData: "0x" + Buffer.from(JSON.stringify({
+  sessionId: sessionStorage.getItem('sessionId'),
+  timestamp: Date.now(),
+  deviceType: navigator.userAgent.includes('Mobile') ? 'mobile' : 'desktop'
+})).toString('hex').padEnd(128, '0')
+
+// Backend - Use session data for configuration
+async getActionId(userIdentifier: string, userDefinedData: string): Promise<string> {
+  const data = JSON.parse(Buffer.from(userDefinedData, 'hex').toString());
+  
+  // Check if this is a returning session
+  const existingSession = await this.sessionStore.get(data.sessionId);
+  
+  if (existingSession) {
+    return existingSession.isPremium ? 'premium_config' : 'standard_config';
+  }
+  
+  // New session - check device type
+  return data.deviceType === 'mobile' ? 'mobile_config' : 'desktop_config';
+}
+```
+
+#### Multi-Tenant Configuration
+
+```javascript
+// Frontend - Include tenant information
+userDefinedData: "0x" + Buffer.from(JSON.stringify({
+  tenantId: window.location.hostname.split('.')[0], // subdomain
+  environment: process.env.REACT_APP_ENV,
+  feature_flags: ['new_flow', 'enhanced_checks']
+})).toString('hex').padEnd(128, '0')
+
+// Backend - Tenant-specific configuration
+async getActionId(userIdentifier: string, userDefinedData: string): Promise<string> {
+  const data = JSON.parse(Buffer.from(userDefinedData, 'hex').toString());
+  
+  // Load tenant-specific configuration
+  const tenantConfig = await this.getTenantConfig(data.tenantId);
+  
+  if (data.feature_flags.includes('enhanced_checks')) {
+    return `${data.tenantId}_enhanced`;
+  }
+  
+  return `${data.tenantId}_${data.environment}`;
+}
+```
+
+### Size Limitations
+
+The user-defined portion is limited to 64 bytes (128 hex characters):
+
+```javascript
+// ❌ Too large - will be truncated
+const largeData = {
+  action: "complex_operation",
+  metadata: {
+    field1: "value1",
+    field2: "value2",
+    // ... many more fields
+  }
+};
+
+// ✅ Compact representation
+const compactData = {
+  a: "transfer",  // Use short keys
+  v: 10000,       // Numeric values are efficient
+  t: Date.now()
+};
+
+// For larger data, use references
+const referenceData = {
+  sessionId: "abc123",  // Store full data server-side
+  version: 2
+};
+```
+
+### Binary Encoding
+
+For maximum efficiency, you can use binary encoding:
+
+```javascript
+// Encode multiple values in binary format
+function encodeUserData(action: number, amount: number, flags: number): string {
+  const buffer = Buffer.alloc(64);
+  
+  buffer.writeUInt8(action, 0);        // 1 byte for action
+  buffer.writeBigUInt64BE(BigInt(amount), 1);  // 8 bytes for amount
+  buffer.writeUInt32BE(flags, 9);      // 4 bytes for flags
+  
+  return "0x" + buffer.toString('hex');
+}
+
+// Frontend
+userDefinedData: encodeUserData(
+  1,      // Action: 1 = transfer
+  50000,  // Amount: $50,000
+  0b1101  // Flags: enhanced_checks | ofac | fast_track
+)
+
+// Backend
+function decodeUserData(hex: string): { action: number, amount: number, flags: number } {
+  const buffer = Buffer.from(hex, 'hex');
+  
+  return {
+    action: buffer.readUInt8(0),
+    amount: Number(buffer.readBigUInt64BE(1)),
+    flags: buffer.readUInt32BE(9)
+  };
+}
+```
+
+### Security Considerations
+
+1. **Don't include sensitive data**: User context data is not encrypted
+2. **Validate all inputs**: Always validate decoded data
+3. **Use checksums**: For critical data, include integrity checks
+4. **Avoid user-controlled configs**: Don't let users directly specify security settings
+
+```javascript
+// ❌ Bad: User controls security settings
+userDefinedData: "0x" + Buffer.from(JSON.stringify({
+  skipOFAC: true,  // Don't allow this
+  minimumAge: 0    // Don't allow this
+})).toString('hex')
+
+// ✅ Good: User provides context, backend decides security
+userDefinedData: "0x" + Buffer.from(JSON.stringify({
+  purchaseType: "alcohol",  // Backend will enforce age 21
+  jurisdiction: "US-CA"     // Backend will apply CA laws
+})).toString('hex')
+```
+
+### Integration with Smart Contracts
+
+In V2 contracts, user context data flows through to the callback:
+
+```solidity
+function customVerificationHook(
+    PassportData memory passportData,
+    VerificationOutput memory output,
+    uint256 attestationId,
+    bytes32 userIdentifier,
+    bytes calldata userDefinedData  // Your 64 bytes
+) internal override {
+    // Decode and use the data
+    uint8 action = uint8(userDefinedData[0]);
+    uint256 amount = uint256(bytes32(userDefinedData[1:33]));
+    
+    if (action == 1 && amount > 10000) {
+        // High-value transfer logic
+    }
+}
+```
+
+### Debugging
+
+To debug user context data issues:
+
+```typescript
+// Backend: Log the full context
+console.log('Full context data:', userContextData);
+console.log('User identifier:', userIdentifier);
+console.log('User defined (hex):', userDefinedData);
+console.log('User defined (decoded):', Buffer.from(userDefinedData, 'hex').toString());
+
+// Check data size
+console.log('User defined size:', Buffer.from(userDefinedData, 'hex').length, 'bytes');
+```
+
+### Best Practices
+
+1. **Keep data compact**: Use short keys and efficient encoding
+2. **Version your format**: Include a version field for future compatibility
+3. **Document your schema**: Clearly document what data is expected
+4. **Handle errors gracefully**: Always have fallback configurations
+5. **Use standard formats**: Prefer JSON for readability, binary for efficiency
+6. **Test edge cases**: Test with maximum size data and empty data
+7. **Monitor usage**: Log what configurations are being selected
+
+This flexible system enables sophisticated verification flows while maintaining security and performance.
+
+
