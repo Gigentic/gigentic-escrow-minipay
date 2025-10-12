@@ -13,7 +13,7 @@ describe("SimpleEscrow", function () {
 
     // Deploy SimpleEscrow
     const escrow = await hre.viem.deployContract(
-      "SimpleEscrow" as const,
+      "SimpleEscrow",
       [recipient.account.address],
       {
         value: escrowAmount,
@@ -83,7 +83,7 @@ describe("SimpleEscrow", function () {
       const [, recipient] = await hre.viem.getWalletClients();
 
       await expect(
-        hre.viem.deployContract("SimpleEscrow" as const, [recipient.account.address], {
+        hre.viem.deployContract("SimpleEscrow", [recipient.account.address], {
           value: 0n,
         })
       ).to.be.rejectedWith("Must deposit CELO");

@@ -35,7 +35,7 @@ async function main() {
   // Deploy contract (no explicit nonce - let Hardhat handle it)
   console.log("⏳ Deploying contract...");
   // Note: 'as const' is required for hardhat-viem (no TypeChain support for Viem yet)
-  const escrow = await hre.viem.deployContract("SimpleEscrow" as const, [RECIPIENT_ADDRESS], {
+  const escrow = await hre.viem.deployContract("SimpleEscrow", [RECIPIENT_ADDRESS], {
     value: ESCROW_AMOUNT,
   });
 
