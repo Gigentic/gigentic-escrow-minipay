@@ -17,7 +17,7 @@ Gigentic Escrow is a decentralized escrow protocol built on Celo blockchain, des
 - **Node Version**: 18.0.0+
 - **Frontend**: Next.js 14 (App Router), React 18, TypeScript
 - **Styling**: Tailwind CSS with shadcn/ui components
-- **Blockchain**: Celo (mainnet & Alfajores testnet)
+- **Blockchain**: Celo (mainnet & Sepolia testnet)
 - **Smart Contracts**: Solidity 0.8.28, Hardhat with Viem
 - **Wallet Integration**: RainbowKit, Wagmi, Viem
 - **Currency**: cUSD (Celo Dollar)
@@ -56,8 +56,8 @@ pnpm clean            # Clean all build artifacts
 pnpm contracts:compile              # Compile smart contracts
 pnpm contracts:test                 # Run all contract tests
 pnpm contracts:deploy               # Deploy to local network
-pnpm contracts:deploy:alfajores     # Deploy to Alfajores testnet
 pnpm contracts:deploy:celo          # Deploy to Celo mainnet
+pnpm contracts:deploy:sepolia       # Deploy to Sepolia testnet
 
 # Individual commands (from apps/contracts directory):
 cd apps/contracts
@@ -128,7 +128,7 @@ REPORT_GAS=false      # Enable gas reporting
 ### Networks Configuration
 Hardhat is configured for:
 - **Celo Mainnet**: https://forno.celo.org (Chain ID: 42220)
-- **Alfajores Testnet**: https://alfajores-forno.celo-testnet.org (Chain ID: 44787)
+- **Sepolia Testnet**: https://forno.celo-sepolia.celo-testnet.org (Chain ID: 11142220)
 - **Localhost**: http://127.0.0.1:8545 (Chain ID: 31337)
 
 ### Frontend Environment
@@ -153,7 +153,7 @@ The Next.js app may require environment variables for API routes and external se
 2. Write tests in `apps/contracts/test/`
 3. Compile: `pnpm contracts:compile`
 4. Test: `pnpm contracts:test`
-5. Deploy to testnet: `pnpm contracts:deploy:alfajores`
+5. Deploy to testnet: `pnpm contracts:deploy:sepolia`
 6. Verify on Celoscan: `cd apps/contracts && pnpm verify`
 
 ### Working with Frontend
@@ -206,11 +206,11 @@ See `docs/` directory for detailed specifications:
 ## Dependencies
 
 ### Key Dependencies
-- **@openzeppelin/contracts**: Smart contract security standards (v5.0.0)
-- **@rainbow-me/rainbowkit**: Wallet connection UI (v2.0.0)
-- **wagmi**: React hooks for Ethereum (v2.0.0)
-- **viem**: TypeScript Ethereum library (v2.0.0)
-- **@tanstack/react-query**: Async state management (v5.0.0)
+- **@openzeppelin/contracts**: Smart contract security standards
+- **@rainbow-me/rainbowkit**: Wallet connection UI
+- **wagmi**: React hooks for Ethereum
+- **viem**: TypeScript Ethereum library
+- **@tanstack/react-query**: Async state management
 
 ### Monorepo Tools
 - Turborepo handles task orchestration and caching

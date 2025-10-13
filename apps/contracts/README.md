@@ -14,8 +14,8 @@ pnpm compile
 # Run tests
 pnpm test
 
-# Deploy to Alfajores testnet
-pnpm deploy:alfajores
+# Deploy to Sepolia testnet
+pnpm deploy:sepolia
 
 # Deploy to Celo mainnet
 pnpm deploy:celo
@@ -26,7 +26,6 @@ pnpm deploy:celo
 - `pnpm compile` - Compile smart contracts
 - `pnpm test` - Run contract tests
 - `pnpm deploy` - Deploy to local network
-- `pnpm deploy:alfajores` - Deploy to Celo Alfajores testnet
 - `pnpm deploy:celo` - Deploy to Celo mainnet
 - `pnpm verify` - Verify contracts on Celoscan
 - `pnpm clean` - Clean artifacts and cache
@@ -38,11 +37,11 @@ pnpm deploy:celo
 - **RPC URL**: https://forno.celo.org
 - **Explorer**: https://celoscan.io
 
-### Alfajores Testnet
-- **Chain ID**: 44787
-- **RPC URL**: https://alfajores-forno.celo-testnet.org
-- **Explorer**: https://alfajores.celoscan.io
-- **Faucet**: https://faucet.celo.org
+### Sepolia Testnet
+- **Chain ID**: 11142220
+- **RPC URL**: https://forno.celo-sepolia.celo-testnet.org
+- **Explorer**: https://celo-sepolia.blockscout.com
+- **Faucet**: https://faucet.celo.org/sepolia
 
 ## 🔧 Environment Setup
 
