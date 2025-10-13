@@ -1,67 +1,88 @@
-"use client";
+"use client"
 
-import { RainbowKitProvider, connectorsForWallets } from "@rainbow-me/rainbowkit";
-import "@rainbow-me/rainbowkit/styles.css";
-import { injectedWallet } from "@rainbow-me/rainbowkit/wallets";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
-import { WagmiProvider, createConfig, http, useConnect } from "wagmi";
-import { celo, celoAlfajores } from "wagmi/chains";
-import { ConnectButton } from "./connect-button";
+import { useState, useEffect } from 'react'
+import '@rainbow-me/rainbowkit/styles.css'
+import { getDefaultConfig, RainbowKitProvider } from '@rainbow-me/rainbowkit'
+import { WagmiProvider } from 'wagmi'
+import { celo, celoAlfajores } from 'wagmi/chains'
+import { defineChain } from 'viem'
+import { QueryClientProvider, QueryClient } from '@tanstack/react-query'
+import { http } from 'wagmi'
 
-const connectors = connectorsForWallets(
-  [
-    {
-      groupName: "Recommended",
-      wallets: [injectedWallet],
-    },
-  ],
-  {
-    appName: "gigentic-escrow-minipay",
-    projectId: process.env.NEXT_PUBLIC_WC_PROJECT_ID!,
-  }
-);
-
-const wagmiConfig = createConfig({
-  chains: [celo, celoAlfajores],
-  connectors,
-  transports: {
-    [celo.id]: http(),
-    [celoAlfajores.id]: http(),
+// Define Celo Sepolia chain
+const celoSepolia = defineChain({
+  id: 11142220,
+  name: 'Celo Sepolia',
+  nativeCurrency: {
+    decimals: 18,
+    name: 'CELO',
+    symbol: 'CELO',
   },
-  ssr: true,
-});
+  rpcUrls: {
+    default: {
+      http: ['https://forno.celo-sepolia.celo-testnet.org'],
+    },
+  },
+  blockExplorers: {
+    default: {
+      name: 'Celo Sepolia Blockscout',
+      url: 'https://celo-sepolia.blockscout.com',
+    },
+  },
+  testnet: true,
+})
 
-const queryClient = new QueryClient();
+// Create config with proper SSR handling
+let config: any = null
 
-function WalletProviderInner({ children }: { children: React.ReactNode }) {
-  const { connect, connectors } = useConnect();
-
-  useEffect(() => {
-    // Check if the app is running inside MiniPay
-    if (window.ethereum && window.ethereum.isMiniPay) {
-      // Find the injected connector, which is what MiniPay uses
-      const injectedConnector = connectors.find((c) => c.id === "injected");
-      if (injectedConnector) {
-        connect({ connector: injectedConnector });
-      }
-    }
-  }, [connect, connectors]);
-
-  return <>{children}</>;
+function getWagmiConfig() {
+  if (!config) {
+    config = getDefaultConfig({
+      appName: 'gigentic-escrow-minipay',
+      projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || 'YOUR_PROJECT_ID',
+      chains: [celo, celoAlfajores, celoSepolia],
+      transports: {
+        [celo.id]: http(),
+        [celoAlfajores.id]: http(),
+        [celoSepolia.id]: http(),
+      },
+      ssr: true,
+    })
+  }
+  return config
 }
 
-export function WalletProvider({ children }: { children: React.ReactNode }) {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+    },
+  },
+})
 
+function WalletProviderInner({ children }: { children: React.ReactNode }) {
   return (
-    <WagmiProvider config={wagmiConfig}>
+    <WagmiProvider config={getWagmiConfig()}>
       <QueryClientProvider client={queryClient}>
         <RainbowKitProvider>
-          <WalletProviderInner>{children}</WalletProviderInner>
+          {children}
         </RainbowKitProvider>
       </QueryClientProvider>
     </WagmiProvider>
-  );
+  )
+}
+
+export function WalletProvider({ children }: { children: React.ReactNode }) {
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // Show children without wallet functionality during SSR
+  if (!mounted) {
+    return <>{children}</>
+  }
+
+  return <WalletProviderInner>{children}</WalletProviderInner>
 }
