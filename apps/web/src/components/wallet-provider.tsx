@@ -71,7 +71,6 @@ function WalletProviderInner({ children }: { children: React.ReactNode }) {
     </WagmiProvider>
   )
 }
-
 export function WalletProvider({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false)
 
@@ -86,3 +85,4 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
 
   return <WalletProviderInner>{children}</WalletProviderInner>
 }
+
