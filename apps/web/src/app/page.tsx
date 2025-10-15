@@ -33,8 +33,8 @@ export default function Home() {
           Start building your decentralized application on Celo. Fast and secure blockchain for everyone.
         </p>
 
-        {/* User Balance Display
-        <UserBalance /> */}
+        {/* User Balance Display */}
+        <UserBalance />
 
         {/* CTA Buttons */}
         <div

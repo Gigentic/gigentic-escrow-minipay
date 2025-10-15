@@ -1,9 +1,5 @@
-packages:
-  - apps/*
-
 onlyBuiltDependencies:
   - bufferutil
   - keccak
-  - secp256k1
   - unrs-resolver
   - utf-8-validate
