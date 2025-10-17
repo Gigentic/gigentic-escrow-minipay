@@ -73,49 +73,52 @@ export function EscrowInteraction() {
         ) : (
           <div className="space-y-4">
             {/* Contract Address */}
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium text-muted-foreground">
+            <div className="flex justify-between items-center py-3 border-b">
+              <span className="text-sm font-medium text-muted-foreground">
                 Contract Address
-              </label>
+              </span>
               <Address
                 address={ESCROW_CONTRACT_ADDRESS}
-                className="bg-secondary p-3 rounded-md font-mono text-sm"
+                className="font-mono text-sm"
                 copyOnClick
+                isTruncated
               />
             </div>
 
             {/* Depositor */}
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium text-muted-foreground">
+            <div className="flex justify-between items-center py-3 border-b">
+              <span className="text-sm font-medium text-muted-foreground">
                 Depositor
-              </label>
+              </span>
               <Address
                 address={parsedInfo.depositor}
-                className="bg-secondary p-3 rounded-md font-mono text-sm"
+                className="font-mono text-sm"
                 copyOnClick
+                isTruncated
               />
             </div>
 
             {/* Recipient */}
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium text-muted-foreground">
+            <div className="flex justify-between items-center py-3 border-b">
+              <span className="text-sm font-medium text-muted-foreground">
                 Recipient
-              </label>
+              </span>
               <Address
                 address={parsedInfo.recipient}
-                className="bg-secondary p-3 rounded-md font-mono text-sm"
+                className="font-mono text-sm"
                 copyOnClick
+                isTruncated
               />
             </div>
 
             {/* Amount */}
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium text-muted-foreground">
+            <div className="flex justify-between items-center py-3 border-b">
+              <span className="text-sm font-medium text-muted-foreground">
                 Amount Locked
-              </label>
-              <div className="bg-secondary p-3 rounded-md font-semibold text-lg">
+              </span>
+              <span className="font-semibold text-lg">
                 {formatEther(parsedInfo.amount)} CELO
-              </div>
+              </span>
             </div>
 
             {/* Status */}
@@ -170,31 +173,38 @@ export function EscrowInteraction() {
               You are the depositor. You can release the funds to the recipient.
             </p>
 
-            <Transaction
-              chainId={celoSepolia.id}
-              onSuccess={(result: any) => {
-                console.log("Release successful:", result);
-                setTxHash(result);
-                // Refetch escrow info after successful release
-                setTimeout(() => refetch(), 2000);
-              }}
-              onError={(error: any) => {
-                console.error("Release failed:", error);
-              }}
-              transaction={{
-                abi: SIMPLE_ESCROW_ABI,
-                address: ESCROW_CONTRACT_ADDRESS,
-                functionName: "release",
-              }}
-            >
-              <TransactionButton
-                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-3 px-6 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={!canRelease}
+            {canRelease ? (
+              <Transaction
+                chainId={celoSepolia.id}
+                onSuccess={(result: any) => {
+                  console.log("Release successful:", result);
+                  setTxHash(result);
+                  // Refetch escrow info after successful release
+                  setTimeout(() => refetch(), 2000);
+                }}
+                onError={(error: any) => {
+                  console.error("Release failed:", error);
+                }}
+                transaction={{
+                  abi: SIMPLE_ESCROW_ABI,
+                  address: ESCROW_CONTRACT_ADDRESS,
+                  functionName: "release",
+                  args: [],
+                }}
               >
-                {canRelease ? "Release Funds" : "Cannot Release"}
-              </TransactionButton>
-              <TransactionStatus className="mt-4" />
-            </Transaction>
+                <TransactionButton className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-3 px-6 rounded-md">
+                  Release Funds
+                </TransactionButton>
+                <TransactionStatus className="mt-4" />
+              </Transaction>
+            ) : (
+              <button
+                disabled
+                className="w-full bg-muted text-muted-foreground font-semibold py-3 px-6 rounded-md cursor-not-allowed opacity-50"
+              >
+                Cannot Release
+              </button>
+            )}
 
             {txHash && (
               <div className="mt-4 p-3 bg-green-100 dark:bg-green-900 rounded-md">
