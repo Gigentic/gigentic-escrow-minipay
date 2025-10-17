@@ -564,16 +564,10 @@ describe("EscrowContract", function() {
 
 ## 🔧 Deployment Configuration
 
-### Testnet (Alfajores)
+### Testnet (Sepolia)
 ```javascript
-const CUSD_TESTNET = "0x874069Fa1Eb16D44d622F2e0Ca25eeA172369bC1";
-const factory = await MasterFactory.deploy(CUSD_TESTNET);
-```
-
-### Mainnet (Celo)
-```javascript
-const CUSD_MAINNET = "0x765DE816845861e75A25fCA122bb6898B8B1282a";
-const factory = await MasterFactory.deploy(CUSD_MAINNET);
+const CUSD_SEPOLIA = "0xdE9e4C3ce781b4bA68120d6261cbad65ce0aB00b";
+const factory = await MasterFactory.deploy(CUSD_SEPOLIA);
 ```
 
 ---
@@ -633,16 +627,3 @@ await escrow.resolve(false, resolutionHash);
 ```
 
 ---
-
-## 🚀 Next Steps
-
-1. **Deploy factory contracts** on testnet and mainnet
-2. **Implement KV storage** for deliverables and resolutions
-3. **Build admin dashboard** for arbitration
-4. **Create user interface** for escrow creation and management
-5. **Integrate Self Protocol** for identity verification
-6. **Launch pilot program** with 20 test users
-
----
-
-This specification provides a complete, production-ready smart contract system with gas-efficient hash-based documentation and clear fee structures optimized for the Celo ecosystem.
