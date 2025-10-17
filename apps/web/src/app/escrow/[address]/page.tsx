@@ -1,0 +1,136 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+import { usePublicClient } from "wagmi";
+import { type Address } from "viem";
+import { EscrowDetailsDisplay } from "@/components/escrow/escrow-details";
+import { EscrowActions } from "@/components/escrow/escrow-actions";
+import {
+  ESCROW_CONTRACT_ABI,
+  type EscrowDetails,
+  type DeliverableDocument,
+} from "@/lib/escrow-config";
+
+export default function EscrowDetailPage() {
+  const params = useParams();
+  const publicClient = usePublicClient();
+  const escrowAddress = params.address as Address;
+
+  const [details, setDetails] = useState<EscrowDetails | null>(null);
+  const [deliverable, setDeliverable] = useState<DeliverableDocument | null>(null);
+  const [disputeInfo, setDisputeInfo] = useState<{ disputeReason: string; resolutionHash?: string } | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const fetchEscrowData = async () => {
+    if (!publicClient || !escrowAddress) return;
+
+    setIsLoading(true);
+    setError("");
+
+    try {
+      // Fetch escrow details
+      const escrowDetails = await publicClient.readContract({
+        address: escrowAddress,
+        abi: ESCROW_CONTRACT_ABI,
+        functionName: "getDetails",
+      });
+
+      const parsedDetails: EscrowDetails = {
+        depositor: escrowDetails[0],
+        recipient: escrowDetails[1],
+        escrowAmount: escrowDetails[2],
+        platformFee: escrowDetails[3],
+        disputeBond: escrowDetails[4],
+        state: escrowDetails[5],
+        deliverableHash: escrowDetails[6],
+        createdAt: escrowDetails[7],
+      };
+
+      setDetails(parsedDetails);
+
+      // Fetch deliverable document from API
+      try {
+        const docResponse = await fetch(`/api/documents/${parsedDetails.deliverableHash}`);
+        if (docResponse.ok) {
+          const docData = await docResponse.json();
+          setDeliverable(docData.document);
+        }
+      } catch (err) {
+        console.error("Error fetching deliverable:", err);
+      }
+
+      // Fetch dispute info if disputed or resolved
+      try {
+        const disputeData = await publicClient.readContract({
+          address: escrowAddress,
+          abi: ESCROW_CONTRACT_ABI,
+          functionName: "getDisputeInfo",
+        });
+
+        if (disputeData[0] || disputeData[1] !== "0x0000000000000000000000000000000000000000000000000000000000000000") {
+          setDisputeInfo({
+            disputeReason: disputeData[0],
+            resolutionHash: disputeData[1],
+          });
+        }
+      } catch (err) {
+        console.error("Error fetching dispute info:", err);
+      }
+    } catch (err: any) {
+      console.error("Error fetching escrow data:", err);
+      setError("Failed to load escrow details");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchEscrowData();
+  }, [escrowAddress, publicClient]);
+
+  if (isLoading) {
+    return (
+      <main className="flex-1 container mx-auto px-4 py-12">
+        <div className="text-center">
+          <p className="text-muted-foreground">Loading escrow details...</p>
+        </div>
+      </main>
+    );
+  }
+
+  if (error || !details) {
+    return (
+      <main className="flex-1 container mx-auto px-4 py-12">
+        <div className="text-center">
+          <p className="text-red-600 dark:text-red-400">
+            {error || "Escrow not found"}
+          </p>
+        </div>
+      </main>
+    );
+  }
+
+  return (
+    <main className="flex-1 container mx-auto px-4 py-12">
+      <div className="max-w-5xl mx-auto space-y-8">
+        <EscrowDetailsDisplay
+          escrowAddress={escrowAddress}
+          details={details}
+          deliverable={deliverable || undefined}
+          disputeInfo={disputeInfo || undefined}
+        />
+
+        <EscrowActions
+          escrowAddress={escrowAddress}
+          depositor={details.depositor}
+          recipient={details.recipient}
+          state={details.state}
+          onSuccess={fetchEscrowData}
+        />
+      </div>
+    </main>
+  );
+}
+
