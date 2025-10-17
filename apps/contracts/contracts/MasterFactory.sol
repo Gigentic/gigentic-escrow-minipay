@@ -43,8 +43,8 @@ contract MasterFactory {
     /**
      * @dev Constructor
      * @param _cUSDAddress Address of cUSD token
-     * Mainnet: 0x765DE816845861e75A25fCA122bb6898B8B1282a
-     * Testnet: 0x874069Fa1Eb16D44d622F2e0Ca25eeA172369bC1
+     * Celo Mainnet: 0x765de816845861e75a25fca122bb6898b8b1282a
+     * Sepolia Testnet: 0xdE9e4C3ce781b4bA68120d6261cbad65ce0aB00b
      */
     constructor(address _cUSDAddress) {
         admin = msg.sender;
