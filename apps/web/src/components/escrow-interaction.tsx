@@ -178,7 +178,7 @@ export function EscrowInteraction() {
                 chainId={celoSepolia.id}
                 onSuccess={(result: any) => {
                   console.log("Release successful:", result);
-                  setTxHash(result);
+                  setTxHash(result.transactionHash || result);
                   // Refetch escrow info after successful release
                   setTimeout(() => refetch(), 2000);
                 }}

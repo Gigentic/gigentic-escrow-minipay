@@ -3,8 +3,8 @@ import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
 import { parseEther } from "viem";
 
 // Default values for deployment
-const DEFAULT_RECIPIENT = "0x1c9a2e08aE1d17d9aA2D01F20f27a8b6b4b7efc9"; // Replace with actual recipient
-const DEFAULT_AMOUNT: bigint = parseEther("0.001"); // 0.001 CELO
+const DEFAULT_RECIPIENT = "0xDf47ec1FaFF640f42dB25CC107210cF76E1f2033"; // Replace with actual recipient
+const DEFAULT_AMOUNT: bigint = parseEther("0.1");
 
 const SimpleEscrowModule = buildModule("SimpleEscrowModule", (m) => {
   // Get parameters or use defaults
