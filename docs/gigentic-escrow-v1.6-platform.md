@@ -1,11 +1,11 @@
 # Gigentic Escrow Platform Architecture v1.6
 ## Requirements & Implementation Guide
 
-This document outlines the platform architecture needed for the Gigentic Escrow project, covering milestones 2-4 implementation. We're building on the Celo Composer Kit Next.js skeleton with mobile optimization for MiniPay and Valora wallets.
+This document outlines the platform architecture needed for the Gigentic Escrow project, covering milestones 2-4 implementation. We're building on the Celo Composer Kit Next.js skeleton with mobile optimization for MiniPay wallet environment.
 
 ## Key Design Principles
 - **Simplicity First**: Minimal backend, maximum on-chain functionality
-- **Mobile Optimized**: Built for MiniPay and Valora wallet users
+- **Mobile Optimized**: Built for MiniPay users
 - **Factory Pattern**: Individual escrow contracts deployed via master factory
 - **Hash-Based Documents**: Off-chain storage with on-chain hash verification
 - **Optional Identity**: Self Protocol integration for trust enhancement
@@ -43,12 +43,12 @@ Frontend (Next.js + Celo Composer Kit)
 - **Factory Pattern**: Each escrow gets its own contract instance for gas efficiency
 - **Hash Verification**: Documents stored off-chain but verified on-chain via hashes
 - **Minimal Backend**: Only for Self Protocol integration and admin operations
-- **Mobile First**: Optimized for MiniPay/Valora wallet integration
+- **Mobile First**: Optimized for MiniPay wallet integration
 
 ### 2. **User Management - Wallet-Only Authentication**
 
 **Authentication Model:**
-- Users identified solely by wallet address (Valora, MiniPay, MetaMask)
+- Users identified solely by wallet address (MiniPay, MetaMask)
 - No traditional user accounts, passwords, or sessions
 - Wallet signature provides authentication when needed
 
@@ -125,7 +125,7 @@ GET  /api/documents/[hash]     // Retrieve document by hash
 | **Frontend** | Next.js 14 | React framework with API routes |
 | **Styling** | Tailwind CSS | Utility-first styling |
 | **State Management** | React Context | Simple state management |
-| **Wallet Connection** | Celo Composer Kit | Multi-wallet support (Valora, MiniPay, MetaMask) |
+| **Wallet Connection** | Celo Composer Kit | Multi-wallet support (MiniPay, MetaMask) |
 | **Storage** | Upstash KV | Document + verification storage |
 | **Hosting** | Vercel | Frontend and API hosting |
 | **Identity** | Self Protocol | Optional identity verification |
@@ -185,11 +185,11 @@ GET  /api/documents/[hash]     // Retrieve document by hash
 1. **Core UI**: Dashboard, create escrow, view escrow flows
 2. **Factory Integration**: Connect UI to MasterFactory contract
 3. **Document System**: Hash-based deliverable storage
-4. **Mobile Optimization**: Responsive design for MiniPay/Valora
+4. **Mobile Optimization**: Responsive design for MiniPay
 
 ### Milestone 3: Identity & Wallet Integration  
 5. **Self Protocol**: Complete verification flow integration
-6. **Multi-wallet Support**: Valora, MiniPay, MetaMask compatibility
+6. **Multi-wallet Support**: MiniPay, MetaMask compatibility
 7. **Trust Signals**: Public verification status display
 8. **Pilot Testing**: 10 documented user tests
 
@@ -209,7 +209,7 @@ GET  /api/documents/[hash]     // Retrieve document by hash
 - **Factory pattern** - Individual contracts for each escrow, clean separation
 
 ### Production Ready
-- **Mobile First** - Optimized for MiniPay and Valora wallet users
+- **Mobile First** - Optimized for MiniPay wallet users
 - **Gas Efficient** - Hash-based documents, factory deployment pattern
 - **Scalable** - Each escrow is independent, KV store handles off-chain data
 - **Secure** - Hash verification, immutable on-chain records

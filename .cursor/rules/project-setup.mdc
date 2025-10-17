@@ -7,7 +7,7 @@ This file provides guidance to Cursor's AI models when working with code in this
 
 ## Project Overview
 
-Gigentic Escrow is a decentralized escrow protocol built on Celo blockchain, designed for secure peer-to-peer transactions in emerging markets. The platform combines smart contract-based escrow with optional identity verification (Self Protocol) and admin-controlled dispute resolution, optimized for mobile users via MiniPay and Valora wallets.
+Gigentic Escrow is a decentralized escrow protocol built on Celo blockchain, designed for secure peer-to-peer transactions in emerging markets. The platform combines smart contract-based escrow with optional identity verification (Self Protocol) and admin-controlled dispute resolution, optimized for mobile users via MiniPay wallets.
 
 **Core Value Proposition:** Enable trustless transactions between parties without traditional banking, with built-in dispute resolution and optional identity verification for enhanced trust.
 
@@ -104,7 +104,7 @@ The system uses a **Factory Pattern** with two main contracts:
 ### Frontend Architecture
 
 - **Next.js 14 App Router** with server components
-- **Wallet Integration**: RainbowKit + Wagmi for multi-wallet support (Valora, MiniPay, MetaMask)
+- **Wallet Integration**: RainbowKit + Wagmi for multi-wallet support (MiniPay, MetaMask)
 - **Component Library**: shadcn/ui (Radix UI primitives + Tailwind)
 - **State Management**: React Context via WalletProvider
 - **Blockchain Interaction**: Viem for typed Ethereum interactions
@@ -184,7 +184,7 @@ The escrow contract implements a strict state machine. State transitions:
 - Optional for users
 
 ### Mobile-First Design
-- Optimized for MiniPay and Valora wallet browsers
+- Optimized for MiniPay wallet environment
 - Responsive design required
 - Touch-friendly UI components
 
