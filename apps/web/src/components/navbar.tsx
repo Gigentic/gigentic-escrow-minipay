@@ -56,9 +56,7 @@ export function Navbar() {
                   </Link>
                 ))}
                 <div className="mt-6 pt-6 border-t">
-                  <Button asChild className="w-full">
-                    <ConnectButton />
-                  </Button>
+                  <ConnectButton />
                 </div>
               </nav>
             </SheetContent>

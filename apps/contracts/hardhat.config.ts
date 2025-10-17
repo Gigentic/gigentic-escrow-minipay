@@ -1,5 +1,6 @@
 import type { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox-viem";
+import "dotenv/config";
 
 const config: HardhatUserConfig = {
   solidity: {
@@ -24,6 +25,12 @@ const config: HardhatUserConfig = {
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
       chainId: 44787,
     },
+    // Celo Sepolia Testnet
+    sepolia: {
+      url: "https://forno.celo-sepolia.celo-testnet.org",
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      chainId: 11142220,
+    },
     // Local development
     localhost: {
       url: "http://127.0.0.1:8545",
@@ -33,7 +40,8 @@ const config: HardhatUserConfig = {
   etherscan: {
     apiKey: {
       celo: process.env.CELOSCAN_API_KEY || "",
-      alfajores: process.env.CELOSCAN_API_KEY || "",
+      alfajores: 'empty',
+      sepolia: process.env.CELOSCAN_API_KEY || "",
     },
     customChains: [
       {
@@ -48,8 +56,16 @@ const config: HardhatUserConfig = {
         network: "alfajores",
         chainId: 44787,
         urls: {
-          apiURL: "https://api-alfajores.celoscan.io/api",
-          browserURL: "https://alfajores.celoscan.io",
+          apiURL: "https://celo-alfajores.blockscout.com/api",
+          browserURL: "https://celo-alfajores.blockscout.com"
+        },
+      },
+      {
+        network: "sepolia",
+        chainId: 11142220,
+        urls: {
+          apiURL: "https://api-celo-sepolia.blockscout.com/api",
+          browserURL: "https://celo-sepolia.blockscout.com",
         },
       },
     ],

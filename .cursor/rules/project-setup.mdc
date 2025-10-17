@@ -1,0 +1,218 @@
+---
+alwaysApply: true
+---
+# Project Rules
+
+This file provides guidance to Cursor's AI models when working with code in this repository.
+
+## Project Overview
+
+Gigentic Escrow is a decentralized escrow protocol built on Celo blockchain, designed for secure peer-to-peer transactions in emerging markets. The platform combines smart contract-based escrow with optional identity verification (Self Protocol) and admin-controlled dispute resolution, optimized for mobile users via MiniPay and Valora wallets.
+
+**Core Value Proposition:** Enable trustless transactions between parties without traditional banking, with built-in dispute resolution and optional identity verification for enhanced trust.
+
+## Tech Stack
+
+- **Monorepo Manager**: Turborepo with PNPM (v8.10.0+)
+- **Node Version**: 18.0.0+
+- **Frontend**: Next.js 14 (App Router), React 18, TypeScript
+- **Styling**: Tailwind CSS with shadcn/ui components
+- **Blockchain**: Celo (mainnet & Sepolia testnet)
+- **Smart Contracts**: Solidity 0.8.28, Hardhat with Viem
+- **Wallet Integration**: RainbowKit, Wagmi, Viem
+- **Currency**: cUSD (Celo Dollar)
+
+## Repository Structure
+
+```
+apps/
+├── web/              # Next.js frontend application
+│   ├── src/
+│   │   ├── app/      # Next.js App Router pages
+│   │   ├── components/  # React components (navbar, wallet-provider, etc.)
+│   │   └── lib/      # Utility functions
+│
+└── contracts/        # Hardhat smart contract development
+    ├── contracts/    # Solidity contracts
+    ├── test/         # Contract tests
+    ├── ignition/     # Deployment modules
+    └── hardhat.config.ts  # Hardhat configuration
+```
+
+## Common Commands
+
+### Root Level (Monorepo)
+```bash
+pnpm install           # Install all dependencies
+pnpm dev              # Start all dev servers (Next.js + contracts)
+pnpm build            # Build all packages and apps
+pnpm lint             # Lint all packages
+pnpm type-check       # Run TypeScript type checking
+pnpm clean            # Clean all build artifacts
+```
+
+### Smart Contracts (`apps/contracts`)
+```bash
+pnpm contracts:compile              # Compile smart contracts
+pnpm contracts:test                 # Run all contract tests
+pnpm contracts:deploy               # Deploy to local network
+pnpm contracts:deploy:celo          # Deploy to Celo mainnet
+pnpm contracts:deploy:sepolia       # Deploy to Sepolia testnet
+
+# Individual commands (from apps/contracts directory):
+cd apps/contracts
+pnpm test                          # Run tests
+pnpm compile                       # Compile contracts
+pnpm verify                        # Verify contracts on Celoscan
+pnpm clean                         # Clean artifacts and cache
+```
+
+### Web Application (`apps/web`)
+```bash
+cd apps/web
+pnpm dev              # Start Next.js dev server (localhost:3000)
+pnpm build            # Build for production
+pnpm start            # Start production server
+pnpm lint             # Run ESLint
+pnpm type-check       # Type check without emitting
+```
+
+## Architecture & Design
+
+### Smart Contract Architecture
+
+The system uses a **Factory Pattern** with two main contracts:
+
+1. **MasterFactory**: Deploys individual escrow instances, maintains registry, configures arbiter, tracks global statistics
+2. **EscrowContract**: Manages individual escrow transactions with 4-state machine:
+   - `CREATED`: Funds locked, awaiting completion or dispute
+   - `DISPUTED`: Dispute raised, arbiter can resolve
+   - `COMPLETED`: Funds released to recipient
+   - `REFUNDED`: Funds returned to depositor
+
+**Fee Structure:**
+- 1% platform fee
+- 4% dispute bond (refundable if no dispute)
+- All amounts in cUSD
+
+**Key Design Features:**
+- Hash-based deliverable tracking (off-chain storage for gas efficiency)
+- Admin-controlled arbiter designation
+- ERC-20 token integration with security features
+- Gas-optimized implementation
+
+### Frontend Architecture
+
+- **Next.js 14 App Router** with server components
+- **Wallet Integration**: RainbowKit + Wagmi for multi-wallet support (Valora, MiniPay, MetaMask)
+- **Component Library**: shadcn/ui (Radix UI primitives + Tailwind)
+- **State Management**: React Context via WalletProvider
+- **Blockchain Interaction**: Viem for typed Ethereum interactions
+
+**Key Components:**
+- `WalletProvider`: Wraps app with wallet connection context
+- `Navbar`: Navigation with wallet connection status
+- `ConnectButton`: Wallet connection interface
+- `UserBalance`: Display user's cUSD balance
+
+## Configuration & Environment
+
+### Smart Contracts Environment
+Create `apps/contracts/.env`:
+```bash
+PRIVATE_KEY=          # Deployment account (never use real funds in testnet)
+CELOSCAN_API_KEY=     # For contract verification
+REPORT_GAS=false      # Enable gas reporting
+```
+
+### Networks Configuration
+Hardhat is configured for:
+- **Celo Mainnet**: https://forno.celo.org (Chain ID: 42220)
+- **Sepolia Testnet**: https://forno.celo-sepolia.celo-testnet.org (Chain ID: 11142220)
+- **Localhost**: http://127.0.0.1:8545 (Chain ID: 31337)
+
+### Frontend Environment
+The Next.js app may require environment variables for API routes and external services (check for `.env.example` in `apps/web/`).
+
+## Development Workflow
+
+### General Workflow
+1. First think through the problem, read the codebase for relevant files, and write a plan to tasks/todo.md.
+2. The plan should have a list of todo items that you can check off as you complete them
+3. Before you begin working, check in with me and I will verify the plan.
+4. Then, begin working on the todo items, marking them as complete as you go.
+5. Please every step of the way just give me a high level explanation of what changes you made
+6. Make every task and code change you do as simple as possible. We want to avoid making any massive or complex changes. Every change should impact as little code as possible. Everything is about simplicity.
+7. Finally, add a review section to the todo.md file with a summary of the changes you made and any other relevant information.
+8. DO NOT BE LAZY. NEVER BE LAZY. IF THERE IS A BUG FIND THE ROOT CAUSE AND FIX IT. NO TEMPORARY FIXES. YOU ARE A SENIOR DEVELOPER. NEVER BE LAZY
+9. MAKE ALL FIXES AND CODE CHANGES AS SIMPLE AS HUMANLY POSSIBLE. THEY SHOULD ONLY IMPACT NECESSARY CODE RELEVANT TO THE TASK AND NOTHING ELSE. IT SHOULD IMPACT AS LITTLE CODE AS POSSIBLE. YOUR GOAL IS TO NOT INTRODUCE ANY BUGS. IT'S ALL ABOUT SIMPLICITY
+
+
+### Working with Smart Contracts
+1. Write contracts in `apps/contracts/contracts/`
+2. Write tests in `apps/contracts/test/`
+3. Compile: `pnpm contracts:compile`
+4. Test: `pnpm contracts:test`
+5. Deploy to testnet: `pnpm contracts:deploy:sepolia`
+6. Verify on Celoscan: `cd apps/contracts && pnpm verify`
+
+### Working with Frontend
+1. Components go in `apps/web/src/components/`
+2. Pages use Next.js App Router in `apps/web/src/app/`
+3. Utilities in `apps/web/src/lib/`
+4. Run dev server: `pnpm dev` (from root) or `cd apps/web && pnpm dev`
+
+### Testing Strategy
+- Smart contracts: Hardhat test suite with Chai matchers
+- Frontend: TypeScript type checking with `pnpm type-check`
+- Gas reporting: Enable with `REPORT_GAS=true` in contracts env
+
+## Important Implementation Details
+
+### Escrow State Machine
+The escrow contract implements a strict state machine. State transitions:
+- `CREATED` → `COMPLETED` (depositor completes)
+- `CREATED` → `DISPUTED` (either party disputes)
+- `CREATED` → `REFUNDED` (admin resolves to refund)
+- `DISPUTED` → `COMPLETED` (admin resolves to recipient)
+- `DISPUTED` → `REFUNDED` (admin resolves to depositor)
+
+### Identity Verification (Self Protocol)
+- Integration is **frontend-only** (trust signal)
+- **No smart contract enforcement** of verification status
+- Verification status stored off-chain
+- Optional for users
+
+### Mobile-First Design
+- Optimized for MiniPay and Valora wallet browsers
+- Responsive design required
+- Touch-friendly UI components
+
+### Platform Fees & Bonds
+When creating escrow:
+- User deposits: `amount + 1% fee + 4% bond`
+- On completion: recipient gets `amount`, depositor gets bond back
+- On dispute resolution: loser forfeits bond to winner
+
+## Related Documentation
+
+See `docs/` directory for detailed specifications:
+- `gigentic-escrow-v1.6-prd.md`: Product requirements and milestones
+- `gigentic-escrow-v1.6-contract.md`: Complete smart contract specification
+- `gigentic-escrow-v1.6-platform.md`: Platform architecture details
+- `gigentic-escrow-v1.6-self.md`: Self Protocol integration
+- `Wallet Authentication in the Celo Ecosystem.md`: Wallet integration guide
+
+## Dependencies
+
+### Key Dependencies
+- **@openzeppelin/contracts**: Smart contract security standards
+- **@rainbow-me/rainbowkit**: Wallet connection UI
+- **wagmi**: React hooks for Ethereum
+- **viem**: TypeScript Ethereum library
+- **@tanstack/react-query**: Async state management
+
+### Monorepo Tools
+- Turborepo handles task orchestration and caching
+- PNPM workspaces for dependency management
+- Shared TypeScript configurations

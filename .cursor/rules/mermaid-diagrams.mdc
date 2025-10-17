@@ -1,0 +1,88 @@
+---
+description: "Guidelines for creating properly formatted mermaid diagrams"
+alwaysApply: false
+---
+# Mermaid Diagram Formatting Rules
+
+## Critical Formatting Requirements
+
+When creating mermaid diagrams, **ALWAYS** put text annotations and multi-line content inside quotation marks for proper rendering.
+
+### Examples of CORRECT formatting:
+
+```mermaid
+flowchart TD
+    A["Start"] --> B["Set offset_id = 0<br/>Set limit = 100<br/>Set all_messages = []"]
+    B --> C{"More messages?"}
+    C -->|Yes| D["Process messages"]
+    C -->|No| E["Complete"]
+```
+
+```mermaid
+graph TB
+    subgraph "Application Layer"
+        CLI["CLI Entry Point<br/>main.cli()"]
+        MAIN["Main Orchestrator<br/>main.main()"]
+    end
+```
+
+### Examples of INCORRECT formatting:
+
+```mermaid
+flowchart TD
+    A[Start] --> B[Set offset_id = 0<br/>Set limit = 100<br/>Set all_messages = []]
+    B --> C{More messages?}
+```
+
+## Key Rules:
+
+**Node Labels**: Always wrap in quotes when containing text
+   - ✅ `A["Start Process"]`
+   - ❌ `A[Start Process]`
+
+**Multi-line Content**: Always wrap in quotes when using `<br/>` tags
+   - ✅ `B["Line 1<br/>Line 2<br/>Line 3"]`
+   - ❌ `B[Line 1<br/>Line 2<br/>Line 3]`
+
+**Decision Nodes**: Always wrap text in quotes
+   - ✅ `C{"Is valid?"}`
+   - ❌ `C{Is valid?}`
+
+**Subgraph Labels**: Always wrap in quotes
+   - ✅ `subgraph "Database Layer"`
+   - ❌ `subgraph Database Layer`
+
+**Complex Text**: Any text with special characters, spaces, or formatting should be quoted
+   - ✅ `NODE["Complex text with symbols & formatting"]`
+   - ❌ `NODE[Complex text with symbols & formatting]`
+
+**Note Syntax in Class Diagrams**: Never use colons between "note for" and the quoted text
+   - ✅ `note for ClassName "This is a note"`
+   - ❌ `note for ClassName : "This is a note"`
+
+**Edge Labels**: Always wrap in quotes when using colons for labeled relationships
+   - ✅ `A --> B : "labeled edge"`
+   - ❌ `A --> B : labeled edge`
+
+**Escape Special Characters**: Use `\` to escape special characters in labels
+   - ✅ `SDK -.->|"1\. Quote"| LP`
+   - ❌ `SDK -.->|1\. Quote| LP`
+
+
+## Why This Matters
+
+Proper quoting ensures:
+- Diagrams render correctly in all mermaid viewers
+- Text with special characters displays properly
+- Multi-line content appears as intended
+- Professional, consistent diagram appearance
+- Correct syntax prevents parse errors
+
+## Common Syntax Pitfalls to Avoid:
+
+1. **Note Syntax Error**: Adding unnecessary colons in class diagram notes
+2. **Unquoted Labels**: Using spaces or special characters without quotes
+3. **Mixed Line Breaks**: Using `\n` instead of `<br/>` in quoted text
+4. **Unquoted Edge Labels**: Text after colons in relationships needs quotes
+
+**Remember**: When in doubt, add quotes around node text content!
