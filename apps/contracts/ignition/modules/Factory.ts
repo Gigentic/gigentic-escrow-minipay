@@ -14,8 +14,8 @@ import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
  *         --parameters '{"FactoryModule":{"cUSDAddress":"0x5FbDB2315678afecb367f032d93F642f64180aa3"}}'
  * 
  * 2. For TESTNETS/MAINNET (use real cUSD):
- *    pnpm exec hardhat ignition deploy ignition/modules/Factory.ts --network alfajores \
- *      --parameters '{"FactoryModule":{"cUSDAddress":"0x874069Fa1Eb16D44d622F2e0Ca25eeA172369bC1"}}'
+ *    pnpm exec hardhat ignition deploy ignition/modules/Factory.ts --network sepolia \
+ *      --parameters '{"FactoryModule":{"cUSDAddress":"0xdE9e4C3ce781b4bA68120d6261cbad65ce0aB00b"}}'
  * 
  * cUSD addresses:
  * - Celo Mainnet: 0x765de816845861e75a25fca122bb6898b8b1282a

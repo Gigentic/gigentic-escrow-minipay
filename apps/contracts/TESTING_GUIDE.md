@@ -99,7 +99,8 @@ console.log("Escrow created at:", escrowAddress);
 after setup
 ```javascript
 // Get contracts
-const factory = await hre.viem.getContractAt("MasterFactory", "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512");
+//const factory = await hre.viem.getContractAt("MasterFactory", "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512");
+const factory = await hre.viem.getContractAt("MasterFactory", "0xF5c1d566A9dFB717F4C02268fc078bDcB55006F4"); // Sepolia
 const escrow = await hre.viem.getContractAt("EscrowContract", "0xCafac3dD18aC6c6e92c921884f9E4176737C052c");
 const mockCUSD = await hre.viem.getContractAt("MockCUSD", "0x5fbdb2315678afecb367f032d93f642f64180aa3");
 const [admin, user1, user2] = await hre.viem.getWalletClients();
