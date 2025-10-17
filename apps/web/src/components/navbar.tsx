@@ -37,7 +37,7 @@ export function Navbar() {
               <div className="flex items-center gap-2 mb-8">
 
                 <span className="font-bold text-lg">
-                  gigentic-escrow-minipay
+                  Gigentic Escrow
                 </span>
               </div>
               <nav className="flex flex-col gap-4">

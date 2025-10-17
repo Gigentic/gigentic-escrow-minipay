@@ -8,7 +8,7 @@ import { WalletProvider } from "@/components/wallet-provider"
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'gigentic-escrow-minipay',
+  title: 'Gigentic Escrow',
   description: 'Send money through an escrow with built in AI dispute resolution',
 };
 
