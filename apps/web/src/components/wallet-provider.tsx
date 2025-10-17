@@ -59,18 +59,18 @@ const wagmiConfig = createConfig({
 const queryClient = new QueryClient();
 
 function WalletProviderInner({ children }: { children: React.ReactNode }) {
-  // const { connect, connectors } = useConnect();
+  const { connect, connectors } = useConnect();
 
-  // useEffect(() => {
-    // // Check if the app is running inside MiniPay
-    // if (window.ethereum && window.ethereum.isMiniPay) {
-    //   // Find the injected connector, which is what MiniPay uses
-    //   const injectedConnector = connectors.find((c) => c.id === "injected");
-    //   if (injectedConnector) {
-    //     connect({ connector: injectedConnector });
-    //   }
-    // }
-  // }, [connect, connectors]);
+  useEffect(() => {
+    // Check if the app is running inside MiniPay
+    if (window.ethereum && window.ethereum.isMiniPay) {
+      // Find the injected connector, which is what MiniPay uses
+      const injectedConnector = connectors.find((c) => c.id === "injected");
+      if (injectedConnector) {
+        connect({ connector: injectedConnector });
+      }
+    }
+  }, [connect, connectors]);
 
   return <>{children}</>;
 }
