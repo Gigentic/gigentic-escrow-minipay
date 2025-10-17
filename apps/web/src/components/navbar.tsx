@@ -66,7 +66,7 @@ export function Navbar() {
           <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
 
             <span className="hidden font-bold text-xl sm:inline-block">
-              gigentic-escrow-minipay
+              Gigentic Escrow
             </span>
           </Link>
         </div>
