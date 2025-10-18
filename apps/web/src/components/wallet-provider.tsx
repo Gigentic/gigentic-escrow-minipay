@@ -76,8 +76,16 @@ function WalletProviderInner({ children }: { children: React.ReactNode }) {
 }
 
 export function WalletProvider({ children }: { children: React.ReactNode }) {
-  // const [mounted, setMounted] = useState(false);
-  // useEffect(() => setMounted(true), []);
+  const [mounted, setMounted] = useState(false);
+  
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Prevent hydration mismatch by not rendering until client-side
+  if (!mounted) {
+    return null;
+  }
 
   return (
     <WagmiProvider config={wagmiConfig}>
