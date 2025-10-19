@@ -95,9 +95,9 @@ export async function authenticateRequest(request: Request): Promise<Address | n
  * @returns true if address is admin, false otherwise
  */
 export function isAdmin(address: Address): boolean {
-  const adminAddress = process.env.ADMIN_WALLET_ADDRESS?.toLowerCase();
+  const adminAddress = process.env.NEXT_PUBLIC_ADMIN_WALLET_ADDRESS?.toLowerCase();
   if (!adminAddress) {
-    console.error("ADMIN_WALLET_ADDRESS not configured");
+    console.error("NEXT_PUBLIC_ADMIN_WALLET_ADDRESS not configured");
     return false;
   }
   return address.toLowerCase() === adminAddress;

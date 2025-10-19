@@ -1,13 +1,28 @@
 import { NextResponse } from "next/server";
 import { createPublicClient, http, type Address } from "viem";
-import { celoSepolia } from "viem/chains";
+import { celoSepolia, hardhat, celo } from "viem/chains";
 import { isAdmin } from "@/lib/wallet-auth";
 import {
   MASTER_FACTORY_ADDRESS,
   MASTER_FACTORY_ABI,
   ESCROW_CONTRACT_ABI,
   EscrowState,
+  CHAIN_ID,
 } from "@/lib/escrow-config";
+
+// Helper to get the correct chain based on CHAIN_ID
+function getChain() {
+  switch (CHAIN_ID) {
+    case 31337:
+      return hardhat;
+    case 42220:
+      return celo;
+    case 11142220:
+      return celoSepolia;
+    default:
+      return celoSepolia;
+  }
+}
 
 /**
  * GET /api/admin/stats
@@ -27,7 +42,7 @@ export async function GET(request: Request) {
 
     // Create public client
     const publicClient = createPublicClient({
-      chain: celoSepolia,
+      chain: getChain(),
       transport: http(),
     });
 
