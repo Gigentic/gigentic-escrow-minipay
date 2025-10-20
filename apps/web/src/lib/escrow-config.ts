@@ -457,7 +457,6 @@ export interface DeliverableDocument {
   title: string;
   description: string;
   acceptanceCriteria: string[];
-  escrowAddress: Address;
   depositor: Address;
   recipient: Address;
   amount: string;
@@ -475,6 +474,13 @@ export interface ResolutionDocument {
   decisionRationale: string;
   resolvedAt: number;
   transactionHash: string;
+}
+
+export interface DisputeDocument {
+  escrowAddress: Address;
+  raiser: Address;
+  reason: string;
+  raisedAt: number;
 }
 
 export interface UserMetadata {

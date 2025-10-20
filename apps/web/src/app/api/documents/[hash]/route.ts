@@ -3,12 +3,13 @@ import { getKVClient, kvKeys } from "@/lib/kv";
 
 /**
  * GET /api/documents/[hash]
- * Retrieve a document by its hash
- * 
- * Tries both deliverable and resolution prefixes
+ * Retrieve a document by its hash or escrow address
+ *
+ * For deliverables: expects escrow address
+ * For disputes/resolutions: expects hash
  */
 export async function GET(
-  request: Request,
+  _request: Request,
   { params }: { params: { hash: string } }
 ) {
   try {
@@ -16,21 +17,32 @@ export async function GET(
 
     if (!hash) {
       return NextResponse.json(
-        { error: "Hash parameter required" },
+        { error: "Hash/address parameter required" },
         { status: 400 }
       );
     }
 
     const kv = getKVClient();
 
-    // Try deliverable first
-    let document = await kv.get(kvKeys.deliverable(hash));
-    let type = "deliverable";
+    // Check if it's an address (starts with 0x and is 42 chars) vs hash (66 chars)
+    const isAddress = hash.startsWith("0x") && hash.length === 42;
+    let document = null;
+    let type = "";
 
-    // If not found, try resolution
-    if (!document) {
+    if (isAddress) {
+      // Try deliverable by escrow address
+      document = await kv.get(kvKeys.deliverable(hash));
+      type = "deliverable";
+    } else {
+      // Try resolution first
       document = await kv.get(kvKeys.resolution(hash));
       type = "resolution";
+
+      // If not found, try dispute
+      if (!document) {
+        document = await kv.get(kvKeys.dispute(hash));
+        type = "dispute";
+      }
     }
 
     // If still not found, return 404

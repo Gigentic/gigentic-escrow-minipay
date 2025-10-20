@@ -47,13 +47,15 @@ const NAMESPACE = `${APP_ENV}:${CHAIN}:`;
 export const KV_PREFIXES = {
   DELIVERABLE: `${NAMESPACE}deliverable:`,
   RESOLUTION: `${NAMESPACE}resolution:`,
+  DISPUTE: `${NAMESPACE}dispute:`,
   USER: `${NAMESPACE}user:`,
 } as const;
 
 // Helper functions for key generation
 export const kvKeys = {
-  deliverable: (hash: string) => `${KV_PREFIXES.DELIVERABLE}${hash}`,
+  deliverable: (escrowAddress: string) => `${KV_PREFIXES.DELIVERABLE}${escrowAddress.toLowerCase()}`,
   resolution: (hash: string) => `${KV_PREFIXES.RESOLUTION}${hash}`,
+  dispute: (hash: string) => `${KV_PREFIXES.DISPUTE}${hash}`,
   user: (address: string) => `${KV_PREFIXES.USER}${address.toLowerCase()}`,
 };
 

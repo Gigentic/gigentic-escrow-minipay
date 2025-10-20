@@ -8,7 +8,9 @@ import { Card } from "@/components/ui/card";
 import {
   ESCROW_CONTRACT_ABI,
   EscrowState,
+  type DisputeDocument,
 } from "@/lib/escrow-config";
+import { hashDocument } from "@/lib/hash";
 
 interface EscrowActionsProps {
   escrowAddress: Address;
@@ -74,7 +76,7 @@ export function EscrowActions({
 
   // Handle dispute
   const handleDisputeSubmit = async () => {
-    if (!isConnected || !isParty) return;
+    if (!isConnected || !isParty || !userAddress) return;
     if (!disputeReason.trim()) {
       setError("Please provide a reason for the dispute");
       return;
@@ -85,18 +87,46 @@ export function EscrowActions({
     setSuccess("");
 
     try {
+      // Create dispute document
+      const disputeDoc: DisputeDocument = {
+        escrowAddress,
+        raiser: userAddress,
+        reason: disputeReason.trim(),
+        raisedAt: Date.now(),
+      };
+
+      // Generate hash
+      const disputeHash = hashDocument(disputeDoc);
+
+      // Store dispute document in KV
+      const storeResponse = await fetch("/api/documents/store", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          hash: disputeHash,
+          document: disputeDoc,
+        }),
+      });
+
+      if (!storeResponse.ok) {
+        throw new Error("Failed to store dispute document");
+      }
+
+      console.log("Dispute document stored with hash:", disputeHash);
+
+      // Send only the hash to the blockchain
       const tx = await writeContractAsync({
         address: escrowAddress,
         abi: ESCROW_CONTRACT_ABI,
         functionName: "dispute",
-        args: [disputeReason],
+        args: [disputeHash],
       });
 
       console.log("Dispute tx:", tx);
       setSuccess("Dispute raised successfully. An arbiter will review the case.");
       setShowDisputeModal(false);
       setDisputeReason("");
-      
+
       if (onSuccess) {
         setTimeout(() => onSuccess(), 2000);
       }

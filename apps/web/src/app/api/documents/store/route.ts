@@ -13,7 +13,7 @@ import { verifyDocumentHash } from "@/lib/hash";
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { hash, document } = body;
+    const { hash, document, escrowAddress } = body;
 
     // Validate input
     if (!hash || !document) {
@@ -33,18 +33,36 @@ export async function POST(request: Request) {
     }
 
     // Determine document type based on structure
+    const isDeliverable = "acceptanceCriteria" in document && !("arbiter" in document) && !("raiser" in document);
     const isResolution = "arbiter" in document && "favorDepositor" in document;
-    const key = isResolution ? kvKeys.resolution(hash) : kvKeys.deliverable(hash);
+    const isDispute = "raiser" in document && "reason" in document && !("arbiter" in document);
+
+    // For deliverables, require escrowAddress
+    if (isDeliverable && !escrowAddress) {
+      return NextResponse.json(
+        { error: "Missing escrowAddress for deliverable document" },
+        { status: 400 }
+      );
+    }
+
+    // Generate appropriate key
+    const key = isDeliverable
+      ? kvKeys.deliverable(escrowAddress)
+      : isResolution
+        ? kvKeys.resolution(hash)
+        : kvKeys.dispute(hash);
 
     // Store in KV
     const kv = getKVClient();
     await kv.set(key, document);
 
+    const type = isResolution ? "resolution" : isDispute ? "dispute" : "deliverable";
+
     return NextResponse.json({
       success: true,
       hash,
       key,
-      type: isResolution ? "resolution" : "deliverable",
+      type,
     });
   } catch (error) {
     console.error("Error storing document:", error);

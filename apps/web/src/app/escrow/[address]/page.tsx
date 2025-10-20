@@ -50,9 +50,9 @@ export default function EscrowDetailPage() {
 
       setDetails(parsedDetails);
 
-      // Fetch deliverable document from API
+      // Fetch deliverable document from API using escrow address
       try {
-        const docResponse = await fetch(`/api/documents/${parsedDetails.deliverableHash}`);
+        const docResponse = await fetch(`/api/documents/${escrowAddress}`);
         if (docResponse.ok) {
           const docData = await docResponse.json();
           setDeliverable(docData.document);
@@ -69,10 +69,28 @@ export default function EscrowDetailPage() {
           functionName: "getDisputeInfo",
         });
 
-        if (disputeData[0] || disputeData[1] !== "0x0000000000000000000000000000000000000000000000000000000000000000") {
+        // disputeData[0] is now a hash (hex string) instead of cleartext
+        const disputeReasonHash = disputeData[0];
+        const resolutionHash = disputeData[1];
+
+        if (disputeReasonHash && disputeReasonHash !== "" && disputeReasonHash !== "0x0000000000000000000000000000000000000000000000000000000000000000") {
+          // Fetch actual dispute text from KV
+          let actualDisputeReason = disputeReasonHash; // Fallback to hash if fetch fails
+
+          try {
+            const disputeDocResponse = await fetch(`/api/documents/${disputeReasonHash}`);
+            if (disputeDocResponse.ok) {
+              const disputeDocData = await disputeDocResponse.json();
+              actualDisputeReason = disputeDocData.document.reason;
+            }
+          } catch (err) {
+            console.error("Error fetching dispute document from KV:", err);
+            // Keep fallback value (the hash itself)
+          }
+
           setDisputeInfo({
-            disputeReason: disputeData[0],
-            resolutionHash: disputeData[1],
+            disputeReason: actualDisputeReason,
+            resolutionHash: resolutionHash,
           });
         }
       } catch (err) {

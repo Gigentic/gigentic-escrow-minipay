@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useAccount, useWriteContract, useReadContract, usePublicClient } from "wagmi";
-import { parseEther, type Address } from "viem";
+import { parseEther, type Address, decodeEventLog } from "viem";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -149,12 +149,11 @@ export function CreateEscrowForm() {
       const amountWei = parseEther(amount);
       const { total } = calculateTotalRequired(amountWei);
 
-      // Create deliverable document
+      // Create deliverable document in memory (escrow address will be stored as KV key)
       const deliverable = {
         title,
         description,
         acceptanceCriteria: criteria.filter((c) => c.trim() !== ""),
-        escrowAddress: "0x0000000000000000000000000000000000000000" as Address, // Will be updated after creation
         depositor: userAddress,
         recipient: recipient as Address,
         amount,
@@ -162,7 +161,7 @@ export function CreateEscrowForm() {
         category: category || undefined,
       };
 
-      // Generate hash
+      // Generate hash from deliverable
       const deliverableHash = hashDocument(deliverable);
 
       // Step 1: Approve tokens if needed
@@ -190,23 +189,7 @@ export function CreateEscrowForm() {
         await refetchAllowance();
       }
 
-      // Step 2: Store deliverable document
-      const storeResponse = await fetch("/api/documents/store", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          hash: deliverableHash,
-          document: deliverable,
-        }),
-      });
-
-      if (!storeResponse.ok) {
-        throw new Error("Failed to store deliverable document");
-      }
-
-      // Step 3: Create escrow
+      // Step 2: Create escrow (hash is written to blockchain here)
       console.log("Creating escrow...");
       const createTxHash = await writeContractAsync({
         address: MASTER_FACTORY_ADDRESS,
@@ -218,13 +201,54 @@ export function CreateEscrowForm() {
       console.log("Escrow tx hash:", createTxHash);
       console.log("Waiting for escrow creation confirmation...");
 
-      // Wait for create escrow transaction to be mined
+      // Wait for create escrow transaction to be mined and get the receipt
       if (publicClient) {
-        await publicClient.waitForTransactionReceipt({
+        const receipt = await publicClient.waitForTransactionReceipt({
           hash: createTxHash,
           confirmations: 1,
         });
         console.log("Escrow created successfully!");
+
+        // Extract escrow address from EscrowCreated event
+        const escrowCreatedLog = receipt.logs.find((log) => {
+          try {
+            const decoded = decodeEventLog({
+              abi: MASTER_FACTORY_ABI,
+              data: log.data,
+              topics: log.topics,
+            });
+            return decoded.eventName === "EscrowCreated";
+          } catch {
+            return false;
+          }
+        });
+
+        if (escrowCreatedLog) {
+          const decoded = decodeEventLog({
+            abi: MASTER_FACTORY_ABI,
+            data: escrowCreatedLog.data,
+            topics: escrowCreatedLog.topics,
+          });
+          const escrowAddress = (decoded.args as any).escrowAddress as Address;
+          console.log("Escrow address:", escrowAddress);
+
+          // Step 3: Store deliverable document using escrow address as key
+          const storeResponse = await fetch("/api/documents/store", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              hash: deliverableHash,
+              document: deliverable,
+              escrowAddress: escrowAddress,
+            }),
+          });
+
+          if (storeResponse.ok) {
+            console.log("Deliverable document stored with escrow address:", escrowAddress);
+          } else {
+            console.error("Failed to store deliverable document");
+          }
+        }
       }
 
       // Redirect to dashboard
@@ -244,9 +268,6 @@ export function CreateEscrowForm() {
       </Card>
     );
   }
-
-  const amountWei = amount ? parseEther(amount) : 0n;
-  const costs = calculateTotalRequired(amountWei);
 
   return (
     <div className="max-w-2xl mx-auto">
