@@ -110,17 +110,8 @@ The system uses a **Factory Pattern** with two main contracts:
 - `WalletProvider`: Wraps app with wallet connection context
 - `Navbar`: Navigation with wallet connection status
 - `ConnectButton`: Wallet connection interface
-- `UserBalance`: Display user's cUSD balance
 
 ## Configuration & Environment
-
-### Smart Contracts Environment
-Create `apps/contracts/.env`:
-```bash
-PRIVATE_KEY=          # Deployment account (never use real funds in testnet)
-CELOSCAN_API_KEY=     # For contract verification
-REPORT_GAS=false      # Enable gas reporting
-```
 
 ### Networks Configuration
 Hardhat is configured for:
@@ -191,14 +182,6 @@ When creating escrow:
 - On completion: recipient gets `amount`, depositor gets bond back
 - On dispute resolution: loser forfeits bond to winner
 
-## Related Documentation
-
-See `docs/` directory for detailed specifications:
-- `gigentic-escrow-v1.6-prd.md`: Product requirements and milestones
-- `gigentic-escrow-v1.6-contract.md`: Complete smart contract specification
-- `gigentic-escrow-v1.6-platform.md`: Platform architecture details
-- `gigentic-escrow-v1.6-self.md`: Self Protocol integration
-- `Wallet Authentication in the Celo Ecosystem.md`: Wallet integration guide
 
 ## Dependencies
 

@@ -28,11 +28,26 @@ export function getKVClient(): Redis {
   return kvClient;
 }
 
+// Get environment and chain from environment variables
+const APP_ENV = process.env.NEXT_PUBLIC_APP_ENV;
+const CHAIN = process.env.NEXT_PUBLIC_CHAIN;
+
+if (!APP_ENV) {
+  throw new Error("NEXT_PUBLIC_APP_ENV is not defined. Please set it in your environment variables.");
+}
+
+if (!CHAIN) {
+  throw new Error("NEXT_PUBLIC_CHAIN is not defined. Please set it in your environment variables.");
+}
+
+// Create namespace prefix
+const NAMESPACE = `${APP_ENV}:${CHAIN}:`;
+
 // Key prefixes for different data types
 export const KV_PREFIXES = {
-  DELIVERABLE: "deliverable:",
-  RESOLUTION: "resolution:",
-  USER: "user:",
+  DELIVERABLE: `${NAMESPACE}deliverable:`,
+  RESOLUTION: `${NAMESPACE}resolution:`,
+  USER: `${NAMESPACE}user:`,
 } as const;
 
 // Helper functions for key generation

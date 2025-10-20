@@ -41,7 +41,7 @@ const connectors = connectorsForWallets(
   ],
   {
     appName: "Gigentic Escrow",
-    projectId: process.env.NEXT_PUBLIC_WC_PROJECT_ID!,
+    projectId: process.env.NEXT_PUBLIC_WC_PROJECT_ID || process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "",
   }
 );
 
