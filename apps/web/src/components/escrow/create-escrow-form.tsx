@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useAccount, useWriteContract, useReadContract } from "wagmi";
+import { useAccount, useWriteContract, useReadContract, usePublicClient } from "wagmi";
 import { parseEther, type Address } from "viem";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,7 @@ export function CreateEscrowForm() {
   const router = useRouter();
   const { address: userAddress, isConnected } = useAccount();
   const { writeContractAsync } = useWriteContract();
+  const publicClient = usePublicClient();
 
   // Form state
   const [step, setStep] = useState(1);
@@ -166,13 +167,26 @@ export function CreateEscrowForm() {
 
       // Step 1: Approve tokens if needed
       if (!allowance || allowance < total) {
-        const approveTx = await writeContractAsync({
+        console.log("Approving cUSD spend...");
+        const approveTxHash = await writeContractAsync({
           address: CUSD_ADDRESS,
           abi: ERC20_ABI,
           functionName: "approve",
           args: [MASTER_FACTORY_ADDRESS, total],
         });
-        console.log("Approval tx:", approveTx);
+
+        console.log("Approval tx hash:", approveTxHash);
+        console.log("Waiting for approval confirmation...");
+
+        // Wait for approval transaction to be mined
+        if (publicClient) {
+          await publicClient.waitForTransactionReceipt({
+            hash: approveTxHash,
+            confirmations: 1,
+          });
+          console.log("Approval confirmed!");
+        }
+
         await refetchAllowance();
       }
 
@@ -193,14 +207,25 @@ export function CreateEscrowForm() {
       }
 
       // Step 3: Create escrow
-      const createTx = await writeContractAsync({
+      console.log("Creating escrow...");
+      const createTxHash = await writeContractAsync({
         address: MASTER_FACTORY_ADDRESS,
         abi: MASTER_FACTORY_ABI,
         functionName: "createEscrow",
         args: [recipient as Address, amountWei, deliverableHash],
       });
 
-      console.log("Escrow created:", createTx);
+      console.log("Escrow tx hash:", createTxHash);
+      console.log("Waiting for escrow creation confirmation...");
+
+      // Wait for create escrow transaction to be mined
+      if (publicClient) {
+        await publicClient.waitForTransactionReceipt({
+          hash: createTxHash,
+          confirmations: 1,
+        });
+        console.log("Escrow created successfully!");
+      }
 
       // Redirect to dashboard
       router.push("/dashboard");

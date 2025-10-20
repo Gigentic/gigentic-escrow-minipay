@@ -13,10 +13,10 @@ import {
 } from "@/components/ui/sheet"
 import { ConnectButton } from "@/components/connect-button"
 
-const navLinks = [
-  { name: "Home", href: "/" },
-  { name: "Docs", href: "https://docs.celo.org", external: true },
-]
+// const navLinks = [
+//   { name: "Home", href: "/" },
+//   { name: "Docs", href: "https://docs.celo.org", external: true },
+// ]
 
 export function Navbar() {
   const pathname = usePathname()
@@ -41,7 +41,7 @@ export function Navbar() {
                 </span>
               </div>
               <nav className="flex flex-col gap-4">
-                {navLinks.map((link) => (
+                {/* {navLinks.map((link) => (
                   <Link
                     key={link.href}
                     href={link.href}
@@ -54,7 +54,7 @@ export function Navbar() {
                     {link.name}
                     {link.external && <ExternalLink className="h-4 w-4" />}
                   </Link>
-                ))}
+                ))} */}
                 <div className="mt-6 pt-6 border-t">
                   <ConnectButton />
                 </div>
@@ -73,7 +73,7 @@ export function Navbar() {
         
         {/* Desktop navigation */}
         <nav className="hidden md:flex items-center gap-8">
-          {navLinks.map((link) => (
+          {/* {navLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
@@ -88,7 +88,7 @@ export function Navbar() {
               {link.name}
               {link.external && <ExternalLink className="h-4 w-4" />}
             </Link>
-          ))}
+          ))} */}
           
           <div className="flex items-center gap-3">
             <ConnectButton />

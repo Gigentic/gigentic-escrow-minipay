@@ -45,17 +45,37 @@ const connectors = connectorsForWallets(
   }
 );
 
-const wagmiConfig = createConfig({
-  chains: [hardhat, celo, celoAlfajores, celoSepolia],
-  connectors,
-  transports: {
-    [hardhat.id]: http(),
-    [celo.id]: http(),
-    [celoAlfajores.id]: http(),
-    [celoSepolia.id]: http(),
-  },
-  ssr: true,
-});
+// Create configs for each supported chain
+const chainConfigs = {
+  hardhat: createConfig({
+    chains: [hardhat],
+    connectors,
+    transports: { [hardhat.id]: http() },
+    ssr: true,
+  }),
+  celo: createConfig({
+    chains: [celo],
+    connectors,
+    transports: { [celo.id]: http() },
+    ssr: true,
+  }),
+  celoAlfajores: createConfig({
+    chains: [celoAlfajores],
+    connectors,
+    transports: { [celoAlfajores.id]: http() },
+    ssr: true,
+  }),
+  celoSepolia: createConfig({
+    chains: [celoSepolia],
+    connectors,
+    transports: { [celoSepolia.id]: http() },
+    ssr: true,
+  }),
+};
+
+// Select config based on environment variable
+const selectedChainKey = process.env.NEXT_PUBLIC_CHAIN! as keyof typeof chainConfigs;
+const wagmiConfig = chainConfigs[selectedChainKey];
 
 const queryClient = new QueryClient();
 
