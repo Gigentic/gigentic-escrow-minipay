@@ -3,7 +3,12 @@
     "allow": [
       "WebSearch",
       "WebFetch(domain:rainbowkit.com)",
-      "Bash(pnpm type-check:*)"
+      "Bash(pnpm type-check:*)",
+      "mcp__vercel__list_deployments",
+      "mcp__vercel__get_deployment",
+      "mcp__vercel__get_deployment_build_logs",
+      "mcp__vercel__deploy_to_vercel",
+      "Bash(vercel deploy)"
     ],
     "deny": [],
     "ask": []

@@ -11,6 +11,9 @@ import {
 } from "@/lib/escrow-config";
 import { getKVClient, kvKeys } from "@/lib/kv";
 
+// Tell Next.js this route must be dynamic (server-rendered on demand)
+export const dynamic = 'force-dynamic';
+
 // Helper to get the correct chain based on CHAIN_ID
 function getChain() {
   switch (CHAIN_ID) {

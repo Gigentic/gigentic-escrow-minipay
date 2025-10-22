@@ -103,3 +103,4 @@ Thumbs.db
 docs/drafts/
 
 .playwright-mcp/
+.vercel
