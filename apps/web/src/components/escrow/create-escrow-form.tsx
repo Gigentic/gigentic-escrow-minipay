@@ -26,13 +26,10 @@ export function CreateEscrowForm() {
   const publicClient = usePublicClient();
 
   // Form state
-  const [step, setStep] = useState(1);
   const [recipient, setRecipient] = useState("");
   const [amount, setAmount] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [criteria, setCriteria] = useState<string[]>([""]);
-  const [category, setCategory] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -57,25 +54,9 @@ export function CreateEscrowForm() {
     },
   });
 
-  // Helper functions
-  const addCriteria = () => {
-    setCriteria([...criteria, ""]);
-  };
-
-  const updateCriteria = (index: number, value: string) => {
-    const newCriteria = [...criteria];
-    newCriteria[index] = value;
-    setCriteria(newCriteria);
-  };
-
-  const removeCriteria = (index: number) => {
-    if (criteria.length > 1) {
-      setCriteria(criteria.filter((_, i) => i !== index));
-    }
-  };
-
-  const validateStep1 = (): boolean => {
-    if (!recipient || !amount) {
+  // Validation
+  const validateForm = (): boolean => {
+    if (!recipient || !amount || !title || !description) {
       setError("Please fill in all fields");
       return false;
     }
@@ -107,36 +88,8 @@ export function CreateEscrowForm() {
     return true;
   };
 
-  const validateStep2 = (): boolean => {
-    if (!title || !description) {
-      setError("Please fill in title and description");
-      return false;
-    }
-
-    const validCriteria = criteria.filter((c) => c.trim() !== "");
-    if (validCriteria.length === 0) {
-      setError("Please add at least one acceptance criterion");
-      return false;
-    }
-
-    setError("");
-    return true;
-  };
-
-  const handleNext = () => {
-    if (step === 1 && validateStep1()) {
-      setStep(2);
-    }
-  };
-
-  const handleBack = () => {
-    if (step === 2) {
-      setStep(1);
-    }
-  };
-
   const handleSubmit = async () => {
-    if (!validateStep2()) return;
+    if (!validateForm()) return;
     if (!userAddress || !isConnected) {
       setError("Please connect your wallet");
       return;
@@ -153,12 +106,10 @@ export function CreateEscrowForm() {
       const deliverable = {
         title,
         description,
-        acceptanceCriteria: criteria.filter((c) => c.trim() !== ""),
         depositor: userAddress,
         recipient: recipient as Address,
         amount,
         createdAt: Date.now(),
-        category: category || undefined,
       };
 
       // Generate hash from deliverable
@@ -271,185 +222,94 @@ export function CreateEscrowForm() {
 
   return (
     <div className="max-w-2xl mx-auto">
-      {/* Progress indicator */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between">
-          <div className={`flex items-center ${step >= 1 ? "text-primary" : "text-muted-foreground"}`}>
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-              step >= 1 ? "bg-primary text-primary-foreground" : "bg-muted"
-            }`}>
-              1
-            </div>
-            <span className="ml-2 hidden sm:inline">Details</span>
-          </div>
-          <div className="flex-1 h-0.5 mx-4 bg-muted">
-            <div className={`h-full ${step >= 2 ? "bg-primary" : ""} transition-all`} />
-          </div>
-          <div className={`flex items-center ${step >= 2 ? "text-primary" : "text-muted-foreground"}`}>
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-              step >= 2 ? "bg-primary text-primary-foreground" : "bg-muted"
-            }`}>
-              2
-            </div>
-            <span className="ml-2 hidden sm:inline">Deliverable</span>
-          </div>
-        </div>
-      </div>
-
       <Card className="p-6">
-        {/* Step 1: Basic Details */}
-        {step === 1 && (
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-2xl font-bold mb-2">Escrow Details</h2>
-              <p className="text-muted-foreground">Enter the recipient and amount</p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">Recipient Address</label>
-              <input
-                type="text"
-                className="w-full px-4 py-2 border rounded-md"
-                placeholder="0x..."
-                value={recipient}
-                onChange={(e) => setRecipient(e.target.value)}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">Amount (cUSD)</label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                className="w-full px-4 py-2 border rounded-md"
-                placeholder="100.00"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-              />
-            </div>
-
-            {amount && (
-              <div className="bg-muted p-4 rounded-md space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span>Escrow Amount:</span>
-                  <span className="font-medium">{amount} cUSD</span>
-                </div>
-                <div className="flex justify-between text-muted-foreground">
-                  <span>Platform Fee (1%):</span>
-                  <span>{(parseFloat(amount) * 0.01).toFixed(2)} cUSD</span>
-                </div>
-                <div className="flex justify-between text-muted-foreground">
-                  <span>Dispute Bond (4%):</span>
-                  <span>{(parseFloat(amount) * 0.04).toFixed(2)} cUSD</span>
-                </div>
-                <div className="flex justify-between font-semibold border-t pt-2">
-                  <span>Total Required:</span>
-                  <span>{(parseFloat(amount) * 1.05).toFixed(2)} cUSD</span>
-                </div>
-              </div>
-            )}
-
-            {error && (
-              <div className="bg-red-100 dark:bg-red-900 p-3 rounded-md">
-                <p className="text-sm text-red-800 dark:text-red-100">{error}</p>
-              </div>
-            )}
-
-            <Button onClick={handleNext} className="w-full" size="lg">
-              Next
-            </Button>
+        <div className="space-y-6">
+          <div>
+            <h2 className="text-2xl font-bold mb-2">Create New Escrow</h2>
+            <p className="text-muted-foreground">Lock funds securely and define deliverables for trustless transactions</p>
           </div>
-        )}
 
-        {/* Step 2: Deliverable Details */}
-        {step === 2 && (
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-2xl font-bold mb-2">Deliverable Details</h2>
-              <p className="text-muted-foreground">Describe what the recipient will deliver</p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">Title</label>
-              <input
-                type="text"
-                className="w-full px-4 py-2 border rounded-md"
-                placeholder="Website Development"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">Category (optional)</label>
-              <input
-                type="text"
-                className="w-full px-4 py-2 border rounded-md"
-                placeholder="Development, Design, Writing, etc."
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">Description</label>
-              <textarea
-                className="w-full px-4 py-2 border rounded-md min-h-[100px]"
-                placeholder="Detailed description of the work to be completed..."
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">Acceptance Criteria</label>
-              {criteria.map((criterion, index) => (
-                <div key={index} className="flex gap-2 mb-2">
-                  <input
-                    type="text"
-                    className="flex-1 px-4 py-2 border rounded-md"
-                    placeholder={`Criterion ${index + 1}`}
-                    value={criterion}
-                    onChange={(e) => updateCriteria(index, e.target.value)}
-                  />
-                  {criteria.length > 1 && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => removeCriteria(index)}
-                    >
-                      Remove
-                    </Button>
-                  )}
-                </div>
-              ))}
-              <Button type="button" variant="outline" onClick={addCriteria} className="mt-2">
-                Add Criterion
-              </Button>
-            </div>
-
-            {error && (
-              <div className="bg-red-100 dark:bg-red-900 p-3 rounded-md">
-                <p className="text-sm text-red-800 dark:text-red-100">{error}</p>
-              </div>
-            )}
-
-            <div className="flex gap-4">
-              <Button variant="outline" onClick={handleBack} className="flex-1">
-                Back
-              </Button>
-              <Button
-                onClick={handleSubmit}
-                disabled={isSubmitting}
-                className="flex-1"
-                size="lg"
-              >
-                {isSubmitting ? "Creating..." : "Create Escrow"}
-              </Button>
-            </div>
+          <div>
+            <label className="block text-sm font-medium mb-2">Recipient Address</label>
+            <input
+              type="text"
+              className="w-full px-4 py-2 border rounded-md"
+              placeholder="0x..."
+              value={recipient}
+              onChange={(e) => setRecipient(e.target.value)}
+            />
           </div>
-        )}
+
+          <div>
+            <label className="block text-sm font-medium mb-2">Amount (cUSD)</label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              className="w-full px-4 py-2 border rounded-md"
+              placeholder="100.00"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">Title</label>
+            <input
+              type="text"
+              className="w-full px-4 py-2 border rounded-md"
+              placeholder="Website Development"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">Description</label>
+            <textarea
+              className="w-full px-4 py-2 border rounded-md min-h-[100px]"
+              placeholder="Detailed description of the work to be completed..."
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </div>
+
+          {amount && (
+            <div className="bg-muted p-4 rounded-md space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span>Escrow Amount:</span>
+                <span className="font-medium">{amount} cUSD</span>
+              </div>
+              <div className="flex justify-between text-muted-foreground">
+                <span>Platform Fee (1%):</span>
+                <span>{(parseFloat(amount) * 0.01).toFixed(2)} cUSD</span>
+              </div>
+              <div className="flex justify-between text-muted-foreground">
+                <span>Dispute Bond (4%):</span>
+                <span>{(parseFloat(amount) * 0.04).toFixed(2)} cUSD</span>
+              </div>
+              <div className="flex justify-between font-semibold border-t pt-2">
+                <span>Total Required:</span>
+                <span>{(parseFloat(amount) * 1.05).toFixed(2)} cUSD</span>
+              </div>
+            </div>
+          )}
+
+          {error && (
+            <div className="bg-red-100 dark:bg-red-900 p-3 rounded-md">
+              <p className="text-sm text-red-800 dark:text-red-100">{error}</p>
+            </div>
+          )}
+
+          <Button
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+            className="w-full"
+            size="lg"
+          >
+            {isSubmitting ? "Creating..." : "Create Escrow"}
+          </Button>
+        </div>
       </Card>
     </div>
   );

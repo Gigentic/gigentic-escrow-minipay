@@ -13,7 +13,7 @@ interface EscrowDetailsDisplayProps {
   deliverable?: {
     title: string;
     description: string;
-    acceptanceCriteria: string[];
+    acceptanceCriteria?: string[];
     category?: string;
   };
   disputeInfo?: {
@@ -109,7 +109,7 @@ export function EscrowDetailsDisplay({
               <p className="text-muted-foreground">{deliverable.description}</p>
             </div>
 
-            {deliverable.acceptanceCriteria.length > 0 && (
+            {deliverable.acceptanceCriteria && deliverable.acceptanceCriteria.length > 0 && (
               <div className="border-t pt-4">
                 <h4 className="font-semibold mb-2">Acceptance Criteria</h4>
                 <ul className="list-disc list-inside space-y-1">
