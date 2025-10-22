@@ -9,6 +9,7 @@ import {
   EscrowState,
   CHAIN_ID,
 } from "@/lib/escrow-config";
+import { getKVClient, kvKeys } from "@/lib/kv";
 
 // Helper to get the correct chain based on CHAIN_ID
 function getChain() {
@@ -73,6 +74,21 @@ export async function GET(request: Request) {
             functionName: "getDisputeInfo",
           });
 
+          // disputeInfo[0] is now a hash, fetch actual dispute reason from KV
+          const disputeReasonHash = disputeInfo[0] as string;
+          let actualDisputeReason = disputeReasonHash; // Fallback to hash if fetch fails
+
+          try {
+            const kv = getKVClient();
+            const disputeDoc = await kv.get(kvKeys.dispute(disputeReasonHash));
+            if (disputeDoc && typeof disputeDoc === 'object' && 'reason' in disputeDoc) {
+              actualDisputeReason = disputeDoc.reason as string;
+            }
+          } catch (err) {
+            console.error(`Error fetching dispute document for ${escrowAddress}:`, err);
+            // Keep fallback value (the hash itself)
+          }
+
           disputedEscrows.push({
             address: escrowAddress,
             depositor: details[0],
@@ -82,7 +98,7 @@ export async function GET(request: Request) {
             disputeBond: details[4].toString(),
             deliverableHash: details[6],
             createdAt: details[7].toString(),
-            disputeReason: disputeInfo[0],
+            disputeReason: actualDisputeReason,
           });
         }
       } catch (error) {

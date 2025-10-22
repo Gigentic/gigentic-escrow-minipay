@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "WebSearch",
-      "WebFetch(domain:rainbowkit.com)"
+      "WebFetch(domain:rainbowkit.com)",
+      "Bash(pnpm type-check:*)"
     ],
     "deny": [],
     "ask": []
