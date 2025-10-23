@@ -3,8 +3,13 @@
 import { useState, useEffect } from 'react'
 import '@rainbow-me/rainbowkit/styles.css'
 import { RainbowKitProvider, connectorsForWallets } from '@rainbow-me/rainbowkit'
-import { injectedWallet } from "@rainbow-me/rainbowkit/wallets";
-import { WagmiProvider, createConfig, http, useConnect } from "wagmi";
+import {
+  injectedWallet,
+  walletConnectWallet,
+  metaMaskWallet,
+  baseAccount,
+} from "@rainbow-me/rainbowkit/wallets";
+import { WagmiProvider, createConfig, http } from "wagmi";
 import { celo, celoAlfajores, hardhat } from 'wagmi/chains'
 import { defineChain } from 'viem'
 import { QueryClientProvider, QueryClient } from '@tanstack/react-query'
@@ -36,65 +41,33 @@ const connectors = connectorsForWallets(
   [
     {
       groupName: "Recommended",
-      wallets: [injectedWallet],
+      wallets: [
+        metaMaskWallet,
+        walletConnectWallet,
+        baseAccount,
+        injectedWallet,
+      ],
     },
   ],
   {
     appName: "Gigentic Escrow",
-    projectId: process.env.NEXT_PUBLIC_WC_PROJECT_ID || process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "",
+    projectId: process.env.NEXT_PUBLIC_WC_PROJECT_ID!,
   }
 );
 
-// Create configs for each supported chain
-const chainConfigs = {
-  hardhat: createConfig({
-    chains: [hardhat],
-    connectors,
-    transports: { [hardhat.id]: http() },
-    ssr: true,
-  }),
-  celo: createConfig({
-    chains: [celo],
-    connectors,
-    transports: { [celo.id]: http() },
-    ssr: true,
-  }),
-  celoAlfajores: createConfig({
-    chains: [celoAlfajores],
-    connectors,
-    transports: { [celoAlfajores.id]: http() },
-    ssr: true,
-  }),
-  celoSepolia: createConfig({
-    chains: [celoSepolia],
-    connectors,
-    transports: { [celoSepolia.id]: http() },
-    ssr: true,
-  }),
-};
-
-// Select config based on environment variable
-const selectedChainKey = process.env.NEXT_PUBLIC_CHAIN! as keyof typeof chainConfigs;
-const wagmiConfig = chainConfigs[selectedChainKey];
+// Create a single wagmi config that supports all chains
+const wagmiConfig = createConfig({
+  chains: [celo, celoSepolia, hardhat],
+  connectors,
+  transports: {
+    [celo.id]: http(),
+    [celoSepolia.id]: http(),
+    [hardhat.id]: http(),
+  },
+  ssr: true,
+});
 
 const queryClient = new QueryClient();
-
-function WalletProviderInner({ children }: { children: React.ReactNode }) {
-  const { connect, connectors } = useConnect();
-
-  useEffect(() => {
-    // Check if the app is running inside MiniPay
-    if (window.ethereum && window.ethereum.isMiniPay) {
-      // Find the injected connector, which is what MiniPay uses
-      const injectedConnector = connectors.find((c) => c.id === "injected");
-      if (injectedConnector) {
-        connect({ connector: injectedConnector });
-      }
-    }
-  }, [connect, connectors]);
-
-  return <>{children}</>;
-}
 
 export function WalletProvider({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false);
@@ -112,7 +85,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
         <RainbowKitProvider>
-          <WalletProviderInner>{children}</WalletProviderInner>
+          {children}
         </RainbowKitProvider>
       </QueryClientProvider>
     </WagmiProvider>

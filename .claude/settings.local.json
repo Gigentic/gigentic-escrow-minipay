@@ -19,7 +19,9 @@
       "mcp__vercel__list_projects",
       "Bash(pnpm install)",
       "Bash(git add:*)",
-      "Bash(git commit -m:*)"
+      "Bash(git commit -m:*)",
+      "Bash(git ls-tree:*)",
+      "WebFetch(domain:docs.celo.org)"
     ],
     "deny": [],
     "ask": []
