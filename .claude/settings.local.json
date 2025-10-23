@@ -15,7 +15,11 @@
       "mcp__playwright__browser_type",
       "mcp__playwright__browser_snapshot",
       "mcp__next-devtools__nextjs_runtime",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "mcp__vercel__list_projects",
+      "Bash(pnpm install)",
+      "Bash(git add:*)",
+      "Bash(git commit -m:*)"
     ],
     "deny": [],
     "ask": []
