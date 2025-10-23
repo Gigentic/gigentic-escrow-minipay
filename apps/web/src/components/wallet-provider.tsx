@@ -7,7 +7,6 @@ import {
   injectedWallet,
   walletConnectWallet,
   metaMaskWallet,
-  baseAccount,
 } from "@rainbow-me/rainbowkit/wallets";
 import { WagmiProvider, createConfig, http } from "wagmi";
 import { celo, celoAlfajores, hardhat } from 'wagmi/chains'
@@ -44,7 +43,6 @@ const connectors = connectorsForWallets(
       wallets: [
         metaMaskWallet,
         walletConnectWallet,
-        baseAccount,
         injectedWallet,
       ],
     },
@@ -55,17 +53,38 @@ const connectors = connectorsForWallets(
   }
 );
 
-// Create a single wagmi config that supports all chains
-const wagmiConfig = createConfig({
-  chains: [celo, celoSepolia, hardhat],
-  connectors,
-  transports: {
-    [celo.id]: http(),
-    [celoSepolia.id]: http(),
-    [hardhat.id]: http(),
-  },
-  ssr: true,
-});
+
+// Create configs for each supported chain
+const chainConfigs = {
+  // celoAlfajores: createConfig({
+  //   chains: [celoAlfajores],
+  //   connectors,
+  //   transports: { [celoAlfajores.id]: http() },
+  //   ssr: true,
+  // }),
+  hardhat: createConfig({
+    chains: [hardhat],
+    connectors,
+    transports: { [hardhat.id]: http() },
+    ssr: true,
+  }),
+  celo: createConfig({
+    chains: [celo],
+    connectors,
+    transports: { [celo.id]: http() },
+    ssr: true,
+  }),
+  celoSepolia: createConfig({
+    chains: [celoSepolia],
+    connectors,
+    transports: { [celoSepolia.id]: http() },
+    ssr: true,
+  }),
+};
+
+// Select config based on environment variable
+const selectedChainKey = process.env.NEXT_PUBLIC_CHAIN! as keyof typeof chainConfigs;
+const wagmiConfig = chainConfigs[selectedChainKey];
 
 const queryClient = new QueryClient();
 
