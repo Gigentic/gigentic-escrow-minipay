@@ -4,7 +4,7 @@ import { type Address } from "viem";
 import { formatEther } from "viem";
 import { Card } from "@/components/ui/card";
 import { AddressDisplay } from "@/components/wallet/address-display";
-import { type EscrowDetails, EscrowState, formatEscrowState } from "@/lib/escrow-config";
+import { type EscrowDetails, EscrowState, formatEscrowState, type ResolutionDocument } from "@/lib/escrow-config";
 import { shortenHash } from "@/lib/hash";
 
 interface EscrowDetailsDisplayProps {
@@ -20,6 +20,7 @@ interface EscrowDetailsDisplayProps {
     disputeReason: string;
     resolutionHash?: string;
   };
+  resolution?: ResolutionDocument;
 }
 
 /**
@@ -31,6 +32,7 @@ export function EscrowDetailsDisplay({
   details,
   deliverable,
   disputeInfo,
+  resolution,
 }: EscrowDetailsDisplayProps) {
   const stateText = formatEscrowState(details.state);
   const stateColor = {
@@ -151,17 +153,46 @@ export function EscrowDetailsDisplay({
 
       {/* Resolution Info */}
       {(details.state === EscrowState.COMPLETED || details.state === EscrowState.REFUNDED) &&
-        disputeInfo?.resolutionHash &&
-        disputeInfo.resolutionHash !== "0x0000000000000000000000000000000000000000000000000000000000000000" && (
+        resolution && (
           <Card className="p-6">
             <h2 className="text-xl font-semibold mb-4">Resolution</h2>
-            <div className="space-y-2">
+            <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
                 This escrow was resolved through dispute resolution.
               </p>
-              <p className="text-xs text-muted-foreground">
-                Resolution Hash: {shortenHash(disputeInfo.resolutionHash)}
-              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Arbiter</p>
+                  <AddressDisplay address={resolution.arbiter} />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Decision</p>
+                  <p className="text-sm font-medium">
+                    {resolution.favorDepositor ? "Favor Depositor (Refund)" : "Favor Recipient (Complete)"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="border-t pt-4">
+                <p className="text-sm text-muted-foreground mb-1">Decision Rationale</p>
+                <p className="text-sm">{resolution.decisionRationale}</p>
+              </div>
+
+              <div className="border-t pt-4">
+                <p className="text-sm text-muted-foreground mb-1">Deliverable Review</p>
+                <p className="text-sm">{resolution.deliverableReview}</p>
+              </div>
+
+              <div className="border-t pt-4">
+                <p className="text-sm text-muted-foreground mb-1">Original Dispute Reason</p>
+                <p className="text-sm">{resolution.disputeReason}</p>
+              </div>
+
+              <div className="border-t pt-4 text-xs text-muted-foreground space-y-1">
+                <p>Resolved: {new Date(resolution.resolvedAt).toLocaleString()}</p>
+                <p>Resolution Hash: {shortenHash(disputeInfo?.resolutionHash || "")}</p>
+              </div>
             </div>
           </Card>
         )}

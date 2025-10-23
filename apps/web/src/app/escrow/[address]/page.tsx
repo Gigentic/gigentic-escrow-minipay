@@ -10,6 +10,7 @@ import {
   ESCROW_CONTRACT_ABI,
   type EscrowDetails,
   type DeliverableDocument,
+  type ResolutionDocument,
 } from "@/lib/escrow-config";
 
 export default function EscrowDetailPage() {
@@ -20,6 +21,7 @@ export default function EscrowDetailPage() {
   const [details, setDetails] = useState<EscrowDetails | null>(null);
   const [deliverable, setDeliverable] = useState<DeliverableDocument | null>(null);
   const [disputeInfo, setDisputeInfo] = useState<{ disputeReason: string; resolutionHash?: string } | null>(null);
+  const [resolution, setResolution] = useState<ResolutionDocument | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -92,6 +94,19 @@ export default function EscrowDetailPage() {
             disputeReason: actualDisputeReason,
             resolutionHash: resolutionHash,
           });
+
+          // Fetch resolution document if resolution hash exists
+          if (resolutionHash && resolutionHash !== "0x0000000000000000000000000000000000000000000000000000000000000000") {
+            try {
+              const resolutionDocResponse = await fetch(`/api/documents/${resolutionHash}`);
+              if (resolutionDocResponse.ok) {
+                const resolutionDocData = await resolutionDocResponse.json();
+                setResolution(resolutionDocData.document);
+              }
+            } catch (err) {
+              console.error("Error fetching resolution document from KV:", err);
+            }
+          }
         }
       } catch (err) {
         console.error("Error fetching dispute info:", err);
@@ -138,6 +153,7 @@ export default function EscrowDetailPage() {
           details={details}
           deliverable={deliverable || undefined}
           disputeInfo={disputeInfo || undefined}
+          resolution={resolution || undefined}
         />
 
         <EscrowActions
