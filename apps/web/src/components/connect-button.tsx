@@ -7,7 +7,8 @@ import { useAccount } from "wagmi";
 export function ConnectButton() {
   const [isMinipay, setIsMinipay] = useState(false);
   const { chain } = useAccount();
-  const isDev = process.env.NEXT_PUBLIC_APP_ENV !== "prod";
+  // const isDev = process.env.NEXT_PUBLIC_APP_ENV !== "prod";
+  const isDev = true;
 
   useEffect(() => {
     // @ts-ignore
