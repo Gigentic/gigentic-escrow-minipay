@@ -10,6 +10,7 @@ import {
   Sheet,
   SheetContent,
   SheetTrigger,
+  SheetClose,
 } from "@/components/ui/sheet"
 import { ConnectButton } from "@/components/connect-button"
 
@@ -56,7 +57,11 @@ export function Navbar() {
                   </Link>
                 ))}
                 <div className="mt-6 pt-6 border-t">
-                  <ConnectButton />
+                  <SheetClose asChild>
+                    <div>
+                      <ConnectButton />
+                    </div>
+                  </SheetClose>
                 </div>
               </nav>
             </SheetContent>
