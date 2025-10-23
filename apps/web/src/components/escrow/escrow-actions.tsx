@@ -250,17 +250,23 @@ export function EscrowActions({
           <Card className="w-full max-w-md p-6">
             <h3 className="text-xl font-semibold mb-4">Raise Dispute</h3>
             <p className="text-sm text-muted-foreground mb-4">
-              Provide a clear reason for the dispute. An arbiter will review your case.
+              Provide a clear reason for the dispute.
+            </p>
+            <p className="text-sm text-muted-foreground mb-4">
+            Link to evidence (e.g. screenshots, videos, documents on <a href="https://drive.google.com" target="_blank" rel="noopener noreferrer">GDrive</a>, <a href="https://www.dropbox.com" target="_blank" rel="noopener noreferrer">Dropbox</a>, <a href="https://send.internxt.com" target="_blank" rel="noopener noreferrer">Internxt</a>, etc.) to support your dispute.
             </p>
 
             <textarea
               className="w-full px-4 py-2 border rounded-md min-h-[120px] mb-4"
-              placeholder="Explain why you are disputing this escrow..."
+              placeholder="Explain and provide evidence why you are disputing this escrow..."
               value={disputeReason}
               onChange={(e) => setDisputeReason(e.target.value)}
               maxLength={256}
             />
 
+            <p className="text-sm text-muted-foreground mb-4">
+              An arbiter will review your case.
+            </p>
             <div className="flex gap-3">
               <Button
                 variant="outline"

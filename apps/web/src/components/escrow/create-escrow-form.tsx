@@ -106,6 +106,7 @@ export function CreateEscrowForm() {
       const deliverable = {
         title,
         description,
+        acceptanceCriteria: [],
         depositor: userAddress,
         recipient: recipient as Address,
         amount,

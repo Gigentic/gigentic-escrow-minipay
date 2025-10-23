@@ -185,7 +185,7 @@ export function ResolveForm({
           />
         </div>
 
-        {/* Evidence Considered */}
+        {/* Evidence Considered
         <div>
           <label className="block text-sm font-medium mb-2">
             Evidence Considered
@@ -213,7 +213,7 @@ export function ResolveForm({
           <Button type="button" variant="outline" onClick={addEvidence} className="mt-2">
             Add Evidence
           </Button>
-        </div>
+        </div> */}
 
         {/* Decision Rationale */}
         <div>
