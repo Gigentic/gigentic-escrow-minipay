@@ -11,6 +11,7 @@ export interface EscrowListItem {
   amount: bigint;
   state: EscrowState;
   createdAt: bigint;
+  title?: string;
 }
 
 interface EscrowListProps {
@@ -48,6 +49,7 @@ export function EscrowList({
           state={escrow.state}
           createdAt={escrow.createdAt}
           currentUserAddress={currentUserAddress}
+          title={escrow.title}
         />
       ))}
     </div>

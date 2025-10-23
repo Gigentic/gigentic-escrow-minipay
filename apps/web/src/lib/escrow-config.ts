@@ -418,9 +418,9 @@ export const ERC20_ABI = [
 ] as const;
 
 // Contract addresses from environment variables
-export const MASTER_FACTORY_ADDRESS = (process.env.NEXT_PUBLIC_MASTER_FACTORY_ADDRESS as Address) || "0x";
-export const CUSD_ADDRESS = (process.env.NEXT_PUBLIC_CUSD_ADDRESS as Address) || "0xdE9e4C3ce781b4bA68120d6261cbad65ce0aB00b";
-export const CHAIN_ID = Number(process.env.NEXT_PUBLIC_CHAIN_ID) || 11142220; // Sepolia testnet
+export const MASTER_FACTORY_ADDRESS = (process.env.NEXT_PUBLIC_MASTER_FACTORY_ADDRESS! as Address);
+export const CUSD_ADDRESS = (process.env.NEXT_PUBLIC_CUSD_ADDRESS! as Address);
+export const CHAIN_ID = Number(process.env.NEXT_PUBLIC_CHAIN_ID!);
 
 // TypeScript interfaces for contract data structures
 

@@ -3,12 +3,15 @@
 import { useState } from "react";
 import { type Address } from "viem";
 import { Button } from "@/components/ui/button";
-import { Check, Copy } from "lucide-react";
+import { Check, Copy, ExternalLink } from "lucide-react";
+import { getAddressExplorerUrl } from "@/lib/utils";
+import { CHAIN_ID } from "@/lib/escrow-config";
 
 interface AddressDisplayProps {
   address: Address;
   className?: string;
   showCopy?: boolean;
+  showExplorer?: boolean;
   truncate?: boolean;
   prefixLength?: number;
   suffixLength?: number;
@@ -17,12 +20,13 @@ interface AddressDisplayProps {
 /**
  * Address Display Component
  * Displays Ethereum addresses with optional copy-to-clipboard functionality
- * and truncation for better UX
+ * and explorer link support
  */
 export function AddressDisplay({
   address,
   className = "",
   showCopy = true,
+  showExplorer = true,
   truncate = true,
   prefixLength = 6,
   suffixLength = 4,
@@ -32,6 +36,8 @@ export function AddressDisplay({
   const displayAddress = truncate
     ? `${address.slice(0, prefixLength)}...${address.slice(-suffixLength)}`
     : address;
+
+  const explorerUrl = getAddressExplorerUrl(address, CHAIN_ID);
 
   const handleCopy = async () => {
     try {
@@ -45,7 +51,18 @@ export function AddressDisplay({
 
   return (
     <div className={`inline-flex items-center gap-2 ${className}`}>
-      <span className="font-mono text-sm">{displayAddress}</span>
+      {showExplorer ? (
+        <a
+          href={explorerUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-mono text-sm hover:underline"
+        >
+          {displayAddress}
+        </a>
+      ) : (
+        <span className="font-mono text-sm">{displayAddress}</span>
+      )}
       {showCopy && (
         <Button
           variant="ghost"

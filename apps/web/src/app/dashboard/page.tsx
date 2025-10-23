@@ -53,6 +53,18 @@ export default function DashboardPage() {
             functionName: "getDetails",
           });
 
+          // Fetch deliverable title
+          let title: string | undefined;
+          try {
+            const docResponse = await fetch(`/api/documents/${escrowAddress}`);
+            if (docResponse.ok) {
+              const docData = await docResponse.json();
+              title = docData.document?.title;
+            }
+          } catch (err) {
+            console.error("Error fetching deliverable:", err);
+          }
+
           return {
             address: escrowAddress as Address,
             depositor: details[0],
@@ -60,11 +72,12 @@ export default function DashboardPage() {
             amount: details[2],
             state: details[5] as EscrowState,
             createdAt: details[7],
+            title,
           };
         });
 
         const escrowDetails = await Promise.all(escrowPromises);
-        setEscrows(escrowDetails.filter((e): e is EscrowListItem => e !== null));
+        setEscrows(escrowDetails.filter((e) => e !== null) as EscrowListItem[]);
       } catch (error) {
         console.error("Error fetching escrow details:", error);
       } finally {

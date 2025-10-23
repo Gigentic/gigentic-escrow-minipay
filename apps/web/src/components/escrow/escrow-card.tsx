@@ -15,6 +15,7 @@ interface EscrowCardProps {
   state: EscrowState;
   createdAt: bigint;
   currentUserAddress?: Address;
+  title?: string;
 }
 
 /**
@@ -29,6 +30,7 @@ export function EscrowCard({
   state,
   createdAt,
   currentUserAddress,
+  title,
 }: EscrowCardProps) {
   // Determine user's role in this escrow
   const isDepositor = currentUserAddress?.toLowerCase() === depositor.toLowerCase();
@@ -54,7 +56,7 @@ export function EscrowCard({
           {/* Header with state badge */}
           <div className="flex justify-between items-start">
             <div>
-              <h3 className="text-lg font-semibold mb-1">Escrow</h3>
+              <h3 className="text-lg font-semibold mb-1">{title || "Escrow"}</h3>
               <p className="text-sm text-muted-foreground">{createdDate}</p>
             </div>
             <span className={`px-3 py-1 rounded-full text-xs font-medium ${stateColor}`}>
@@ -72,11 +74,11 @@ export function EscrowCard({
           <div className="grid grid-cols-2 gap-4 border-t pt-4">
             <div>
               <p className="text-sm text-muted-foreground mb-2">Depositor</p>
-              <AddressDisplay address={depositor} showCopy={false} />
+              <AddressDisplay address={depositor} showCopy={false} showExplorer={false} />
             </div>
             <div>
               <p className="text-sm text-muted-foreground mb-2">Recipient</p>
-              <AddressDisplay address={recipient} showCopy={false} />
+              <AddressDisplay address={recipient} showCopy={false} showExplorer={false} />
             </div>
           </div>
 

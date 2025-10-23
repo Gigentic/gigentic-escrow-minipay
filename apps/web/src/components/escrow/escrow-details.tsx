@@ -49,7 +49,7 @@ export function EscrowDetailsDisplay({
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold mb-2">Escrow Details</h1>
+          <h1 className="text-3xl font-bold mb-2">{deliverable?.title || "Escrow Details"}</h1>
           <AddressDisplay address={escrowAddress} className="text-muted-foreground" />
         </div>
         <span className={`px-4 py-2 rounded-full text-sm font-medium ${stateColor}`}>
@@ -101,15 +101,12 @@ export function EscrowDetailsDisplay({
         <Card className="p-6">
           <h2 className="text-xl font-semibold mb-4">Deliverable</h2>
           <div className="space-y-4">
-            <div>
-              <h3 className="font-semibold text-lg mb-2">{deliverable.title}</h3>
-              {deliverable.category && (
-                <span className="inline-block px-2 py-1 text-xs bg-gray-100 dark:bg-gray-800 rounded mb-3">
-                  {deliverable.category}
-                </span>
-              )}
-              <p className="text-muted-foreground">{deliverable.description}</p>
-            </div>
+            {deliverable.category && (
+              <span className="inline-block px-2 py-1 text-xs bg-gray-100 dark:bg-gray-800 rounded mb-3">
+                {deliverable.category}
+              </span>
+            )}
+            <p className="text-muted-foreground">{deliverable.description}</p>
 
             {deliverable.acceptanceCriteria && deliverable.acceptanceCriteria.length > 0 && (
               <div className="border-t pt-4">

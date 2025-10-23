@@ -2,6 +2,7 @@
 
 import { useAccount, useBalance } from "wagmi";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AddressDisplay } from "@/components/wallet/address-display";
 
 // const cUSD_ADDRESS = "0x765de816845861e75a25fca122bb6898b8b1282a"; //mainnet
 const cUSD_ADDRESS = "0xdE9e4C3ce781b4bA68120d6261cbad65ce0aB00b"; //sepolia testnet
@@ -35,7 +36,9 @@ export function UserBalance() {
     <Card className="w-full max-w-md mx-auto mb-8">
       <CardHeader>
         <CardTitle className="text-lg font-medium">Connected Wallet</CardTitle>
-        <p className="text-sm text-muted-foreground truncate pt-1">{address}</p>
+        <div className="pt-1">
+          <AddressDisplay address={address} />
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2 pt-2 border-t">
