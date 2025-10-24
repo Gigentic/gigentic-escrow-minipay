@@ -151,6 +151,13 @@ The Next.js app may require environment variables for API routes and external se
 3. Utilities in `apps/web/src/lib/`
 4. Run dev server: `pnpm dev` (from root) or `cd apps/web && pnpm dev`
 
+### Working with Mobile Responsive Design
+When working on mobile responsive design using Chrome DevTools:
+- **DO NOT** use `mcp__chrome-devtools__resize_page` to change viewport size
+- The user will set the viewport using Chrome DevTools' "Toggle Device Toolbar" button
+- **ONLY** use `mcp__chrome-devtools__take_screenshot` to check how the mobile view looks
+- Assume the viewport is already set to the correct mobile dimensions
+
 ### Testing Strategy
 - Smart contracts: Hardhat test suite with Chai matchers
 - Frontend: TypeScript type checking with `pnpm type-check`
