@@ -1,7 +1,6 @@
 "use client"
 
 import Link from "next/link"
-import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { Menu, ExternalLink } from "lucide-react"
 
@@ -11,6 +10,8 @@ import {
   SheetContent,
   SheetTrigger,
   SheetClose,
+  SheetTitle,
+  SheetDescription,
 } from "@/components/ui/sheet"
 import { ConnectButton } from "@/components/connect-button"
 
@@ -35,12 +36,12 @@ export function Navbar() {
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-80">
-              <div className="flex items-center gap-2 mb-8">
-
-                <span className="font-bold text-lg">
-                  Gigentic Escrow
-                </span>
-              </div>
+              <SheetTitle className="flex items-center gap-2 mb-2">
+                Gigentic Escrow
+              </SheetTitle>
+              <SheetDescription className="mb-6">
+                Navigate to different sections of the app
+              </SheetDescription>
               <nav className="flex flex-col gap-4">
                 {navLinks.map((link) => (
                   <Link
