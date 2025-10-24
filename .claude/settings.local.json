@@ -21,9 +21,30 @@
       "Bash(git add:*)",
       "Bash(git commit -m:*)",
       "Bash(git ls-tree:*)",
-      "WebFetch(domain:docs.celo.org)"
+      "WebFetch(domain:docs.celo.org)",
+      "WebFetch(domain:github.com)",
+      "mcp__chrome-devtools__list_pages",
+      "mcp__chrome-devtools__list_console_messages",
+      "Bash(curl:*)",
+      "Bash(npx chrome-devtools-mcp@latest:*)",
+      "Bash(npm info:*)",
+      "Bash(chmod:*)",
+      "Bash(/Users/marci/dev/Gigentic/gigentic-escrow-minipay/chrome-mcp-wrapper.sh:*)",
+      "mcp__playwright__browser_console_messages",
+      "mcp__playwright__browser_tabs",
+      "mcp__chrome-devtools__navigate_page",
+      "Read(//Users/marci/dev/Gigentic/chrome-devtools-mcp/**)",
+      "mcp__chrome-devtools__get_console_message",
+      "mcp__chrome-devtools__take_snapshot",
+      "mcp__chrome-devtools__click",
+      "mcp__chrome-devtools__take_screenshot",
+      "mcp__chrome-devtools__resize_page"
     ],
     "deny": [],
     "ask": []
-  }
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "playwright"
+  ]
 }

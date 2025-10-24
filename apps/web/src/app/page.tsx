@@ -12,7 +12,7 @@ export default function Home() {
             Secure Escrow for <span className="text-primary">Emerging Markets</span>
           </h1>
           <p className="text-xl md:text-2xl text-muted-foreground mb-8">
-            Trustless peer-to-peer transactions on Celo blockchain. Built for MiniPay users.
+            Trustless peer-to-peer transactions on Celo blockchain.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/create">

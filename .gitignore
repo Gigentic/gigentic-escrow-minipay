@@ -104,3 +104,4 @@ docs/drafts/
 
 .playwright-mcp/
 .vercel
+.mcp.json
