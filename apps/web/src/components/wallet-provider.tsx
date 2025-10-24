@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react'
 import '@rainbow-me/rainbowkit/styles.css'
 import { RainbowKitProvider, connectorsForWallets } from '@rainbow-me/rainbowkit'
+import { RainbowKitSiweNextAuthProvider } from '@rainbow-me/rainbowkit-siwe-next-auth'
+import { SessionProvider } from 'next-auth/react'
 import {
   injectedWallet,
   walletConnectWallet,
@@ -12,6 +14,7 @@ import { WagmiProvider, createConfig, http } from "wagmi";
 import { celo, celoAlfajores, hardhat } from 'wagmi/chains'
 import { defineChain } from 'viem'
 import { QueryClientProvider, QueryClient } from '@tanstack/react-query'
+import { getSiweMessageOptions } from '@/lib/siwe'
 
 // Define Celo Sepolia chain
 const celoSepolia = defineChain({
@@ -102,13 +105,19 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <WagmiProvider config={wagmiConfig}>
-      <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider
-          modalSize="compact"
-        >
-          {children}
-        </RainbowKitProvider>
-      </QueryClientProvider>
+      <SessionProvider refetchInterval={0}>
+        <QueryClientProvider client={queryClient}>
+          <RainbowKitSiweNextAuthProvider
+            getSiweMessageOptions={getSiweMessageOptions}
+          >
+            <RainbowKitProvider
+              modalSize="compact"
+            >
+              {children}
+            </RainbowKitProvider>
+          </RainbowKitSiweNextAuthProvider>
+        </QueryClientProvider>
+      </SessionProvider>
     </WagmiProvider>
   );
 }

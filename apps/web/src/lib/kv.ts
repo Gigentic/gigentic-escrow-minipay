@@ -57,5 +57,37 @@ export const kvKeys = {
   resolution: (hash: string) => `${KV_PREFIXES.RESOLUTION}${hash}`,
   dispute: (hash: string) => `${KV_PREFIXES.DISPUTE}${hash}`,
   user: (address: string) => `${KV_PREFIXES.USER}${address.toLowerCase()}`,
+  profile: (address: string) => `${NAMESPACE}profile:${address.toLowerCase()}`,
 };
+
+// User Profile Types
+export interface UserProfile {
+  name: string;
+  bio: string;
+  updatedAt: number;
+}
+
+// Profile Helper Functions
+export async function getProfile(address: string): Promise<UserProfile | null> {
+  const kv = getKVClient();
+  const key = kvKeys.profile(address);
+  const profile = await kv.get<UserProfile>(key);
+  return profile;
+}
+
+export async function setProfile(address: string, profile: Omit<UserProfile, 'updatedAt'>): Promise<void> {
+  const kv = getKVClient();
+  const key = kvKeys.profile(address);
+  const data: UserProfile = {
+    ...profile,
+    updatedAt: Date.now(),
+  };
+  await kv.set(key, data);
+}
+
+export async function deleteProfile(address: string): Promise<void> {
+  const kv = getKVClient();
+  const key = kvKeys.profile(address);
+  await kv.del(key);
+}
 
