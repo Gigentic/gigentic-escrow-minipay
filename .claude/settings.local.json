@@ -42,7 +42,8 @@
       "mcp__chrome-devtools__list_network_requests",
       "Bash(pnpm add:*)",
       "Bash(npx shadcn@latest add:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "mcp__chrome-devtools__get_network_request"
     ],
     "deny": [],
     "ask": []

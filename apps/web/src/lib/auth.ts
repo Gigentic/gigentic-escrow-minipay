@@ -21,7 +21,8 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials, req) {
         try {
-          const siwe = new SiweMessage(JSON.parse(credentials?.message || "{}"));
+          // RainbowKit sends the SIWE message as plain text, not JSON
+          const siwe = new SiweMessage(credentials?.message || "");
 
           const nextAuthUrl = new URL(process.env.NEXTAUTH_URL!);
 
@@ -38,6 +39,7 @@ export const authOptions: NextAuthOptions = {
           }
           return null;
         } catch (e) {
+          console.error("SIWE verification error:", e);
           return null;
         }
       },
