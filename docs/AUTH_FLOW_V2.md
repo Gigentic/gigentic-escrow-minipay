@@ -114,13 +114,15 @@ stateDiagram-v2
 
     Disconnected --> ConnectingWallet: Click "Login / Register"
     ConnectingWallet --> WalletConnected: User approves connection
-    ConnectingWallet --> Disconnected: User cancels connection
+    ConnectingWallet --> Disconnected: User cancels/closes modal
 
-    WalletConnected --> Authenticating: useAutoSign triggers
+    WalletConnected --> Authenticating: Auto-trigger (immediate)
 
     state Authenticating {
-        [*] --> GettingNonce
+        [*] --> WaitingDelay: Start auth
+        WaitingDelay --> GettingNonce: 300ms delay (TODO REMOVE)
         GettingNonce --> CreatingSIWE: Nonce received
+        GettingNonce --> AuthFailed: No nonce
         CreatingSIWE --> RequestingSignature: Message created
         RequestingSignature --> VerifyingSignature: User signs
         RequestingSignature --> AuthFailed: User cancels
@@ -129,13 +131,27 @@ stateDiagram-v2
     }
 
     Authenticating --> Authenticated: AuthSuccess
-    Authenticating --> WalletConnected: AuthFailed (no retry)
+    Authenticating --> Disconnected: AuthFailed → auto-disconnect()
 
-    Authenticated --> ShowingSuccess: Brief notification
-    ShowingSuccess --> Authenticated: After 500ms
+    Authenticated --> ShowingSuccess: Brief notification (500ms)
+    ShowingSuccess --> Authenticated: Auto-hide
 
     Authenticated --> Disconnected: User clicks "Logout"
-    WalletConnected --> Disconnected: User disconnects wallet
+
+    note right of Disconnected
+        Clean slate
+        Must start from
+        "Login / Register"
+    end note
+
+    note right of Authenticating
+        On any failure:
+        - Cancel signature
+        - Network error
+        - Invalid signature
+        → disconnect() wallet
+        → back to Disconnected
+    end note
 ```
 
 ## Component States
