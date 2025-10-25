@@ -47,7 +47,8 @@
       "Bash(pnpm dev)",
       "Bash(git revert:*)",
       "Bash(git checkout:*)",
-      "Bash(ngrok http:*)"
+      "Bash(ngrok http:*)",
+      "Read(//Users/marci/dev/Gigentic/sandbox/wagmi-project/src/**)"
     ],
     "deny": [],
     "ask": []
