@@ -57,8 +57,8 @@ const connectors = connectorsForWallets(
     {
       groupName: "Recommended",
       wallets: [
-        metaMaskWallet,
-        walletConnectWallet,
+        // metaMaskWallet,
+        // walletConnectWallet,
         injectedWallet,
       ],
     },
@@ -118,13 +118,13 @@ function RainbowKitWithAutoAuth({ children }: { children: React.ReactNode }) {
   // const { showSuccess, isAuthenticating } = useAutoSign();
 
   return (
-    <AuthContext.Provider value={{ isAuthenticating: false }}>
+    // <AuthContext.Provider value={{ isAuthenticating: false }}>
       <RainbowKitProvider modalSize="compact">
         {children}
         {/* <AuthLoadingOverlay isAuthenticating={isAuthenticating} /> */}
         {/* <AuthSuccessNotification show={showSuccess} /> */}
       </RainbowKitProvider>
-    </AuthContext.Provider>
+    // </AuthContext.Provider>
   );
 }
 
@@ -142,13 +142,13 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <WagmiProvider config={wagmiConfig}>
-      <SessionProvider refetchInterval={0}>
+      {/* <SessionProvider refetchInterval={0}> */}
         <QueryClientProvider client={queryClient}>
           <RainbowKitWithAutoAuth>
             {children}
           </RainbowKitWithAutoAuth>
         </QueryClientProvider>
-      </SessionProvider>
+      {/* </SessionProvider> */}
     </WagmiProvider>
   );
 }

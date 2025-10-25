@@ -12,7 +12,7 @@ import { Loader2 } from "lucide-react";
 
 export function ConnectButton() {
   const { chain, address, chainId } = useAccount();
-  const { status: sessionStatus } = useSession();
+  // const { status: sessionStatus } = useSession();
   const { profile } = useProfile(address);
   const { signMessageAsync } = useSignMessage();
   const { disconnect } = useDisconnect();
@@ -20,7 +20,7 @@ export function ConnectButton() {
   const [isSigningIn, setIsSigningIn] = useState(false);
 
   const isDev = process.env.NEXT_PUBLIC_APP_ENV !== "prod";
-  const isAuthenticated = sessionStatus === 'authenticated';
+  // const isAuthenticated = sessionStatus === 'authenticated';
 
   const handleSignIn = async () => {
     if (!address || !chainId) return;
@@ -120,37 +120,37 @@ export function ConnectButton() {
                 }
 
                 // Show profile button when authenticated
-                if (isAuthenticated) {
-                  return (
-                    <>
-                      <Button
-                        onClick={() => setProfileModalOpen(true)}
-                        type="button"
-                        variant="outline"
-                        className="flex items-center gap-2"
-                      >
-                        {account.ensAvatar && (
-                          <img
-                            alt={account.ensName ?? 'Account avatar'}
-                            src={account.ensAvatar}
-                            className="h-6 w-6 rounded-full"
-                          />
-                        )}
-                        <span>
-                          {profile?.name || account.displayName}
-                        </span>
-                      </Button>
+                // if (isAuthenticated) {
+                //   return (
+                //     <>
+                //       <Button
+                //         onClick={() => setProfileModalOpen(true)}
+                //         type="button"
+                //         variant="outline"
+                //         className="flex items-center gap-2"
+                //       >
+                //         {account.ensAvatar && (
+                //           <img
+                //             alt={account.ensName ?? 'Account avatar'}
+                //             src={account.ensAvatar}
+                //             className="h-6 w-6 rounded-full"
+                //           />
+                //         )}
+                //         <span>
+                //           {profile?.name || account.displayName}
+                //         </span>
+                //       </Button>
 
-                      {address && (
-                        <ProfileModal
-                          open={profileModalOpen}
-                          onOpenChange={setProfileModalOpen}
-                          address={address}
-                        />
-                      )}
-                    </>
-                  );
-                }
+                //       {address && (
+                //         <ProfileModal
+                //           open={profileModalOpen}
+                //           onOpenChange={setProfileModalOpen}
+                //           address={address}
+                //         />
+                //       )}
+                //     </>
+                //   );
+                // }
 
                 // Connected but not authenticated - show Connected status + Sign In button
                 return (
