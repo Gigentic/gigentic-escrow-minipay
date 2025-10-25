@@ -55,7 +55,7 @@ export function ConnectButton() {
                 if (!connected) {
                   return (
                     <Button onClick={openConnectModal} type="button">
-                      Connect Wallet
+                      Login / Register
                     </Button>
                   );
                 }

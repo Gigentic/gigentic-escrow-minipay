@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useDisconnect } from 'wagmi';
+import { signOut } from 'next-auth/react';
 import { useProfile } from '@/hooks/use-profile';
 import {
   Dialog,
@@ -68,7 +69,8 @@ export function ProfileModal({ open, onOpenChange, address }: ProfileModalProps)
     );
   };
 
-  const handleDisconnect = () => {
+  const handleLogout = async () => {
+    await signOut({ redirect: false });
     disconnect();
     onOpenChange(false);
   };
@@ -150,10 +152,10 @@ export function ProfileModal({ open, onOpenChange, address }: ProfileModalProps)
         <DialogFooter className="gap-2">
           <Button
             variant="outline"
-            onClick={handleDisconnect}
+            onClick={handleLogout}
             disabled={isUpdating}
           >
-            Disconnect
+            Logout
           </Button>
           <Button onClick={handleSave} disabled={isUpdating || isLoading}>
             {isUpdating ? 'Saving...' : 'Save Changes'}

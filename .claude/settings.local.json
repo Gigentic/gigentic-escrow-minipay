@@ -43,7 +43,8 @@
       "Bash(pnpm add:*)",
       "Bash(npx shadcn@latest add:*)",
       "Bash(cat:*)",
-      "mcp__chrome-devtools__get_network_request"
+      "mcp__chrome-devtools__get_network_request",
+      "Bash(pnpm dev)"
     ],
     "deny": [],
     "ask": []
