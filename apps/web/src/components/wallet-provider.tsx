@@ -9,7 +9,7 @@ import {
   walletConnectWallet,
   metaMaskWallet,
 } from "@rainbow-me/rainbowkit/wallets";
-import { WagmiProvider, createConfig, http } from "wagmi";
+import { WagmiProvider, createConfig, http, cookieStorage, createStorage } from "wagmi";
 import { celo, hardhat } from 'wagmi/chains'
 import { defineChain } from 'viem'
 import { QueryClientProvider, QueryClient } from '@tanstack/react-query'
@@ -85,18 +85,27 @@ const chainConfigs = {
     chains: [hardhat],
     connectors,
     transports: { [hardhat.id]: http() },
+    storage: createStorage({
+      storage: cookieStorage,
+    }),
     ssr: true,
   }),
   celo: createConfig({
     chains: [celo],
     connectors,
     transports: { [celo.id]: http() },
+    storage: createStorage({
+      storage: cookieStorage,
+    }),
     ssr: true,
   }),
   celoSepolia: createConfig({
     chains: [celoSepolia],
     connectors,
     transports: { [celoSepolia.id]: http() },
+    storage: createStorage({
+      storage: cookieStorage,
+    }),
     ssr: true,
   }),
 };
