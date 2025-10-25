@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import '@rainbow-me/rainbowkit/styles.css'
-import { RainbowKitProvider, connectorsForWallets, RainbowKitAuthenticationProvider, AuthenticationStatus } from '@rainbow-me/rainbowkit'
-import { SessionProvider, useSession } from 'next-auth/react'
+import { RainbowKitProvider, connectorsForWallets } from '@rainbow-me/rainbowkit'
+import { SessionProvider } from 'next-auth/react'
 import {
   injectedWallet,
   walletConnectWallet,
@@ -13,7 +13,6 @@ import { WagmiProvider, createConfig, http } from "wagmi";
 import { celo, celoAlfajores, hardhat } from 'wagmi/chains'
 import { defineChain } from 'viem'
 import { QueryClientProvider, QueryClient } from '@tanstack/react-query'
-import { createCustomAuthAdapter } from '@/lib/auth-adapter'
 import { useAutoSign } from '@/hooks/use-auto-sign'
 import { AuthSuccessNotification } from './auth-success-notification'
 import { AuthLoadingOverlay } from './auth-loading-overlay'
@@ -92,37 +91,17 @@ const selectedChainKey = process.env.NEXT_PUBLIC_CHAIN! as keyof typeof chainCon
 const wagmiConfig = chainConfigs[selectedChainKey];
 
 const queryClient = new QueryClient();
-const authAdapter = createCustomAuthAdapter();
 
-function RainbowKitProviderWithAuth({ children }: { children: React.ReactNode }) {
-  const { status } = useSession();
-
+function RainbowKitWithAutoAuth({ children }: { children: React.ReactNode }) {
   // Auto-trigger signature when wallet connects
   const { showSuccess, isAuthenticating } = useAutoSign();
 
-  const authenticationStatus: AuthenticationStatus = (() => {
-    switch (status) {
-      case 'loading':
-        return 'loading';
-      case 'authenticated':
-        return 'authenticated';
-      case 'unauthenticated':
-      default:
-        return 'unauthenticated';
-    }
-  })();
-
   return (
-    <RainbowKitAuthenticationProvider
-      adapter={authAdapter}
-      status={authenticationStatus}
-    >
-      <RainbowKitProvider modalSize="compact">
-        {children}
-        <AuthLoadingOverlay isAuthenticating={isAuthenticating} />
-        <AuthSuccessNotification show={showSuccess} />
-      </RainbowKitProvider>
-    </RainbowKitAuthenticationProvider>
+    <RainbowKitProvider modalSize="compact">
+      {children}
+      <AuthLoadingOverlay isAuthenticating={isAuthenticating} />
+      <AuthSuccessNotification show={showSuccess} />
+    </RainbowKitProvider>
   );
 }
 
@@ -142,9 +121,9 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     <WagmiProvider config={wagmiConfig}>
       <SessionProvider refetchInterval={0}>
         <QueryClientProvider client={queryClient}>
-          <RainbowKitProviderWithAuth>
+          <RainbowKitWithAutoAuth>
             {children}
-          </RainbowKitProviderWithAuth>
+          </RainbowKitWithAutoAuth>
         </QueryClientProvider>
       </SessionProvider>
     </WagmiProvider>

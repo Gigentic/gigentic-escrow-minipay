@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAccount, useSignMessage } from 'wagmi';
 import { useSession } from 'next-auth/react';
-import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { SiweMessage } from 'siwe';
 import { getCsrfToken, signIn } from 'next-auth/react';
 
@@ -9,7 +8,6 @@ export function useAutoSign() {
   const { address, isConnected, chainId } = useAccount();
   const { status: sessionStatus } = useSession();
   const { signMessageAsync } = useSignMessage();
-  const { connectModalOpen } = useConnectModal();
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const hasTriggeredRef = useRef(false);
@@ -68,17 +66,17 @@ export function useAutoSign() {
           console.log('Authentication successful');
           // Show success state briefly
           setShowSuccess(true);
-          // Auto-close after 500ms if modal is still open
+          // Auto-close after 500ms
           setTimeout(() => {
             setShowSuccess(false);
           }, 500);
         } else {
           console.error('Authentication failed:', result?.error);
-          hasTriggeredRef.current = false; // Allow retry
+          // Don't retry automatically - user must reconnect wallet
         }
       } catch (error) {
         console.error('Auto-sign error:', error);
-        hasTriggeredRef.current = false; // Allow retry if user rejected
+        // Don't retry automatically - user can try again by reconnecting
       } finally {
         setIsAuthenticating(false);
       }
