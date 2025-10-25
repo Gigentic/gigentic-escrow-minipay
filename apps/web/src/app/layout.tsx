@@ -1,9 +1,15 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
+import dynamic from 'next/dynamic';
 
 import { Navbar } from '@/components/navbar';
-import { WalletProvider } from "@/components/wallet-provider"
+
+// Load WalletProvider only on client-side to avoid IndexedDB errors during SSR/build
+const WalletProvider = dynamic(
+  () => import('@/components/wallet-provider').then(mod => ({ default: mod.WalletProvider })),
+  { ssr: false }
+);
 
 const inter = Inter({ subsets: ['latin'] });
 
