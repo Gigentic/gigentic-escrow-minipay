@@ -1,5 +1,20 @@
 # Authentication Flow V2 - Clean Architecture
 
+**Status**: Active implementation - refinement in progress
+
+**Known Issues**:
+- ⚠️ **MetaMask sometimes doesn't open when connecting wallet** (RainbowKit → MetaMask connection issue)
+  - Happens at "Opening MetaMask..." step when user clicks "Login / Register"
+  - NOT at signature request step
+  - Root cause: RainbowKit modal race condition, not our code
+
+**Recent Changes**:
+- ✅ Removed dual authentication (RainbowKit provider + custom hook conflict)
+- ✅ Auto-disconnect wallet on cancel/failure (no orphaned connections)
+- ✅ Fixed page refresh auto-auth bug (detects new vs existing connections)
+- ❌ Added 300ms delay before signature request (WRONG LOCATION - needs removal)
+- 🔄 Need to simplify and prune code
+
 ## Current Architecture (Option B: Hook-Only)
 
 ```mermaid
@@ -42,7 +57,11 @@ sequenceDiagram
     RKModal->>User: Show wallet options
 
     User->>RKModal: Select wallet (e.g., MetaMask)
+    RKModal->>RKModal: Show "Opening MetaMask..."
     RKModal->>Wagmi: Connect wallet
+
+    Note over RKModal,Wallet: ⚠️ MetaMask sometimes doesn't open here<br/>(RainbowKit modal race condition)
+
     Wagmi->>Wallet: Request connection
     Wallet->>Wagmi: Connection approved
     Wagmi->>RKModal: Connected
@@ -54,6 +73,8 @@ sequenceDiagram
 
     AutoSign->>Overlay: setIsAuthenticating(true)
     Overlay->>User: Show "Signing in..." spinner
+
+    AutoSign->>AutoSign: Wait 300ms (TODO: REMOVE - wrong location)
 
     AutoSign->>NextAuth: getCsrfToken()
     NextAuth->>AutoSign: Return nonce
@@ -76,10 +97,12 @@ sequenceDiagram
     else User cancels signature
         Wallet->>Wagmi: User rejected
         Wagmi->>AutoSign: Error thrown
+        AutoSign->>AutoSign: disconnect() - Clean up
+        AutoSign->>Wagmi: Disconnect wallet
+        Wagmi->>Wallet: Disconnect
         AutoSign->>Overlay: setIsAuthenticating(false)
         Overlay->>User: Hide loading
-        Note over AutoSign: hasTriggeredRef stays true<br/>NO RETRY
-        Note over User: Must disconnect & reconnect to retry
+        Note over User: Wallet disconnected<br/>Must start from "Login / Register"
     end
 ```
 
