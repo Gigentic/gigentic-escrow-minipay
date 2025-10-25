@@ -4,16 +4,22 @@
 
 **Known Issues**:
 - ⚠️ **MetaMask sometimes doesn't open when connecting wallet** (RainbowKit → MetaMask connection issue)
-  - Happens at "Opening MetaMask..." step when user clicks "Login / Register"
-  - NOT at signature request step
-  - Root cause: RainbowKit modal race condition, not our code
+  - Happens at "Opening MetaMask..." step when user selects MetaMask in RainbowKit modal
+  - NOT at signature request step (that works fine)
+  - Root cause: RainbowKit internal issue with wallet connector initialization
+  - **Not caused by our code** - happens BEFORE useAutoSign hook even triggers
+  - Possible RainbowKit bug or browser extension race condition
+  - User workaround: Close modal and try again, or use "Browser Wallet" option
 
 **Recent Changes**:
 - ✅ Removed dual authentication (RainbowKit provider + custom hook conflict)
 - ✅ Auto-disconnect wallet on cancel/failure (no orphaned connections)
 - ✅ Fixed page refresh auto-auth bug (detects new vs existing connections)
-- ❌ Added 300ms delay before signature request (WRONG LOCATION - needs removal)
-- 🔄 Need to simplify and prune code
+- ✅ Removed unnecessary 300ms delay (was in wrong location)
+- ✅ Cleaned up wallet-auth.ts (removed 90 lines of commented code)
+- ✅ Fixed isDev hardcoded value in connect-button
+- ✅ Removed unused authenticationStatus checks (leftover from RainbowKit auth)
+- ✅ Simplified and pruned authentication codebase
 
 ## Current Architecture (Option B: Hook-Only)
 
@@ -74,8 +80,6 @@ sequenceDiagram
     AutoSign->>Overlay: setIsAuthenticating(true)
     Overlay->>User: Show "Signing in..." spinner
 
-    AutoSign->>AutoSign: Wait 300ms (TODO: REMOVE - wrong location)
-
     AutoSign->>NextAuth: getCsrfToken()
     NextAuth->>AutoSign: Return nonce
 
@@ -119,8 +123,7 @@ stateDiagram-v2
     WalletConnected --> Authenticating: Auto-trigger (immediate)
 
     state Authenticating {
-        [*] --> WaitingDelay: Start auth
-        WaitingDelay --> GettingNonce: 300ms delay (TODO REMOVE)
+        [*] --> GettingNonce: Start auth
         GettingNonce --> CreatingSIWE: Nonce received
         GettingNonce --> AuthFailed: No nonce
         CreatingSIWE --> RequestingSignature: Message created

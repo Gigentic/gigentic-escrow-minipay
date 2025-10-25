@@ -12,8 +12,7 @@ export function ConnectButton() {
   const { profile } = useProfile(address);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
 
-  // const isDev = process.env.NEXT_PUBLIC_APP_ENV !== "prod";
-  const isDev = true;
+  const isDev = process.env.NEXT_PUBLIC_APP_ENV !== "prod";
 
   return (
     <div className="flex items-center gap-3">
@@ -29,16 +28,10 @@ export function ConnectButton() {
           chain,
           openChainModal,
           openConnectModal,
-          authenticationStatus,
           mounted,
         }) => {
-          const ready = mounted && authenticationStatus !== 'loading';
-          const connected =
-            ready &&
-            account &&
-            chain &&
-            (!authenticationStatus ||
-              authenticationStatus === 'authenticated');
+          const ready = mounted;
+          const connected = ready && account && chain;
 
           return (
             <div

@@ -37,9 +37,6 @@ export function useAutoSign() {
         setIsAuthenticating(true);
         hasTriggeredRef.current = true;
 
-        // Small delay to ensure wallet extension is ready
-        await new Promise(resolve => setTimeout(resolve, 300));
-
         // Get nonce
         const nonce = await getCsrfToken();
         if (!nonce) {
