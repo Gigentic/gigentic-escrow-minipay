@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useAccount, useSignMessage } from 'wagmi';
+import { useAccount, useSignMessage, useDisconnect } from 'wagmi';
 import { useSession } from 'next-auth/react';
 import { SiweMessage } from 'siwe';
 import { getCsrfToken, signIn } from 'next-auth/react';
@@ -8,13 +8,20 @@ export function useAutoSign() {
   const { address, isConnected, chainId } = useAccount();
   const { status: sessionStatus } = useSession();
   const { signMessageAsync } = useSignMessage();
+  const { disconnect } = useDisconnect();
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const hasTriggeredRef = useRef(false);
+  const previousConnectedRef = useRef(false);
 
   useEffect(() => {
+    // Only trigger auth when wallet connection CHANGES from false to true
+    // This prevents auto-auth on page refresh when wallet reconnects from storage
+    const isNewConnection = isConnected && !previousConnectedRef.current;
+    previousConnectedRef.current = isConnected;
+
     const shouldAuthenticate =
-      isConnected &&
+      isNewConnection &&  // Only on fresh connections, not reconnections
       address &&
       chainId &&
       sessionStatus === 'unauthenticated' &&
@@ -30,10 +37,14 @@ export function useAutoSign() {
         setIsAuthenticating(true);
         hasTriggeredRef.current = true;
 
+        // Small delay to ensure wallet extension is ready
+        await new Promise(resolve => setTimeout(resolve, 300));
+
         // Get nonce
         const nonce = await getCsrfToken();
         if (!nonce) {
           console.error('Failed to get CSRF token');
+          disconnect();
           return;
         }
 
@@ -72,23 +83,26 @@ export function useAutoSign() {
           }, 500);
         } else {
           console.error('Authentication failed:', result?.error);
-          // Don't retry automatically - user must reconnect wallet
+          // Disconnect wallet on authentication failure
+          disconnect();
         }
       } catch (error) {
         console.error('Auto-sign error:', error);
-        // Don't retry automatically - user can try again by reconnecting
+        // Disconnect wallet when user cancels signature
+        disconnect();
       } finally {
         setIsAuthenticating(false);
       }
     };
 
     authenticate();
-  }, [address, isConnected, chainId, sessionStatus, isAuthenticating, signMessageAsync]);
+  }, [address, isConnected, chainId, sessionStatus, isAuthenticating, signMessageAsync, disconnect]);
 
   // Reset trigger when wallet disconnects
   useEffect(() => {
     if (!isConnected) {
       hasTriggeredRef.current = false;
+      previousConnectedRef.current = false;
       setShowSuccess(false);
     }
   }, [isConnected]);
