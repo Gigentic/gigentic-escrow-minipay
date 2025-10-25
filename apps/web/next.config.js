@@ -12,6 +12,7 @@ const nextConfig = {
     
     return config
   },
+  allowedDevOrigins: ['c8204f998c1c.ngrok-free.app']
 };
 
 module.exports = nextConfig;
