@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, createContext, useContext } from 'react'
 import '@rainbow-me/rainbowkit/styles.css'
 import { RainbowKitProvider, connectorsForWallets } from '@rainbow-me/rainbowkit'
 import { SessionProvider } from 'next-auth/react'
@@ -10,12 +10,27 @@ import {
   metaMaskWallet,
 } from "@rainbow-me/rainbowkit/wallets";
 import { WagmiProvider, createConfig, http } from "wagmi";
-import { celo, celoAlfajores, hardhat } from 'wagmi/chains'
+import { celo, hardhat } from 'wagmi/chains'
 import { defineChain } from 'viem'
 import { QueryClientProvider, QueryClient } from '@tanstack/react-query'
 import { useAutoSign } from '@/hooks/use-auto-sign'
 import { AuthSuccessNotification } from './auth-success-notification'
 import { AuthLoadingOverlay } from './auth-loading-overlay'
+
+// Create context for authentication state
+interface AuthContextValue {
+  isAuthenticating: boolean;
+}
+
+const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+
+export function useAuthState() {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuthState must be used within WalletProvider');
+  }
+  return context;
+}
 
 // Define Celo Sepolia chain
 const celoSepolia = defineChain({
@@ -97,11 +112,13 @@ function RainbowKitWithAutoAuth({ children }: { children: React.ReactNode }) {
   const { showSuccess, isAuthenticating } = useAutoSign();
 
   return (
-    <RainbowKitProvider modalSize="compact">
-      {children}
-      <AuthLoadingOverlay isAuthenticating={isAuthenticating} />
-      <AuthSuccessNotification show={showSuccess} />
-    </RainbowKitProvider>
+    <AuthContext.Provider value={{ isAuthenticating }}>
+      <RainbowKitProvider modalSize="compact">
+        {children}
+        <AuthLoadingOverlay isAuthenticating={isAuthenticating} />
+        <AuthSuccessNotification show={showSuccess} />
+      </RainbowKitProvider>
+    </AuthContext.Provider>
   );
 }
 

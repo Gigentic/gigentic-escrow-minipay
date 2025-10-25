@@ -20,6 +20,8 @@
 - ✅ Fixed isDev hardcoded value in connect-button
 - ✅ Removed unused authenticationStatus checks (leftover from RainbowKit auth)
 - ✅ Simplified and pruned authentication codebase
+- ✅ Fixed button state during authentication (shows "Signing in..." while waiting)
+- ✅ Created AuthContext to share authentication state across components
 
 ## Current Architecture (Option B: Hook-Only)
 
@@ -32,9 +34,13 @@ graph TB
     WalletProvider --> QueryClient[QueryClientProvider]
     WalletProvider --> RainbowKitProvider[RainbowKitProvider]
 
-    RainbowKitProvider --> AutoSign[useAutoSign Hook]
-    RainbowKitProvider --> LoadingOverlay[AuthLoadingOverlay]
-    RainbowKitProvider --> SuccessNotif[AuthSuccessNotification]
+    RainbowKitProvider --> AuthContext[AuthContext Provider]
+    AuthContext --> AutoSign[useAutoSign Hook]
+    AuthContext --> LoadingOverlay[AuthLoadingOverlay]
+    AuthContext --> SuccessNotif[AuthSuccessNotification]
+
+    ConnectButton --> AuthContext
+    ConnectButton -.reads state.-> AutoSign
 
     AutoSign --> SignMessage[wagmi useSignMessage]
     AutoSign --> NextAuth[NextAuth signIn]
@@ -43,7 +49,9 @@ graph TB
     NextAuth --> SessionProvider
 ```
 
-**Key Simplification:** Single authentication path through `useAutoSign` hook only.
+**Key Simplifications:**
+- Single authentication path through `useAutoSign` hook only
+- AuthContext shares authentication state with ConnectButton
 
 ## Clean Sequence Flow
 
@@ -58,6 +66,7 @@ sequenceDiagram
     participant NextAuth
     participant Overlay as AuthLoadingOverlay
 
+    Note over Button: Shows "Login / Register"
     User->>Button: Click "Login / Register"
     Button->>RKModal: Open connect modal
     RKModal->>User: Show wallet options
@@ -77,8 +86,9 @@ sequenceDiagram
 
     AutoSign->>AutoSign: Check shouldAuthenticate:<br/>✓ isConnected<br/>✓ has address<br/>✓ has chainId<br/>✓ sessionStatus === 'unauthenticated'<br/>✓ !isAuthenticating<br/>✓ !hasTriggeredRef
 
-    AutoSign->>Overlay: setIsAuthenticating(true)
-    Overlay->>User: Show "Signing in..." spinner
+    AutoSign->>AutoSign: setIsAuthenticating(true)
+    Note over Button: Shows "Signing in..." with spinner (disabled)
+    Overlay->>User: Show full-screen "Signing in..." overlay
 
     AutoSign->>NextAuth: getCsrfToken()
     NextAuth->>AutoSign: Return nonce
@@ -93,10 +103,11 @@ sequenceDiagram
         AutoSign->>NextAuth: signIn('credentials', {message, signature})
         NextAuth->>NextAuth: Verify SIWE signature
         NextAuth->>AutoSign: Success
-        AutoSign->>Overlay: setIsAuthenticating(false)
-        Overlay->>User: Hide loading
+        AutoSign->>AutoSign: setIsAuthenticating(false)
+        Overlay->>User: Hide overlay
         AutoSign->>AutoSign: setShowSuccess(true)
         AutoSign->>User: Show success notification (500ms)
+        Note over Button: Shows profile name "Marci"
         Note over User: Authenticated!
     else User cancels signature
         Wallet->>Wagmi: User rejected
@@ -104,8 +115,9 @@ sequenceDiagram
         AutoSign->>AutoSign: disconnect() - Clean up
         AutoSign->>Wagmi: Disconnect wallet
         Wagmi->>Wallet: Disconnect
-        AutoSign->>Overlay: setIsAuthenticating(false)
-        Overlay->>User: Hide loading
+        AutoSign->>AutoSign: setIsAuthenticating(false)
+        Overlay->>User: Hide overlay
+        Note over Button: Shows "Login / Register"
         Note over User: Wallet disconnected<br/>Must start from "Login / Register"
     end
 ```
@@ -186,24 +198,13 @@ const shouldAuthenticate =
   !hasTriggeredRef.current;                // Haven't tried this session
 ```
 
-## Key Differences from V1 (Buggy Version)
-
-| Aspect | V1 (Buggy) | V2 (Clean) |
-|--------|------------|------------|
-| **Auth Systems** | Two competing systems:<br/>- RainbowKitAuthenticationProvider<br/>- useAutoSign hook | Single system:<br/>- useAutoSign hook only |
-| **Modal Behavior** | RainbowKit showed "Verify account" modal<br/>+ Auto-sign triggered simultaneously | RainbowKit connect modal closes<br/>Hook takes over seamlessly |
-| **Signature Requests** | Could create duplicate requests<br/>(modal + hook both trigger) | Single request from hook only |
-| **Error Handling** | Reset `hasTriggeredRef` on error<br/>→ Infinite retry loop | Keep `hasTriggeredRef = true`<br/>→ User must reconnect |
-| **State Sync** | Two systems with separate state | Single source of truth |
-| **Complexity** | Custom adapter + provider + hook | Hook only |
-
 ## File Structure
 
 ```
 src/
 ├── components/
-│   ├── wallet-provider.tsx          # Main provider with useAutoSign
-│   ├── connect-button.tsx           # "Login / Register" button
+│   ├── wallet-provider.tsx          # Main provider with useAutoSign + AuthContext
+│   ├── connect-button.tsx           # "Login / Register" button (uses useAuthState)
 │   ├── auth-loading-overlay.tsx     # Loading state during auth
 │   └── auth-success-notification.tsx # Brief success message
 ├── hooks/
@@ -211,6 +212,8 @@ src/
 └── lib/
     └── auth.ts                      # NextAuth config with SIWE
 ```
+
+**AuthContext**: Shares `isAuthenticating` state from `useAutoSign` hook to `ConnectButton` and other components via `useAuthState()` hook.
 
 ## Core Logic: useAutoSign Hook
 
@@ -294,9 +297,13 @@ Shows when `showSuccess === true`:
 
 ### ConnectButton
 
-- **Disconnected:** "Login / Register"
-- **Connected + Authenticated:** Shows wallet info
-- **Connected + Not Authenticated:** Shows address (rare, during auth)
+Uses `useAuthState()` hook to access authentication state:
+
+- **Disconnected:** "Login / Register" button
+- **Connected + Authenticating:** "Signing in..." with spinner (disabled)
+- **Connected + Authenticated:** Shows profile name and avatar (e.g., "Marci")
+- **Connected + Wrong Network:** "Wrong network" (destructive button)
+- **Fallback (connected but not authenticated):** "Login / Register" (rare edge case)
 
 ### ProfileModal
 
@@ -322,18 +329,20 @@ Shows when `showSuccess === true`:
 
 **On Cancel:**
 - Loading overlay disappears
-- User remains connected but not authenticated
-- Must disconnect wallet to retry authentication
+- Wallet automatically disconnects
+- Button reverts to "Login / Register"
+- User must reconnect wallet to retry authentication
 
 ## Testing Checklist
 
 - [ ] Click "Login / Register" → RainbowKit modal opens
 - [ ] Select wallet → Connection request appears
-- [ ] Approve connection → Modal closes, loading overlay appears
-- [ ] Sign message → Success notification shows
-- [ ] Session persists on page refresh
-- [ ] Click "Logout" → Wallet disconnects and session clears
-- [ ] Cancel signature → No infinite retry loop
+- [ ] Approve connection → Modal closes, button shows "Signing in...", loading overlay appears
+- [ ] Sign message → Success notification shows, button shows profile name
+- [ ] Button correctly shows "Signing in..." while waiting (not profile name)
+- [ ] Session persists on page refresh (no auto-signature on reload)
+- [ ] Click "Logout" → Wallet disconnects, session clears, button shows "Login / Register"
+- [ ] Cancel signature → No infinite retry loop, wallet disconnects, button shows "Login / Register"
 - [ ] Disconnect & reconnect → Can retry authentication
 - [ ] No duplicate signature requests
 - [ ] No conflicting modals
