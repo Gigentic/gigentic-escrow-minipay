@@ -13,9 +13,6 @@ import { WagmiProvider, createConfig, http, cookieStorage, createStorage } from 
 import { celo, hardhat } from 'wagmi/chains'
 import { defineChain } from 'viem'
 import { QueryClientProvider, QueryClient } from '@tanstack/react-query'
-import { useAutoSign } from '@/hooks/use-auto-sign'
-import { AuthSuccessNotification } from './auth-success-notification'
-import { AuthLoadingOverlay } from './auth-loading-overlay'
 
 // Create context for authentication state
 interface AuthContextValue {
@@ -117,15 +114,15 @@ const wagmiConfig = chainConfigs[selectedChainKey];
 const queryClient = new QueryClient();
 
 function RainbowKitWithAutoAuth({ children }: { children: React.ReactNode }) {
-  // Auto-trigger signature when wallet connects
-  const { showSuccess, isAuthenticating } = useAutoSign();
+  // Auto-trigger signature when wallet connects - DISABLED
+  // const { showSuccess, isAuthenticating } = useAutoSign();
 
   return (
-    <AuthContext.Provider value={{ isAuthenticating }}>
+    <AuthContext.Provider value={{ isAuthenticating: false }}>
       <RainbowKitProvider modalSize="compact">
         {children}
-        <AuthLoadingOverlay isAuthenticating={isAuthenticating} />
-        <AuthSuccessNotification show={showSuccess} />
+        {/* <AuthLoadingOverlay isAuthenticating={isAuthenticating} /> */}
+        {/* <AuthSuccessNotification show={showSuccess} /> */}
       </RainbowKitProvider>
     </AuthContext.Provider>
   );
