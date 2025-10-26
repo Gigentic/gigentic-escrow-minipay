@@ -53,7 +53,8 @@
       "Bash(python3:*)",
       "mcp__chrome-devtools__select_page",
       "mcp__chrome-devtools__wait_for",
-      "WebFetch(domain:wagmi.sh)"
+      "WebFetch(domain:wagmi.sh)",
+      "mcp__chrome-devtools__fill_form"
     ],
     "deny": [],
     "ask": []

@@ -1,16 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { useAccount, useWriteContract } from "wagmi";
+import { useAccount, useWriteContract, usePublicClient } from "wagmi";
 import { type Address } from "viem";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
   ESCROW_CONTRACT_ABI,
   EscrowState,
+  MASTER_FACTORY_ADDRESS,
   type DisputeDocument,
 } from "@/lib/escrow-config";
 import { hashDocument } from "@/lib/hash";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface EscrowActionsProps {
   escrowAddress: Address;
@@ -33,6 +35,8 @@ export function EscrowActions({
 }: EscrowActionsProps) {
   const { address: userAddress, isConnected } = useAccount();
   const { writeContractAsync } = useWriteContract();
+  const publicClient = usePublicClient();
+  const queryClient = useQueryClient();
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [showDisputeModal, setShowDisputeModal] = useState(false);
@@ -61,8 +65,19 @@ export function EscrowActions({
       });
 
       console.log("Complete tx:", tx);
+
+      // Invalidate this escrow's cache
+      await queryClient.invalidateQueries({
+        queryKey: ['readContract', publicClient?.chain?.id, escrowAddress],
+      });
+
+      // Invalidate user's escrow list
+      await queryClient.invalidateQueries({
+        queryKey: ['readContract', publicClient?.chain?.id, MASTER_FACTORY_ADDRESS, 'getUserEscrows'],
+      });
+
       setSuccess("Escrow completed successfully! Funds have been released to the recipient.");
-      
+
       if (onSuccess) {
         setTimeout(() => onSuccess(), 2000);
       }
@@ -123,6 +138,17 @@ export function EscrowActions({
       });
 
       console.log("Dispute tx:", tx);
+
+      // Invalidate this escrow's cache
+      await queryClient.invalidateQueries({
+        queryKey: ['readContract', publicClient?.chain?.id, escrowAddress],
+      });
+
+      // Invalidate user's escrow list (state changed)
+      await queryClient.invalidateQueries({
+        queryKey: ['readContract', publicClient?.chain?.id, MASTER_FACTORY_ADDRESS, 'getUserEscrows'],
+      });
+
       setSuccess("Dispute raised successfully. An arbiter will review the case.");
       setShowDisputeModal(false);
       setDisputeReason("");

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ESCROW_CONTRACT_ABI } from "@/lib/escrow-config";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface ResolveFormProps {
   escrowAddress: Address;
@@ -30,6 +31,7 @@ export function ResolveForm({
   const router = useRouter();
   const { address: adminAddress } = useAccount();
   const { writeContractAsync } = useWriteContract();
+  const queryClient = useQueryClient();
 
   const [favorDepositor, setFavorDepositor] = useState<boolean | null>(null);
   const [deliverableReview, setDeliverableReview] = useState("");
@@ -106,6 +108,16 @@ export function ResolveForm({
       });
 
       console.log("Resolution tx:", tx);
+
+      // Invalidate disputes cache so list updates
+      await queryClient.invalidateQueries({
+        queryKey: ['disputes'],
+      });
+
+      // Invalidate this specific escrow's details
+      await queryClient.invalidateQueries({
+        queryKey: ['readContract', undefined, escrowAddress],
+      });
 
       // Redirect back to disputes list
       router.push("/admin/disputes");

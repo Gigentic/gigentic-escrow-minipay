@@ -14,6 +14,7 @@ import {
 } from "@/lib/escrow-config";
 import { hashDocument } from "@/lib/hash";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 
 /**
  * Create Escrow Form Component
@@ -24,6 +25,7 @@ export function CreateEscrowForm() {
   const { address: userAddress, isConnected } = useAccount();
   const { writeContractAsync } = useWriteContract();
   const publicClient = usePublicClient();
+  const queryClient = useQueryClient();
 
   // Form state
   const [recipient, setRecipient] = useState("");
@@ -244,6 +246,11 @@ export function CreateEscrowForm() {
           }
         }
       }
+
+      // Invalidate escrows cache so dashboard shows new escrow
+      await queryClient.invalidateQueries({
+        queryKey: ['readContract', publicClient?.chain?.id, MASTER_FACTORY_ADDRESS, 'getUserEscrows'],
+      });
 
       // Redirect to dashboard
       router.push("/dashboard");

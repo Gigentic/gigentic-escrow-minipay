@@ -99,7 +99,17 @@ const chainConfigs = {
 const selectedChainKey = process.env.NEXT_PUBLIC_CHAIN! as keyof typeof chainConfigs;
 const wagmiConfig = chainConfigs[selectedChainKey];
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 30_000, // Fresh for 30 seconds
+      gcTime: 5 * 60_000, // Keep in memory for 5 minutes (replaces cacheTime)
+      refetchOnMount: true, // Refetch when component mounts if data is stale
+      refetchOnWindowFocus: false, // Don't refetch on window focus for better UX
+      retry: 1, // Only retry failed requests once
+    },
+  },
+});
 
 function RainbowKitWithAutoAuth({ children }: { children: React.ReactNode }) {
   // Auto-trigger signature when wallet connects
