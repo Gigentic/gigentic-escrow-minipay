@@ -4,10 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAccount, usePublicClient, useWriteContract } from "wagmi";
 import type { Address } from "viem";
 import { queryKeys } from "@/lib/queries";
-import {
-  ESCROW_CONTRACT_ABI,
-  MASTER_FACTORY_ADDRESS,
-} from "@/lib/escrow-config";
+import { ESCROW_CONTRACT_ABI } from "@/lib/escrow-config";
 import { hashDocument } from "@/lib/hash";
 import type { DisputeParams, DisputeDocument } from "@/lib/types";
 
@@ -30,9 +27,13 @@ import type { DisputeParams, DisputeDocument } from "@/lib/types";
  * - Automatic error handling
  * - Consistent cache updates
  *
+ * @param options - Optional callbacks for success and error handling
  * @returns Mutation hook with raiseDispute function and state
  */
-export function useDisputeEscrow() {
+export function useDisputeEscrow(options?: {
+  onSuccess?: (data: { txHash: `0x${string}`; disputeHash: `0x${string}` }, params: DisputeParams) => void | Promise<void>;
+  onError?: (error: Error) => void;
+}) {
   const { address: userAddress } = useAccount();
   const publicClient = usePublicClient();
   const { writeContractAsync } = useWriteContract();
@@ -98,27 +99,69 @@ export function useDisputeEscrow() {
       return { txHash, disputeHash, receipt };
     },
 
-    onSuccess: (data, variables) => {
-      // Invalidate escrow details query
-      queryClient.invalidateQueries({
+    onSuccess: async (data, variables) => {
+      // Wait a moment for blockchain state to propagate
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Invalidate and refetch ALL queries related to this escrow
+      // Use exact same query key structure as useEscrowDetails hook
+
+      // 1. Invalidate the main escrow details query
+      await queryClient.invalidateQueries({
         queryKey: queryKeys.escrows.detail(variables.escrowAddress),
+        exact: false, // Match all queries that start with this key
       });
 
-      // Invalidate user escrows list (state changed)
-      queryClient.invalidateQueries({
+      // 2. Invalidate the dispute info query
+      await queryClient.invalidateQueries({
         queryKey: [
-          "readContract",
-          publicClient?.chain?.id,
-          MASTER_FACTORY_ADDRESS,
-          "getUserEscrows",
+          ...queryKeys.escrows.detail(variables.escrowAddress),
+          "dispute",
         ],
       });
 
-      console.log("Cache invalidated after dispute");
+      // 3. Invalidate document queries (for the dispute document)
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.documents.detail(variables.escrowAddress),
+      });
+
+      // Also invalidate with the dispute hash as key
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.documents.detail(data.disputeHash),
+      });
+
+      // 4. Invalidate ALL readContract queries to catch any wagmi cached reads
+      await queryClient.invalidateQueries({
+        queryKey: ["readContract"],
+      });
+
+      // 5. Force refetch all queries for this escrow address
+      await queryClient.refetchQueries({
+        queryKey: queryKeys.escrows.detail(variables.escrowAddress),
+        exact: false,
+        type: 'active',
+      });
+
+      // 6. Also refetch document queries
+      await queryClient.refetchQueries({
+        queryKey: queryKeys.documents.detail(variables.escrowAddress),
+      });
+
+      console.log("Cache invalidated and refetched after dispute for escrow:", variables.escrowAddress);
+
+      // Call the optional onSuccess callback
+      if (options?.onSuccess) {
+        await options.onSuccess(data, variables);
+      }
     },
 
     onError: (error) => {
       console.error("Dispute error:", error);
+
+      // Call the optional onError callback
+      if (options?.onError) {
+        options.onError(error);
+      }
     },
   });
 

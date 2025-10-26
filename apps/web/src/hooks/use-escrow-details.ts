@@ -108,7 +108,9 @@ export function useEscrowDetails(escrowAddress: Address | undefined) {
           return parseEscrowDetails(details);
         },
         enabled: !!publicClient && !!escrowAddress,
-        staleTime: 30_000, // Fresh for 30 seconds
+        staleTime: 5_000, // Fresh for 5 seconds for more responsive updates
+        refetchOnMount: true,
+        refetchOnWindowFocus: true,
       },
 
       // Query 2: Deliverable document from API
@@ -146,7 +148,9 @@ export function useEscrowDetails(escrowAddress: Address | undefined) {
           return parseDisputeInfo(disputeData);
         },
         enabled: !!publicClient && !!escrowAddress,
-        staleTime: 30_000,
+        staleTime: 5_000, // Fresh for 5 seconds for more responsive updates
+        refetchOnMount: true,
+        refetchOnWindowFocus: true,
       },
     ],
   });
@@ -174,6 +178,15 @@ export function useEscrowDetails(escrowAddress: Address | undefined) {
     staleTime: 5 * 60_000,
   });
 
+  // Refetch function to manually trigger all queries to refresh
+  const refetchAll = async () => {
+    console.log("Refetching all escrow details...");
+    await Promise.all([
+      ...queries.map(q => q.refetch()),
+      resolutionQuery.refetch(),
+    ]);
+  };
+
   return {
     details: queries[0].data || null,
     deliverable: queries[1].data || null,
@@ -181,5 +194,6 @@ export function useEscrowDetails(escrowAddress: Address | undefined) {
     resolution: resolutionQuery.data || null,
     isLoading: queries.some((q: { isLoading: boolean }) => q.isLoading) || resolutionQuery.isLoading,
     error: queries.find((q: { error: unknown }) => q.error)?.error || resolutionQuery.error || null,
+    refetchAll,
   };
 }

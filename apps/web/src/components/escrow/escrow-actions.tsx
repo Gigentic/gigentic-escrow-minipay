@@ -14,6 +14,7 @@ interface EscrowActionsProps {
   depositor: Address;
   recipient: Address;
   state: EscrowState;
+  onActionComplete?: () => void | Promise<void>;
 }
 
 /**
@@ -25,18 +26,33 @@ export function EscrowActions({
   depositor,
   recipient,
   state,
+  onActionComplete,
 }: EscrowActionsProps) {
   const { address: userAddress, isConnected } = useAccount();
   const {
     completeEscrowAsync,
     isCompleting,
     error: completeError,
-  } = useCompleteEscrow();
+  } = useCompleteEscrow({
+    onSuccess: async () => {
+      // Call the parent's refetch function after successful completion
+      if (onActionComplete) {
+        await onActionComplete();
+      }
+    },
+  });
   const {
     raiseDisputeAsync,
     isRaisingDispute,
     error: disputeError,
-  } = useDisputeEscrow();
+  } = useDisputeEscrow({
+    onSuccess: async () => {
+      // Call the parent's refetch function after successful dispute
+      if (onActionComplete) {
+        await onActionComplete();
+      }
+    },
+  });
 
   const [showDisputeModal, setShowDisputeModal] = useState(false);
   const [disputeReason, setDisputeReason] = useState("");

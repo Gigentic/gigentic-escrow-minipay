@@ -11,7 +11,7 @@ export default function EscrowDetailPage() {
   const escrowAddress = params.address as Address;
 
   // Use the hook for parallel data fetching
-  const { details, deliverable, disputeInfo, resolution, isLoading, error } =
+  const { details, deliverable, disputeInfo, resolution, isLoading, error, refetchAll } =
     useEscrowDetails(escrowAddress);
 
   if (isLoading) {
@@ -62,6 +62,7 @@ export default function EscrowDetailPage() {
           depositor={details.depositor}
           recipient={details.recipient}
           state={details.state}
+          onActionComplete={refetchAll}
         />
       </div>
     </main>
