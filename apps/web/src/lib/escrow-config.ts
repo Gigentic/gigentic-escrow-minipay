@@ -438,13 +438,13 @@ export interface EscrowDetails {
   platformFee: bigint;
   disputeBond: bigint;
   state: EscrowState;
-  deliverableHash: `0x${string}`;
+  deliverableHash: string;
   createdAt: bigint;
 }
 
 export interface DisputeInfo {
   disputeReason: string;
-  resolutionHash: `0x${string}`;
+  resolutionHash: string;
 }
 
 export interface FactoryStatistics {
