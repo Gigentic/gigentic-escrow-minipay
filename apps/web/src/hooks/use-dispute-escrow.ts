@@ -44,6 +44,10 @@ export function useDisputeEscrow() {
         throw new Error("Wallet not connected");
       }
 
+      if (!publicClient) {
+        throw new Error("Public client not available");
+      }
+
       const { escrowAddress, reason } = params;
 
       if (!reason.trim()) {
@@ -87,7 +91,11 @@ export function useDisputeEscrow() {
 
       console.log("Dispute tx:", txHash);
 
-      return { txHash, disputeHash };
+      // Wait for transaction confirmation
+      const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
+      console.log("Dispute tx confirmed:", receipt.status);
+
+      return { txHash, disputeHash, receipt };
     },
 
     onSuccess: (data, variables) => {

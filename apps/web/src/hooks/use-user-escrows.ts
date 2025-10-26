@@ -80,10 +80,10 @@ export function useUserEscrows(addresses: readonly Address[] | Address[] | undef
     })),
   });
 
-  // Filter out null results and extract data
+  // Filter out null and undefined results and extract data
   const escrows = queries
     .map((q) => q.data)
-    .filter((escrow): escrow is EscrowListItem => escrow !== null);
+    .filter((escrow): escrow is EscrowListItem => !!escrow);
 
   // Loading if ANY query is still loading
   const isLoading = queries.some((q) => q.isLoading);

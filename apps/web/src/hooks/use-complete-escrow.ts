@@ -37,6 +37,8 @@ export function useCompleteEscrow() {
 
   const mutation = useMutation({
     mutationFn: async (escrowAddress: Address) => {
+      if (!publicClient) throw new Error("Public client not available");
+
       // Call escrow.complete()
       const txHash = await writeContractAsync({
         address: escrowAddress,
@@ -46,7 +48,11 @@ export function useCompleteEscrow() {
 
       console.log("Complete tx:", txHash);
 
-      return { txHash };
+      // Wait for transaction confirmation
+      const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
+      console.log("Complete tx confirmed:", receipt.status);
+
+      return { txHash, receipt };
     },
 
     onSuccess: (data, escrowAddress) => {
