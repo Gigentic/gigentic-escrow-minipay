@@ -752,25 +752,25 @@ export function usePendingTransaction(txHash: `0x${string}`) {
 
 ## 🚨 Action Items
 
-### P0 - Critical (This Week)
+### P0 - Critical
 - [ ] Add pagination to dashboard (20 items per page)
 - [ ] Configure React Query defaults (staleTime, cacheTime)
 - [ ] Fix cache invalidation after mutations
 - [ ] Remove URL/state hack workarounds
 
-### P1 - High Priority (Next Week)
+### P1 - High Priority
 - [ ] Create centralized query definitions
 - [ ] Extract duplicate fetch logic to custom hooks
 - [ ] Add API response caching headers
 - [ ] Implement parallel fetching in detail pages
 
-### P2 - Medium Priority (This Month)
+### P2 - Medium Priority
 - [ ] Add optimistic updates for escrow creation
 - [ ] Implement prefetching on hover
 - [ ] Add infinite scroll to dashboard
 - [ ] Implement transaction polling
 
-### P3 - Nice to Have (Next Month)
+### P3 - Nice to Have
 - [ ] Add request deduplication
 - [ ] Implement background refetching
 - [ ] Add offline support with cache
