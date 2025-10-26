@@ -13,6 +13,7 @@ import type {
   DocumentResponse,
   ResolutionDocument,
 } from "@/lib/types";
+import { fetchDisputeDocument } from "@/lib/document-fetchers";
 
 /**
  * Helper function to parse escrow details from contract response
@@ -25,52 +26,39 @@ function parseEscrowDetails(details: readonly unknown[]): EscrowDetails {
     platformFee: details[3] as bigint,
     disputeBond: details[4] as bigint,
     state: details[5] as number,
-    deliverableHash: details[6] as string,
+    deliverableHash: details[6] as `0x${string}`,
     createdAt: details[7] as bigint,
   };
 }
 
 /**
  * Helper function to parse and fetch dispute information
+ * Now properly typed with wagmi's auto-generated types from ABI
  */
-// TODO check what this code does, i think this is outdated as we don't store clear text dispute reasons in the contract anymore
 async function parseDisputeInfo(
-  disputeData: readonly unknown[]
-): Promise<{ disputeReason: string; resolutionHash?: string } | null> {
-  const disputeReasonHash = disputeData[0] as string;
-  const resolutionHash = disputeData[1] as string;
+  disputeData: readonly [`0x${string}`, `0x${string}`]
+): Promise<{
+  disputeReason: string;
+  disputeReasonHash: `0x${string}`;
+  resolutionHash?: `0x${string}`;
+} | null> {
+  const [disputeReasonHash, resolutionHash] = disputeData; // Auto-typed by wagmi!
 
   const ZERO_HASH =
-    "0x0000000000000000000000000000000000000000000000000000000000000000";
+    "0x0000000000000000000000000000000000000000000000000000000000000000" as const;
 
   // No dispute if hash is zero
-  if (
-    !disputeReasonHash ||
-    disputeReasonHash === "" ||
-    disputeReasonHash === ZERO_HASH
-  ) {
+  if (!disputeReasonHash || disputeReasonHash === ZERO_HASH) {
     return null;
   }
 
-  // Fetch actual dispute text from KV
-  let actualDisputeReason = disputeReasonHash; // Fallback to hash if fetch fails
-
-  try {
-    const response = await fetch(`/api/documents/${disputeReasonHash}`);
-    if (response.ok) {
-      const data = await response.json();
-      actualDisputeReason = data.document.reason;
-    }
-  } catch (err) {
-    console.error("Error fetching dispute document from KV:", err);
-  }
+  // Fetch cleartext from KV using centralized helper
+  const disputeDoc = await fetchDisputeDocument(disputeReasonHash);
 
   return {
-    disputeReason: actualDisputeReason,
-    resolutionHash:
-      resolutionHash && resolutionHash !== ZERO_HASH
-        ? resolutionHash
-        : undefined,
+    disputeReason: disputeDoc.reason,
+    disputeReasonHash,
+    resolutionHash: resolutionHash !== ZERO_HASH ? resolutionHash : undefined,
   };
 }
 

@@ -7,7 +7,10 @@ import {
   EscrowState,
   CHAIN_ID,
 } from "@/lib/escrow-config";
-import { getKVClient, kvKeys } from "@/lib/kv";
+import {
+  fetchDisputeDocument,
+  fetchDeliverableDocument,
+} from "@/lib/document-fetchers";
 
 // Helper to get the correct chain based on CHAIN_ID
 function getChain() {
@@ -29,7 +32,7 @@ function getChain() {
  * Includes deliverable document if available
  */
 export async function GET(
-  request: Request,
+  _request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
@@ -67,35 +70,15 @@ export async function GET(
       functionName: "getDisputeInfo",
     });
 
-    // disputeInfo[0] is now a hash, fetch actual dispute reason from KV
-    const disputeReasonHash = disputeInfo[0] as string;
-    let actualDisputeReason = disputeReasonHash; // Fallback to hash if fetch fails
+    // Fetch dispute reason from KV using centralized helper
+    const [disputeReasonHash] = disputeInfo; // Auto-typed by wagmi
+    const disputeDoc = await fetchDisputeDocument(
+      disputeReasonHash as `0x${string}`
+    );
+    const actualDisputeReason = disputeDoc.reason;
 
-    try {
-      const kv = getKVClient();
-      const disputeDoc = await kv.get(kvKeys.dispute(disputeReasonHash));
-      if (disputeDoc && typeof disputeDoc === 'object' && 'reason' in disputeDoc) {
-        actualDisputeReason = disputeDoc.reason as string;
-      }
-    } catch (err) {
-      console.error("Error fetching dispute document from KV:", err);
-      // Keep fallback value (the hash itself)
-    }
-
-    // Get deliverable document (using escrow address as key)
-    let deliverable = null;
-    try {
-      const docResponse = await fetch(
-        `${request.url.split('/api')[0]}/api/documents/${escrowAddress}`,
-        { headers: request.headers }
-      );
-      if (docResponse.ok) {
-        const docData = await docResponse.json();
-        deliverable = docData.document;
-      }
-    } catch (error) {
-      console.error("Error fetching deliverable:", error);
-    }
+    // Get deliverable document using centralized helper
+    const deliverable = await fetchDeliverableDocument(escrowAddress);
 
     return NextResponse.json({
       address: escrowAddress,

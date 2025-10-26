@@ -119,13 +119,14 @@ export interface EscrowDetailData {
     platformFee: bigint;
     disputeBond: bigint;
     state: number;
-    deliverableHash: string;
+    deliverableHash: `0x${string}`; // Changed from string to hex string type
     createdAt: bigint;
   } | null;
   deliverable: DeliverableDocument | null;
   disputeInfo: {
-    disputeReason: string;
-    resolutionHash?: string;
+    disputeReason: string; // Cleartext from KV
+    disputeReasonHash: `0x${string}`; // Hash from contract (for reference)
+    resolutionHash?: `0x${string}`; // Changed from string to hex string type
   } | null;
   resolution: ResolutionDocument | null;
   isLoading: boolean;

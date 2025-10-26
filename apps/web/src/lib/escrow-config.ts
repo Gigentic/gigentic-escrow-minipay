@@ -192,7 +192,7 @@ export const ESCROW_CONTRACT_ABI = [
     anonymous: false,
     inputs: [
       { indexed: true, internalType: "address", name: "raiser", type: "address" },
-      { indexed: false, internalType: "string", name: "reason", type: "string" },
+      { indexed: false, internalType: "bytes32", name: "disputeReasonHash", type: "bytes32" },
     ],
     name: "DisputeRaised",
     type: "event",
@@ -258,7 +258,7 @@ export const ESCROW_CONTRACT_ABI = [
     type: "function",
   },
   {
-    inputs: [{ internalType: "string", name: "reason", type: "string" }],
+    inputs: [{ internalType: "bytes32", name: "_disputeReasonHash", type: "bytes32" }],
     name: "dispute",
     outputs: [],
     stateMutability: "nonpayable",
@@ -273,8 +273,8 @@ export const ESCROW_CONTRACT_ABI = [
   },
   {
     inputs: [],
-    name: "disputeReason",
-    outputs: [{ internalType: "string", name: "", type: "string" }],
+    name: "disputeReasonHash",
+    outputs: [{ internalType: "bytes32", name: "", type: "bytes32" }],
     stateMutability: "view",
     type: "function",
   },
@@ -319,7 +319,7 @@ export const ESCROW_CONTRACT_ABI = [
     inputs: [],
     name: "getDisputeInfo",
     outputs: [
-      { internalType: "string", name: "_disputeReason", type: "string" },
+      { internalType: "bytes32", name: "_disputeReasonHash", type: "bytes32" },
       { internalType: "bytes32", name: "_resolutionHash", type: "bytes32" },
     ],
     stateMutability: "view",
@@ -438,13 +438,13 @@ export interface EscrowDetails {
   platformFee: bigint;
   disputeBond: bigint;
   state: EscrowState;
-  deliverableHash: string;
+  deliverableHash: `0x${string}`;
   createdAt: bigint;
 }
 
 export interface DisputeInfo {
-  disputeReason: string;
-  resolutionHash: string;
+  disputeReasonHash: `0x${string}`;
+  resolutionHash: `0x${string}`;
 }
 
 export interface FactoryStatistics {

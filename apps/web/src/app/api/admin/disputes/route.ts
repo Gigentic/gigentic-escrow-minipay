@@ -9,7 +9,7 @@ import {
   EscrowState,
   CHAIN_ID,
 } from "@/lib/escrow-config";
-import { getKVClient, kvKeys } from "@/lib/kv";
+import { fetchDisputeDocument } from "@/lib/document-fetchers";
 
 // Tell Next.js this route must be dynamic (server-rendered on demand)
 export const dynamic = 'force-dynamic';
@@ -33,7 +33,7 @@ function getChain() {
  * List all disputed escrows
  * Requires admin wallet address in header
  */
-export async function GET(request: Request) {
+export async function GET() {
   try {
     // Check admin authorization using session
     await requireAdmin();
@@ -71,20 +71,12 @@ export async function GET(request: Request) {
             functionName: "getDisputeInfo",
           });
 
-          // disputeInfo[0] is now a hash, fetch actual dispute reason from KV
-          const disputeReasonHash = disputeInfo[0] as string;
-          let actualDisputeReason = disputeReasonHash; // Fallback to hash if fetch fails
-
-          try {
-            const kv = getKVClient();
-            const disputeDoc = await kv.get(kvKeys.dispute(disputeReasonHash));
-            if (disputeDoc && typeof disputeDoc === 'object' && 'reason' in disputeDoc) {
-              actualDisputeReason = disputeDoc.reason as string;
-            }
-          } catch (err) {
-            console.error(`Error fetching dispute document for ${escrowAddress}:`, err);
-            // Keep fallback value (the hash itself)
-          }
+          // Fetch dispute reason from KV using centralized helper
+          const [disputeReasonHash] = disputeInfo; // Auto-typed by wagmi
+          const disputeDoc = await fetchDisputeDocument(
+            disputeReasonHash as `0x${string}`
+          );
+          const actualDisputeReason = disputeDoc.reason;
 
           disputedEscrows.push({
             address: escrowAddress,
