@@ -26,7 +26,7 @@
 
   ✅ Critical Issues (P0 - COMPLETED)
 
-  1. Client-Side Admin Authentication 🔴
+  1. Client-Side Admin Authentication
 
   Status: COMPLETED
   - wallet-auth.ts file doesn't exist (may have been deleted)
@@ -35,21 +35,7 @@
 
 ### TODOs:
 
-  ❌ Outstanding Major Issues (P1)
-
-  2. No Error Boundaries ⚠️
-
-  Status: NOT ADDRESSED
-  - No error.tsx in app directory
-  - One component error crashes entire page
-  - Impact: Poor UX during errors
-
-  10. Inconsistent Error Handling 🔧
-
-  Status: NOT ADDRESSED
-  - Some places have user feedback, others don't
-  - No consistent error handling utility
-
+  
   ---
 
   3. Duplicate Document Fetching Logic ⚠️
@@ -67,6 +53,12 @@
   }
   This same pattern appears in escrow/[address]/page.tsx and admin/disputes/[id]/page.tsx
 
+  8. Synchronous State Updates ⚡
+
+  Status: NOT ADDRESSED
+  Evidence from escrow/[address]/page.tsx:28-120:
+  Sequential awaits and multiple state updates causing re-renders
+
   4. No Loading State Differentiation ⚠️
 
   Status: NOT ADDRESSED
@@ -80,43 +72,6 @@
   Evidence from create-escrow-form.tsx:228:
   const escrowAddress = (decoded.args as any).escrowAddress as Address;
 
-  ❌ Outstanding Performance Issues (P2)
-
-  6. No React.lazy or Code Splitting ⚡
-
-  Status: NOT ADDRESSED
-  - All components eagerly imported
-  - Admin routes not code-split
-
-  7. No API Response Caching ⚡
-
-  Status: PARTIALLY ADDRESSED
-  - ✅ Client-side caching via React Query
-  - ❌ No HTTP cache headers on API routes
-
-  8. Synchronous State Updates ⚡
-
-  Status: NOT ADDRESSED
-  Evidence from escrow/[address]/page.tsx:28-120:
-  Sequential awaits and multiple state updates causing re-renders
-
-  ❌ Outstanding Code Quality Issues (P3)
-
-  9. Magic Numbers 🔧
-
-  Status: NOT ADDRESSED
-  Evidence from create-escrow-form.tsx:334-343:
-  <span>{(parseFloat(amount) * 0.01).toFixed(2)} cUSD</span>
-  <span>{(parseFloat(amount) * 0.04).toFixed(2)} cUSD</span>
-  <span>{(parseFloat(amount) * 1.05).toFixed(2)} cUSD</span>
-
-
-
-  11. No Input Sanitization 🔧
-
-  Status: NOT ADDRESSED
-  - No XSS prevention
-  - No DOMPurify implementation
 
   ❌ Outstanding Architectural Issues (P3)
 
@@ -132,51 +87,472 @@
   - ❌ No centralized query definitions
   - ❌ No prefetching strategy
 
+
+  ==============
+
+
+  ❌ Outstanding Performance Issues (P2)
+
+  6. No React.lazy or Code Splitting ⚡
+
+  Status: NOT ADDRESSED
+  - All components eagerly imported
+  - Admin routes not code-split
+
+  7. No API Response Caching ⚡
+
+  Status: PARTIALLY ADDRESSED
+  - ✅ Client-side caching via React Query
+  - ❌ No HTTP cache headers on API routes
+
+
+  ❌ Outstanding Code Quality Issues (P3)
+
+  9. Magic Numbers 🔧
+
+  Status: NOT ADDRESSED
+  Evidence from create-escrow-form.tsx:334-343:
+  <span>{(parseFloat(amount) * 0.01).toFixed(2)} cUSD</span>
+  <span>{(parseFloat(amount) * 0.04).toFixed(2)} cUSD</span>
+  <span>{(parseFloat(amount) * 1.05).toFixed(2)} cUSD</span>
+
+================
+
+❌ Outstanding Major Issues (P1)
+
+  2. No Error Boundaries ⚠️
+
+  Status: NOT ADDRESSED
+  - No error.tsx in app directory
+  - One component error crashes entire page
+  - Impact: Poor UX during errors
+
+  10. Inconsistent Error Handling 🔧
+
+  Status: NOT ADDRESSED
+  - Some places have user feedback, others don't
+  - No consistent error handling utility
+
+>>>>>
+
+ Error Handling & Error Boundaries Implementation Plan
+
+ Overview
+
+ Fix two related issues: (1) Add error boundaries to prevent crashes and (2) Create consistent error handling
+ utilities.
+
+ Current State Analysis
+
+ Problems Found:
+ - ❌ No error.tsx files anywhere - component errors crash entire page
+ - ❌ 8 files use catch (err: any) - loses TypeScript type safety
+ - ❌ Inconsistent error handling: some log only, some show user feedback
+ - ❌ Mixed patterns: err.message || "Fallback" vs error instanceof Error
+ - ❌ Unused variable warning: session in admin/disputes/[id]/page.tsx:32
+
+ Files with Error Handling Issues:
+ - Client components: 4 files (create-escrow-form, escrow-actions, resolve-form, etc.)
+ - Pages: 5 files (dashboard, escrow detail, admin pages)
+ - API routes: Better structured but could be centralized
+
+ ---
+ Phase 1: Create Error Handling Utilities (P1)
+
+ Task 1.1: Create centralized error utility
+
+ File: src/lib/errors.ts (NEW)
+
+ What: Custom error classes and helper functions
+ // Custom error types for better error handling
+ - EscrowError (base class)
+ - BlockchainError (transaction failures)
+ - ValidationError (form validation)
+ - AuthenticationError (wallet/session issues)
+ - APIError (backend errors)
+
+ // Helper functions
+ - handleError(error: unknown): string - Type-safe error message extraction
+ - isEscrowError(error: unknown): boolean - Type guards
+ - logError(error: unknown, context?: string): void - Consistent logging
+
+ Why: Single source of truth for error handling, type-safe, DRY principle
+
+ ---
+ Phase 2: Add Error Boundaries (P1)
+
+ Task 2.1: Create root error boundary
+
+ File: src/app/error.tsx (NEW)
+
+ What: Catches errors in any page/component
+ - Client component with error/reset props
+ - User-friendly error UI with retry button
+ - Logs error details to console
+ - Matches app's design system (Card, Button)
+
+ Why: Prevents white screen of death, provides recovery option
+
+ Task 2.2: Create admin section error boundary
+
+ File: src/app/admin/error.tsx (NEW)
+
+ What: Admin-specific error handler
+ - Similar to root but admin-themed
+ - Shows "Admin Error" messaging
+ - Link back to admin dashboard
+
+ Why: Better UX for admin-specific errors, isolated from user pages
+
+ Task 2.3: Create loading component
+
+ File: src/app/loading.tsx (NEW)
+
+ What: Root loading state
+ - Simple loading spinner/skeleton
+ - Shown during page transitions
+
+ Why: Better UX during navigation, Next.js best practice
+
+ ---
+ Phase 3: Standardize Client-Side Error Handling (P2)
+
+ Task 3.1: Update create-escrow-form.tsx
+
+ Changes:
+ - Replace catch (err: any) with catch (error)
+ - Use handleError(error) utility
+ - Keep existing UI error display pattern
+ - Improve error specificity (approval vs creation vs storage)
+
+ Task 3.2: Update escrow-actions.tsx
+
+ Changes:
+ - Replace catch (err: any) with catch (error)
+ - Use handleError(error) utility
+ - Both handleComplete and handleDisputeSubmit
+
+ Task 3.3: Update resolve-form.tsx
+
+ Changes:
+ - Replace catch (err: any) with catch (error)
+ - Use handleError(error) utility
+
+ Task 3.4: Update admin pages (3 files)
+
+ Files:
+ - admin/disputes/page.tsx
+ - admin/disputes/[id]/page.tsx
+ - admin/stats/page.tsx
+
+ Changes:
+ - Replace catch (err: any) with catch (error)
+ - Use handleError(error) utility
+ - Fix unused session variable warning
+
+ Task 3.5: Update dashboard page
+
+ Changes:
+ - Update nested catch blocks in escrow fetching
+ - Use consistent error handling
+
+ Task 3.6: Update escrow detail page
+
+ Changes:
+ - Update multiple catch blocks
+ - Use consistent error handling
+
+ ---
+ Phase 4: Standardize API Error Handling (P3)
+
+ Task 4.1: Create API error utility
+
+ File: src/lib/api-errors.ts (NEW)
+
+ What: Consistent API error responses
+ - handleAPIError(error: unknown): NextResponse
+ - Common error codes: UNAUTHORIZED, FORBIDDEN, etc.
+ - Structured error responses
+
+ Task 4.2: Update API routes (6 files)
+
+ Files:
+ - api/admin/disputes/route.ts
+ - api/admin/disputes/[id]/route.ts
+ - api/admin/resolve/route.ts
+ - api/admin/stats/route.ts
+ - api/documents/store/route.ts
+ - api/documents/[hash]/route.ts
+
+ Changes:
+ - Use handleAPIError utility
+ - Remove duplicate error handling code
+ - Keep existing UNAUTHORIZED/FORBIDDEN checks
+
+ ---
+ Implementation Order
+
+ Phase 1: Error Utilities (30 min)
+ ├─ Task 1.1: Create lib/errors.ts
+
+ Phase 2: Error Boundaries (20 min)
+ ├─ Task 2.1: Create app/error.tsx
+ ├─ Task 2.2: Create app/admin/error.tsx
+ └─ Task 2.3: Create app/loading.tsx
+
+ Phase 3: Client Components (40 min)
+ ├─ Task 3.1: create-escrow-form.tsx
+ ├─ Task 3.2: escrow-actions.tsx
+ ├─ Task 3.3: resolve-form.tsx
+ ├─ Task 3.4: admin pages (3 files)
+ ├─ Task 3.5: dashboard/page.tsx
+ └─ Task 3.6: escrow/[address]/page.tsx
+
+
+
+
+
+
+
+================
+
+  11. No Input Sanitization 🔧
+
+  Status: NOT ADDRESSED
+  - No XSS prevention
+  - No DOMPurify implementation
+
+
+Input Sanitization Implementation Plan
+
+ Overview
+
+ Add lightweight input sanitization for user-facing text fields to prevent XSS attacks. Uses simple HTML escaping
+  utility applied on input (client-side) with targeted approach focusing only on displayed text fields.
+
+ User Requirements
+
+ - ✅ Scope: Only displayed text fields (titles, descriptions, dispute reasons)
+ - ✅ Method: Simple escaping utility (no DOMPurify dependency)
+ - ✅ Layer: Client-side on input (onChange handlers)
+
+ Current State Analysis
+
+ Risk Assessment:
+ - ✅ LOW RISK: React escapes JSX text by default - prevents most XSS
+ - ⚠️ ONE RISK FOUND: dangerouslySetInnerHTML in auth-loading-overlay.tsx (line 20)
+   - Current usage: Hardcoded CSS only - no user input involved
+   - Still bad practice - should be removed
+
+ User Input Fields Found:
+ 1. create-escrow-form.tsx: title, description (lines 312, 322)
+ 2. escrow-actions.tsx: disputeReason (line 288)
+ 3. resolve-form.tsx: deliverableReview, decisionRationale (lines 195, 208)
+
+ Display Locations:
+ - escrow-details.tsx: Shows title (52), description (109), criteria (117), disputeReason (142),
+ decisionRationale (176), deliverableReview (181)
+ - escrow-card.tsx: Shows title (59)
+
+ ---
+ Phase 1: Create Sanitization Utility (15 min)
+
+ Task 1.1: Create input validation utility
+
+ File: src/lib/input-validation.ts (NEW)
+
+ What:
+ // Lightweight HTML entity escaping
+ function escapeHtml(text: string): string
+   - Replaces: < > & " ' with HTML entities
+   - Prevents script injection
+   
+ // Sanitize and validate text input
+ function sanitizeTextInput(text: string, maxLength?: number): string
+   - Trim whitespace
+   - Escape HTML entities
+   - Enforce max length
+   - Return clean string
+
+ // Sanitize array of strings (for acceptance criteria)
+ function sanitizeTextArray(items: string[], maxLength?: number): string[]
+   - Map each item through sanitizeTextInput
+   - Filter out empty strings
+
+ Why:
+ - Simple, no dependencies (0KB added to bundle)
+ - Prevents XSS via HTML injection
+ - React already handles the rest
+
+ Example:
+ Input:  "<script>alert('xss')</script>"
+ Output: "&lt;script&gt;alert('xss')&lt;/script&gt;"
+ // React renders as visible text, not executable code
+
+ ---
+ Phase 2: Apply to Form Inputs (30 min)
+
+ Task 2.1: Update create-escrow-form.tsx
+
+ Changes:
+ // Import utility
+ import { sanitizeTextInput } from "@/lib/input-validation";
+
+ // Update onChange handlers
+ onChange={(e) => setTitle(sanitizeTextInput(e.target.value, 200))}
+ onChange={(e) => setDescription(sanitizeTextInput(e.target.value, 1000))}
+
+ Lines: 313, 323
+
+ Task 2.2: Update escrow-actions.tsx (dispute modal)
+
+ Changes:
+ import { sanitizeTextInput } from "@/lib/input-validation";
+
+ onChange={(e) => setDisputeReason(sanitizeTextInput(e.target.value, 256))}
+
+ Lines: 289
+ Note: Already has maxLength={256} attribute, utility enforces it in JS too
+
+ Task 2.3: Update resolve-form.tsx
+
+ Changes:
+ import { sanitizeTextInput } from "@/lib/input-validation";
+
+ onChange={(e) => setDeliverableReview(sanitizeTextInput(e.target.value, 2000))}
+ onChange={(e) => setDecisionRationale(sanitizeTextInput(e.target.value, 2000))}
+
+ // For evidence array (not shown, but if needed)
+ updateEvidence = (index, value) => {
+   newEvidence[index] = sanitizeTextInput(value, 500);
+ }
+
+ Lines: 195, 208
+
+ ---
+ Phase 3: Fix dangerouslySetInnerHTML (15 min)
+
+ Task 3.1: Remove dangerouslySetInnerHTML from auth-loading-overlay.tsx
+
+ Current: Lines 20-71 use dangerouslySetInnerHTML for CSS
+
+ Solution: Move to CSS module or inline  tag
+ // Option 1: Create auth-loading.module.css
+ import styles from './auth-loading.module.css';
+
+ // Option 2: Use Next.js styled-jsx (built-in)
+ <style jsx>{`
+   @keyframes auth-spin { ... }
+   .auth-overlay { ... }
+ `}</style>
+
+ // Option 3: Tailwind classes (if possible)
+ // Preferred - no dangerouslySetInnerHTML at all
+
+ Recommendation: Option 3 (Tailwind) if keyframes can be added to tailwind.config.js, otherwise Option 2
+ (styled-jsx)
+
+ Why: Eliminates the only dangerouslySetInnerHTML usage in codebase
+
+ ---
+ Implementation Order
+
+ Phase 1: Sanitization Utility (15 min)
+ └─ Task 1.1: Create lib/input-validation.ts
+
+ Phase 2: Apply to Forms (30 min)
+ ├─ Task 2.1: create-escrow-form.tsx
+ ├─ Task 2.2: escrow-actions.tsx
+ └─ Task 2.3: resolve-form.tsx
+
+ Phase 3: Fix dangerouslySetInnerHTML (15 min)
+ └─ Task 3.1: auth-loading-overlay.tsx
+
+ Total: ~1 hour
+
+ ---
+ Files to Create (1 new file)
+
+ 1. src/lib/input-validation.ts - Sanitization utility
+ 2. src/components/auth-loading.module.css - CSS module (if Option 1 chosen)
+
+ Files to Modify (4 files)
+
+ 1. components/escrow/create-escrow-form.tsx - Sanitize title, description
+ 2. components/escrow/escrow-actions.tsx - Sanitize disputeReason
+ 3. components/admin/resolve-form.tsx - Sanitize deliverableReview, decisionRationale
+ 4. components/auth-loading-overlay.tsx - Remove dangerouslySetInnerHTML
+
+ ---
+ Testing Strategy
+
+ Manual Testing
+
+ 1. XSS Test: Try entering <script>alert('xss')</script> in title field
+   - ✅ Should display as text: &lt;script&gt;alert('xss')&lt;/script&gt;
+   - ❌ Should NOT execute script
+ 2. HTML Test: Try entering <b>Bold text</b> in description
+   - ✅ Should display as text: &lt;b&gt;Bold text&lt;/b&gt;
+   - ❌ Should NOT render as bold HTML
+ 3. Length Test: Try entering 300 chars in title (max 200)
+   - ✅ Should truncate to 200 characters
+ 4. Normal Text: Enter "Website Development Project"
+   - ✅ Should work normally, no issues
+
+ Type Check
+
+ - Run pnpm type-check - should pass with no errors
+
+ ---
+ Benefits
+
+ ✅ Prevents XSS - HTML entities escaped on input✅ Zero dependencies - No bundle size increase✅ Simple - Easy
+ to understand and maintain✅ Client-side - Immediate feedback to users✅ Enforces limits - Max length validation
+  built-in✅ Removes dangerouslySetInnerHTML - Eliminates security risk
+
+ ---
+ Why This Approach Works
+
+ React's Built-in Protection:
+ - React escapes all JSX text content by default
+ - {title} in JSX → React escapes automatically
+ - XSS only possible via dangerouslySetInnerHTML (which we're removing)
+
+ Our Additional Layer:
+ - Sanitize on input = clean data stored everywhere
+ - No malicious content in state, API calls, or database
+ - Defense in depth approach
+
+ Example:
+ // User types
+ <script>alert('xss')</script>
+
+ // Our utility converts to
+ &lt;script&gt;alert('xss')&lt;/script&gt;
+
+ // React renders as
+ <p>&lt;script&gt;alert('xss')&lt;/script&gt;</p>
+
+ // Browser displays (safe, visible text)
+ <script>alert('xss')</script>
+
+ ---
+ Follows CLAUDE.md Principles
+
+ ✅ Simple - One utility file, applied to 3 components✅ Impacts little code - Only onChange handlers modified✅
+ No bugs introduced - Lightweight escaping, well-tested pattern✅ Zero dependencies - No DOMPurify, no bundle
+ bloat✅ Targeted - Only text fields that need it
+
+=====
+
   14. No Environment Validation 📐
 
   Status: NOT ADDRESSED
   - No Zod schema validation
   - Will crash if env vars missing
 
-  Summary Score Card
 
-  | Category        | Total Items | Completed | In Progress    | Not Started           |
-  |-----------------|-------------|-----------|----------------|-----------------------|
-  | P0 Critical     | 3           | 1 (cache) | 0              | 2 (auth, pagination*) |
-  | P1 Major        | 5           | 0         | 1 (state mgmt) | 4                     |
-  | P2 Performance  | 3           | 0         | 1 (caching)    | 2                     |
-  | P3 Quality/Arch | 6           | 0         | 0              | 6                     |
-  | TOTAL           | 17          | 1         | 2              | 14                    |
-
-  *Pagination intentionally skipped per user decision
-
-  Current Grade: C+ (Improved from B+)
-
-  What Improved:
-  - ✅ Cache management is now proper
-  - ✅ Removed all state management hacks
-  - ✅ Data stays fresh and updates automatically
-
-  What Still Needs Work:
-  - 🔴 Admin authentication security vulnerability
-  - ⚠️ Code quality and maintainability issues
-  - ⚡ Performance optimizations (code splitting, parallel fetching)
-  - 🔧 Type safety and error handling
-
-  Recommended Next Steps
-
-  Immediate (This Week):
-  1. Fix admin authentication (P0) - Move to server-side verification
-  2. Add error boundaries (P1) - Basic error.tsx
-  3. Extract duplicate fetch logic to custom hooks (P1)
-
-  Short-term (Next 2 Weeks):
-  4. Improve loading states (P1)
-  5. Fix type safety issues (P1)
-  6. Add environment validation (P1)
-
-
-
+============
 
 
 
