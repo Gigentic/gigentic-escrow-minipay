@@ -54,7 +54,9 @@
       "mcp__chrome-devtools__select_page",
       "mcp__chrome-devtools__wait_for",
       "WebFetch(domain:wagmi.sh)",
-      "mcp__chrome-devtools__fill_form"
+      "mcp__chrome-devtools__fill_form",
+      "Bash(pnpm compile:*)",
+      "Bash(pnpm test:*)"
     ],
     "deny": [],
     "ask": []

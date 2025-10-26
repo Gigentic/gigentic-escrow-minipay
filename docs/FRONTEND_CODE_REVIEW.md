@@ -810,12 +810,12 @@ Epic: React Query & Custom Hooks Architecture Refactor (UPDATED)
   ☒ Phase 1.1: Create lib/queries.ts - Query key factory
   ☒ Phase 1.2: Create lib/types.ts - TypeScript types
   ☒ Phase 2.1: Create hooks/use-deliverable-document.ts
-  ☐ Phase 2.2: Create hooks/use-escrow-details.ts with parallel fetching
-  ☐ Phase 2.3: Create hooks/use-user-escrows.ts
-  ☐ Phase 3.1: Create hooks/use-create-escrow.ts with optimistic updates
-  ☐ Phase 3.2: Create hooks/use-dispute-escrow.ts
-  ☐ Phase 3.3: Create hooks/use-complete-escrow.ts
-  ☐ Phase 3.4: Create lib/contract-helpers.ts - Type-safe event extraction
+  ☒ Phase 2.2: Create hooks/use-escrow-details.ts with parallel fetching
+  ☒ Phase 2.3: Create hooks/use-user-escrows.ts
+  ☒ Phase 3.1: Create hooks/use-create-escrow.ts with optimistic updates
+  ☒ Phase 3.2: Create hooks/use-dispute-escrow.ts
+  ☒ Phase 3.3: Create hooks/use-complete-escrow.ts
+  ☒ Phase 3.4: Create lib/contract-helpers.ts - Type-safe event extraction
   ☐ Phase 4.1: Refactor create-escrow-form.tsx to use hooks
   ☐ Phase 4.2: Refactor escrow/[address]/page.tsx to use hooks
   ☐ Phase 4.3: Refactor dashboard/page.tsx to use hooks
@@ -824,6 +824,804 @@ Epic: React Query & Custom Hooks Architecture Refactor (UPDATED)
   ☐ Phase 5.2: Add cache headers to api/admin/stats/route.ts
   ☐ Phase 5.3: Add no-cache headers to mutation endpoints
   ☐ Run pnpm type-check to verify no TypeScript errors
+
+When we were at the state shown above, I realized that it was time to fix the disputeReason issue. So we did the following:
+
+Contract + Frontend Refactor: Hash Type Consistency                                                       │
+     │                                                                                                           │
+     │ 🎯 Goal                                                                                                   │
+     │                                                                                                           │
+     │ Change disputeReason from string to bytes32 in smart contract for type consistency, gas savings, and      │
+     │ cleaner frontend code.                                                                                    │
+     │                                                                                                           │
+     │ ---                                                                                                       │
+     │ Phase 1: Smart Contract Updates                                                                           │
+     │                                                                                                           │
+     │ 1.1 Update EscrowContract.sol                                                                             │
+     │                                                                                                           │
+     │ File: apps/contracts/contracts/EscrowContract.sol                                                         │
+     │                                                                                                           │
+     │ Changes:                                                                                                  │
+     │ - Change state variable: string public disputeReason → bytes32 public disputeReasonHash                   │
+     │ - Update dispute() function signature: string memory _reason → bytes32 _disputeReasonHash                 │
+     │ - Update getDisputeInfo() return type: (string memory, bytes32) → (bytes32, bytes32)                      │
+     │ - Update internal references to use disputeReasonHash                                                     │
+     │                                                                                                           │
+     │ 1.2 Update Contract Tests                                                                                 │
+     │                                                                                                           │
+     │ File: apps/contracts/test/*.ts                                                                            │
+     │                                                                                                           │
+     │ Changes:                                                                                                  │
+     │ - Update test calls to dispute() to pass bytes32 hash instead of string                                   │
+     │ - Update assertions checking dispute reason to expect hash                                                │
+     │ - Ensure all tests pass with new signature                                                                │
+     │                                                                                                           │
+     │ 1.3 Compile & Deploy                                                                                      │
+     │                                                                                                           │
+     │ cd apps/contracts                                                                                         │
+     │ pnpm compile                                                                                              │
+     │ pnpm test                    # Verify all tests pass                                                      │
+     │ pnpm deploy:sepolia         # Deploy to Sepolia testnet                                                   │
+     │ pnpm verify                  # Verify on Celoscan                                                         │
+     │                                                                                                           │
+     │ Note deployment addresses for frontend config update                                                      │
+     │                                                                                                           │
+     │ ---                                                                                                       │
+     │ Phase 2: Frontend - ABI & Config Updates                                                                  │
+     │                                                                                                           │
+     │ 2.1 Update ABI in Frontend                                                                                │
+     │                                                                                                           │
+     │ File: apps/web/src/lib/escrow-config.ts                                                                   │
+     │                                                                                                           │
+     │ Changes:                                                                                                  │
+     │ - Copy new ABI from apps/contracts/artifacts/contracts/EscrowContract.sol/EscrowContract.json             │
+     │ - Update ESCROW_CONTRACT_ABI constant                                                                     │
+     │ - Update contract addresses (if redeployed):                                                              │
+     │   - MASTER_FACTORY_ADDRESS                                                                                │
+     │   - Any hardcoded escrow addresses                                                                        │
+     │                                                                                                           │
+     │ Expected ABI changes:                                                                                     │
+     │ // BEFORE                                                                                                 │
+     │ {                                                                                                         │
+     │   name: "disputeReason",                                                                                  │
+     │   outputs: [{ internalType: "string", name: "", type: "string" }],                                        │
+     │ }                                                                                                         │
+     │ {                                                                                                         │
+     │   name: "getDisputeInfo",                                                                                 │
+     │   outputs: [                                                                                              │
+     │     { internalType: "string", name: "_disputeReason", type: "string" },                                   │
+     │     { internalType: "bytes32", name: "_resolutionHash", type: "bytes32" }                                 │
+     │   ]                                                                                                       │
+     │ }                                                                                                         │
+     │                                                                                                           │
+     │ // AFTER                                                                                                  │
+     │ {                                                                                                         │
+     │   name: "disputeReasonHash",                                                                              │
+     │   outputs: [{ internalType: "bytes32", name: "", type: "bytes32" }],                                      │
+     │ }                                                                                                         │
+     │ {                                                                                                         │
+     │   name: "getDisputeInfo",                                                                                 │
+     │   outputs: [                                                                                              │
+     │     { internalType: "bytes32", name: "_disputeReasonHash", type: "bytes32" },                             │
+     │     { internalType: "bytes32", name: "_resolutionHash", type: "bytes32" }                                 │
+     │   ]                                                                                                       │
+     │ }                                                                                                         │
+     │                                                                                                           │
+     │ 2.2 Update Type Definitions                                                                               │
+     │                                                                                                           │
+     │ File: apps/web/src/lib/types.ts                                                                           │
+     │                                                                                                           │
+     │ Add new interface:                                                                                        │
+     │ // Separate on-chain vs application data                                                                  │
+     │ interface DisputeInfoOnChain {                                                                            │
+     │   disputeReasonHash: `0x${string}`;                                                                       │
+     │   resolutionHash: `0x${string}`;                                                                          │
+     │ }                                                                                                         │
+     │                                                                                                           │
+     │ // Update existing                                                                                        │
+     │ interface EscrowDetailData {                                                                              │
+     │   disputeInfo: {                                                                                          │
+     │     disputeReason: string;        // Cleartext from KV                                                    │
+     │     disputeReasonHash: `0x${string}`; // Hash for reference                                               │
+     │     resolutionHash?: `0x${string}`;                                                                       │
+     │   } | null;                                                                                               │
+     │ }                                                                                                         │
+     │                                                                                                           │
+     │ Update hash types:                                                                                        │
+     │ // Change all hash fields from string to `0x${string}`                                                    │
+     │ deliverableHash: `0x${string}`;      // Was: string                                                       │
+     │ disputeReasonHash: `0x${string}`;    // Was: N/A (didn't exist)                                           │
+     │ resolutionHash: `0x${string}`;       // Was: string                                                       │
+     │                                                                                                           │
+     │ 2.3 Update DisputeInfo Interface                                                                          │
+     │                                                                                                           │
+     │ File: apps/web/src/lib/escrow-config.ts                                                                   │
+     │                                                                                                           │
+     │ // BEFORE                                                                                                 │
+     │ export interface DisputeInfo {                                                                            │
+     │   disputeReason: string;                                                                                  │
+     │   resolutionHash: string;                                                                                 │
+     │ }                                                                                                         │
+     │                                                                                                           │
+     │ // AFTER                                                                                                  │
+     │ export interface DisputeInfo {                                                                            │
+     │   disputeReasonHash: `0x${string}`;                                                                       │
+     │   resolutionHash: `0x${string}`;                                                                          │
+     │ }                                                                                                         │
+     │                                                                                                           │
+     │ ---                                                                                                       │
+     │ Phase 3: Frontend - Create Document Fetcher Helpers                                                       │
+     │                                                                                                           │
+     │ 3.1 Create lib/document-fetchers.ts (NEW FILE)                                                            │
+     │                                                                                                           │
+     │ import type { DisputeDocument, ResolutionDocument, DeliverableDocument, DocumentResponse } from           │
+     │ "@/lib/types";                                                                                            │
+     │                                                                                                           │
+     │ /**                                                                                                       │
+     │  * Centralized document fetching helpers                                                                  │
+     │  * Eliminates duplicate hash→cleartext fetching logic                                                     │
+     │  */                                                                                                       │
+     │                                                                                                           │
+     │ export async function fetchDisputeDocument(hash: `0x${string}`): Promise<DisputeDocument> {               │
+     │   const response = await fetch(`/api/documents/${hash}`);                                                 │
+     │   if (!response.ok) {                                                                                     │
+     │     throw new Error(`Failed to fetch dispute document: ${hash}`);                                         │
+     │   }                                                                                                       │
+     │   const data: DocumentResponse<DisputeDocument> = await response.json();                                  │
+     │   return data.document;                                                                                   │
+     │ }                                                                                                         │
+     │                                                                                                           │
+     │ export async function fetchResolutionDocument(hash: `0x${string}`): Promise<ResolutionDocument> {         │
+     │   const response = await fetch(`/api/documents/${hash}`);                                                 │
+     │   if (!response.ok) {                                                                                     │
+     │     throw new Error(`Failed to fetch resolution document: ${hash}`);                                      │
+     │   }                                                                                                       │
+     │   const data: DocumentResponse<ResolutionDocument> = await response.json();                               │
+     │   return data.document;                                                                                   │
+     │ }                                                                                                         │
+     │                                                                                                           │
+     │ export async function fetchDeliverableDocument(hashOrAddress: string): Promise<DeliverableDocument |      │
+     │ null> {                                                                                                   │
+     │   const response = await fetch(`/api/documents/${hashOrAddress}`);                                        │
+     │   if (response.status === 404) return null;                                                               │
+     │   if (!response.ok) {                                                                                     │
+     │     throw new Error(`Failed to fetch deliverable document: ${hashOrAddress}`);                            │
+     │   }                                                                                                       │
+     │   const data: DocumentResponse<DeliverableDocument> = await response.json();                              │
+     │   return data.document;                                                                                   │
+     │ }                                                                                                         │
+     │                                                                                                           │
+     │ ---                                                                                                       │
+     │ Phase 4: Frontend - Simplify Hook Logic                                                                   │
+     │                                                                                                           │
+     │ 4.1 Refactor use-escrow-details.ts                                                                        │
+     │                                                                                                           │
+     │ File: apps/web/src/hooks/use-escrow-details.ts                                                            │
+     │                                                                                                           │
+     │ Simplify parseDisputeInfo function:                                                                       │
+     │                                                                                                           │
+     │ // BEFORE (complex with fallback)                                                                         │
+     │ async function parseDisputeInfo(                                                                          │
+     │   disputeData: readonly unknown[]                                                                         │
+     │ ): Promise<{ disputeReason: string; resolutionHash?: string } | null> {                                   │
+     │   const disputeReasonHash = disputeData[0] as string;                                                     │
+     │   const resolutionHash = disputeData[1] as string;                                                        │
+     │   const ZERO_HASH = "0x00...";                                                                            │
+     │                                                                                                           │
+     │   if (!disputeReasonHash || disputeReasonHash === "" || disputeReasonHash === ZERO_HASH) {                │
+     │     return null;                                                                                          │
+     │   }                                                                                                       │
+     │                                                                                                           │
+     │   // Fetch with fallback to hash if fails                                                                 │
+     │   let actualDisputeReason = disputeReasonHash;                                                            │
+     │   try {                                                                                                   │
+     │     const response = await fetch(`/api/documents/${disputeReasonHash}`);                                  │
+     │     if (response.ok) {                                                                                    │
+     │       const data = await response.json();                                                                 │
+     │       actualDisputeReason = data.document.reason;                                                         │
+     │     }                                                                                                     │
+     │   } catch (err) {                                                                                         │
+     │     console.error("Error fetching dispute document from KV:", err);                                       │
+     │   }                                                                                                       │
+     │                                                                                                           │
+     │   return { disputeReason: actualDisputeReason, resolutionHash: ... };                                     │
+     │ }                                                                                                         │
+     │                                                                                                           │
+     │ // AFTER (simple, leverages wagmi types + helper)                                                         │
+     │ async function parseDisputeInfo(                                                                          │
+     │   disputeData: readonly [disputeReasonHash: `0x${string}`, resolutionHash: `0x${string}`]                 │
+     │ ): Promise<{ disputeReason: string; disputeReasonHash: `0x${string}`; resolutionHash?: `0x${string}` } |  │
+     │ null> {                                                                                                   │
+     │   const [disputeReasonHash, resolutionHash] = disputeData; // Auto-typed by wagmi!                        │
+     │                                                                                                           │
+     │   const ZERO_HASH = "0x0000000000000000000000000000000000000000000000000000000000000000" as const;        │
+     │                                                                                                           │
+     │   // No dispute if hash is zero                                                                           │
+     │   if (!disputeReasonHash || disputeReasonHash === ZERO_HASH) {                                            │
+     │     return null;                                                                                          │
+     │   }                                                                                                       │
+     │                                                                                                           │
+     │   // Fetch cleartext from KV (no fallback - let it error)                                                 │
+     │   const disputeDoc = await fetchDisputeDocument(disputeReasonHash);                                       │
+     │                                                                                                           │
+     │   return {                                                                                                │
+     │     disputeReason: disputeDoc.reason,                                                                     │
+     │     disputeReasonHash,                                                                                    │
+     │     resolutionHash: resolutionHash !== ZERO_HASH ? resolutionHash : undefined,                            │
+     │   };                                                                                                      │
+     │ }                                                                                                         │
+     │                                                                                                           │
+     │ Key improvements:                                                                                         │
+     │ - ✅ No manual type assertions (wagmi auto-types)                                                          │
+     │ - ✅ No fallback logic (proper error handling)                                                             │
+     │ - ✅ Reuses centralized fetcher                                                                            │
+     │ - ✅ Type-safe throughout                                                                                  │
+     │                                                                                                           │
+     │ Remove TODO comment (line 36)                                                                             │
+     │                                                                                                           │
+     │ ---                                                                                                       │
+     │ Phase 5: Frontend - Remove Duplicate Implementations                                                      │
+     │                                                                                                           │
+     │ 5.1 Remove from escrow/[address]/page.tsx                                                                 │
+     │                                                                                                           │
+     │ File: apps/web/src/app/escrow/[address]/page.tsx                                                          │
+     │                                                                                                           │
+     │ Lines 74-94: Delete duplicate dispute fetching logic                                                      │
+     │ - This will be replaced when we refactor to use useEscrowDetails hook (Phase 4.2 of original plan)        │
+     │                                                                                                           │
+     │ 5.2 Remove from app/api/admin/disputes/route.ts                                                           │
+     │                                                                                                           │
+     │ File: apps/web/src/app/api/admin/disputes/route.ts                                                        │
+     │                                                                                                           │
+     │ Lines 75-90: Replace with centralized fetcher:                                                            │
+     │ // BEFORE (lines 75-90)                                                                                   │
+     │ const disputeReasonHash = disputeInfo[0] as string;                                                       │
+     │ let actualDisputeReason = disputeReasonHash;                                                              │
+     │ try {                                                                                                     │
+     │   const kv = getKVClient();                                                                               │
+     │   const disputeDoc = await kv.get(kvKeys.dispute(disputeReasonHash));                                     │
+     │   if (disputeDoc && typeof disputeDoc === 'object' && 'reason' in disputeDoc) {                           │
+     │     actualDisputeReason = disputeDoc.reason as string;                                                    │
+     │   }                                                                                                       │
+     │ } catch (err) { ... }                                                                                     │
+     │                                                                                                           │
+     │ // AFTER                                                                                                  │
+     │ const [disputeReasonHash, resolutionHash] = disputeInfo; // Auto-typed!                                   │
+     │ const disputeDoc = await fetchDisputeDocument(disputeReasonHash);                                         │
+     │ const actualDisputeReason = disputeDoc.reason;                                                            │
+     │                                                                                                           │
+     │ 5.3 Remove from app/api/admin/disputes/[id]/route.ts                                                      │
+     │                                                                                                           │
+     │ File: apps/web/src/app/api/admin/disputes/[id]/route.ts                                                   │
+     │                                                                                                           │
+     │ Lines 71-79: Same replacement as 5.2                                                                      │
+     │                                                                                                           │
+     │ ---                                                                                                       │
+     │ Phase 6: Frontend - Update Components                                                                     │
+     │                                                                                                           │
+     │ 6.1 Update use-dispute-escrow.ts                                                                          │
+     │                                                                                                           │
+     │ File: apps/web/src/hooks/use-dispute-escrow.ts                                                            │
+     │                                                                                                           │
+     │ No changes needed! Already uses hashDocument() and sends hash to contract. The contract's new bytes32     │
+     │ type will be auto-handled by wagmi.                                                                       │
+     │                                                                                                           │
+     │ 6.2 Update escrow-details component                                                                       │
+     │                                                                                                           │
+     │ File: `apps/web/src/components/escrow/escrow-details.tsx**                                                │
+     │                                                                                                           │
+     │ Add hash display (optional enhancement):                                                                  │
+     │ // Show both hash and cleartext                                                                           │
+     │ <p>Dispute Reason: {disputeInfo.disputeReason}</p>                                                        │
+     │ <p className="text-xs text-muted-foreground">                                                             │
+     │   Hash: {shortenHash(disputeInfo.disputeReasonHash)}                                                      │
+     │ </p>                                                                                                      │
+     │                                                                                                           │
+     │ ---                                                                                                       │
+     │ Phase 7: Testing & Verification                                                                           │
+     │                                                                                                           │
+     │ 7.1 Type Check                                                                                            │
+     │                                                                                                           │
+     │ pnpm type-check                                                                                           │
+     │ Ensure all TypeScript errors are resolved.                                                                │
+     │                                                                                                           │
+     │ 7.2 Manual Testing                                                                                        │
+     │                                                                                                           │
+     │ 1. Create new escrow                                                                                      │
+     │ 2. Raise dispute (verify hash is sent, not cleartext)                                                     │
+     │ 3. View dispute details (verify cleartext fetched from KV)                                                │
+     │ 4. Admin resolve dispute                                                                                  │
+     │ 5. View resolution (verify hash→cleartext works)                                                          │
+     │                                                                                                           │
+     │ 7.3 Check Network Tab                                                                                     │
+     │                                                                                                           │
+     │ - Verify contract calls send bytes32 (0x... format)                                                       │
+     │ - Verify API calls fetch documents by hash                                                                │
+     │ - Verify no errors in console                                                                             │
+     │                                                                                                           │
+     │ ---                                                                                                       │
+     │ Phase 8: Cleanup                                                                                          │
+     │                                                                                                           │
+     │ 8.1 Remove Unused Code                                                                                    │
+     │                                                                                                           │
+     │ - Remove old DisputeInfo interface if replaced                                                            │
+     │ - Remove any commented-out fallback logic                                                                 │
+     │                                                                                                           │
+     │ 8.2 Update Documentation                                                                                  │
+     │                                                                                                           │
+     │ Add JSDoc comments explaining the hash→document pattern:                                                  │
+     │ /**                                                                                                       │
+     │  * All documents are stored off-chain in KV for gas efficiency.                                           │
+     │  * On-chain we only store bytes32 hashes:                                                                 │
+     │  * - deliverableHash: keccak256(deliverable JSON)                                                         │
+     │  * - disputeReasonHash: keccak256(dispute JSON)                                                           │
+     │  * - resolutionHash: keccak256(resolution JSON)                                                           │
+     │  */                                                                                                       │
+     │                                                                                                           │
+     │ ---                                                                                                       │
+     │ 📊 Summary of Changes                                                                                     │
+     │                                                                                                           │
+     │ Smart Contract:                                                                                           │
+     │ - 1 file modified (EscrowContract.sol)                                                                    │
+     │ - Tests updated                                                                                           │
+     │ - Redeploy + verify                                                                                       │
+     │                                                                                                           │
+     │ Frontend:                                                                                                 │
+     │ - 1 file created: lib/document-fetchers.ts                                                                │
+     │ - 5 files modified:                                                                                       │
+     │   - lib/escrow-config.ts (ABI update)                                                                     │
+     │   - lib/types.ts (new types, hash type improvements)                                                      │
+     │   - hooks/use-escrow-details.ts (simplify)                                                                │
+     │   - app/api/admin/disputes/route.ts (use helper)                                                          │
+     │   - app/api/admin/disputes/[id]/route.ts (use helper)                                                     │
+     │                                                                                                           │
+     │ Code Reduction:                                                                                           │
+     │ - ~65 lines removed (duplicate logic)                                                                     │
+     │ - ~30 lines added (centralized helpers)                                                                   │
+     │ - Net: -35 lines, much cleaner                                                                            │
+     │                                                                                                           │
+     │ Type Safety:                                                                                              │
+     │ - All hashes now 0x${string} (enforced by TypeScript)                                                     │
+     │ - No manual type assertions (wagmi auto-types from ABI)                                                   │
+     │ - Separation of on-chain vs application data                                                              │
+     │                                                                                                           │
+     │ ---                                                                                                       │
+     │ ⚠️ Important Notes                                                                                        │
+     │                                                                                                           │
+     │ 1. Contract addresses will change after redeployment - update .env and escrow-config.ts                   │
+     │ 2. No backwards compatibility - old contract data won't be accessible (confirmed OK by user)              │
+     │ 3. ABI regeneration is critical - must copy new ABI to frontend after contract compilation                │
+     │                                                                                                           │
+     │ ---                                                                                                       │
+     │ Ready to execute this plan?                                                                               │
+     ╰───────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+> why do we have has or address here? can we also further simplify here? \
+ export async function fetchDeliverableDocument(hashOrAddress: string): Promise<DeliverableDocument | null> {
+   const response = await fetch(`/api/documents/${hashOrAddress}`);
+   if (response.status === 404) return null;
+   if (!response.ok) {
+     throw new Error(`Failed to fetch deliverable document: ${hashOrAddress}`);
+   }
+   const data: DocumentResponse<DeliverableDocument> = await response.json();
+   return data.document; 
+
+⏺ Excellent catch! Let me investigate how deliverable documents are actually stored and accessed:
+
+⏺ Search(pattern: "api/documents/store", output_mode: "content")
+  ⎿  Found 101 lines (ctrl+o to expand)
+
+⏺ Read(~/dev/Gigentic/gigentic-escrow-minipay/apps/web/src/app/api/documents/store/route.ts)
+  ⎿  Read 162 lines
+
+⏺ Search(pattern: "kvKeys\.", path: "~/dev/Gigentic/gigentic-escrow-minipay/apps/web/src/lib/kv.ts", output_mode:
+        "content")
+  ⎿  Found 11 lines (ctrl+o to expand)
+
+⏺ Read(~/dev/Gigentic/gigentic-escrow-minipay/apps/web/src/lib/kv.ts)
+  ⎿  Read 50 lines
+
+⏺ Read(~/dev/Gigentic/gigentic-escrow-minipay/apps/web/src/lib/kv.ts)
+  ⎿  Read 30 lines
+
+⏺ Perfect analysis! I can see the issue now. Looking at the KV keys (line 56):
+
+  deliverable: (escrowAddress: string) => `${KV_PREFIXES.DELIVERABLE}${escrowAddress.toLowerCase()}`
+  resolution: (hash: string) => `${KV_PREFIXES.RESOLUTION}${hash}`
+  dispute: (hash: string) => `${KV_PREFIXES.DISPUTE}${hash}`
+
+  The Problem
+
+  Deliverables are keyed DIFFERENTLY than disputes/resolutions:
+  - ✅ Disputes: Keyed by hash
+  - ✅ Resolutions: Keyed by hash
+  - ❌ Deliverables: Keyed by escrowAddress (NOT hash!)
+
+  The hashOrAddress parameter is misleading - it's always the escrowAddress for deliverables, never a hash!
+
+  ---
+  Why This Design?
+
+  This actually makes sense:
+  1. Deliverable hash doesn't exist yet when you need to fetch it (chicken-egg problem)
+  2. You know the escrowAddress from the contract/URL
+  3. The deliverableHash on-chain is for integrity verification, not lookup
+
+  So we have:
+  // Contract stores hash for verification
+  deliverableHash: 0x1234...
+
+  // KV stores document at address key
+  KV["deliverable:0xABCD..."] = { title, description, ... }
+
+  ---
+  Simplification
+
+  Rename parameter for clarity:
+
+  // BEFORE (confusing - implies it could be either)
+  export async function fetchDeliverableDocument(
+    hashOrAddress: string
+  ): Promise<DeliverableDocument | null>
+
+  // AFTER (clear - it's always address)
+  export async function fetchDeliverableDocument(
+    escrowAddress: Address
+  ): Promise<DeliverableDocument | null>
+
+  Keep 3 separate functions since they have fundamentally different lookup patterns:
+  fetchDeliverableDocument(escrowAddress: Address)  // Lookup by address
+  fetchDisputeDocument(hash: `0x${string}`)         // Lookup by hash
+  fetchResolutionDocument(hash: `0x${string}`)      // Lookup by hash
+
+  ---
+  Alternative: Unify KV Keys?
+
+  We could change deliverables to be keyed by hash like the others, but that would require:
+  1. ❌ Fetching deliverableHash from contract first
+  2. ❌ Extra contract call just to get the hash
+  3. ❌ More complexity
+
+  Current design is actually optimal - each document type uses its natural key.
+
+  ---
+  Recommendation: Just rename hashOrAddress → escrowAddress for clarity. The current KV key strategy is good.
+
+> Okay, great, now pls start implementing the tasks based on our latest plans. When you are done with the 
+contract and test updates, report so that we can do testing and deployment together. 
+
+⏺ Perfect! Let me start with the contract updates. Exiting plan mode and beginning implementation.
+
+⏺ Read(contracts/EscrowContract.sol)
+  ⎿  Read 227 lines
+
+⏺ Update(contracts/EscrowContract.sol)
+  ⎿  Updated contracts/EscrowContract.sol with 1 addition and 1 removal
+       41        
+       42        // Mutable state
+       43        EscrowState public state;
+       44 -      string public disputeReason;
+       44 +      bytes32 public disputeReasonHash;
+       45        bytes32 public resolutionHash;
+       46        
+       47        // Events
+
+⏺ Update(contracts/EscrowContract.sol)
+  ⎿  Updated contracts/EscrowContract.sol with 3 additions and 3 removals               
+       48        event EscrowFunded(uint256 amount, uint256 fee, uint256 bond);
+       49        event EscrowCompleted(address indexed recipient, uint256 amount);
+       50        event EscrowRefunded(address indexed depositor, uint256 amount);
+       51 -      event DisputeRaised(address indexed raiser, string reason);
+       51 +      event DisputeRaised(address indexed raiser, bytes32 disputeReasonHash);
+       52        event DisputeResolved(
+       53 -          bool favorDepositor, 
+       54 -          bytes32 resolutionHash, 
+       53 +          bool favorDepositor,
+       54 +          bytes32 resolutionHash,
+       55            uint256 payoutAmount,
+       56            uint256 feeAmount
+       57        );
+
+⏺ Update(contracts/EscrowContract.sol)
+  ⎿  Updated contracts/EscrowContract.sol with 6 additions and 6 removals                               
+       133            emit EscrowCompleted(recipient, escrowAmount);
+       134        }
+       135        
+       136 -      function dispute(string memory reason
+           -  ) external onlyParties inState(EscrowState.CREATED) {
+       137 -          require(bytes(reason).length > 0 && bytes(reason).length <= 256, "Invalid dispute 
+           - reason");
+       138 -          
+       136 +      function dispute(bytes32 _disputeReasonHash
+           +  ) external onlyParties inState(EscrowState.CREATED) {
+       137 +          require(_disputeReasonHash != bytes32(0), "Dispute reason hash required");
+       138 +  
+       139            state = EscrowState.DISPUTED;
+       140 -          disputeReason = reason;
+       141 -          
+       142 -          emit DisputeRaised(msg.sender, reason);
+       140 +          disputeReasonHash = _disputeReasonHash;
+       141 +  
+       142 +          emit DisputeRaised(msg.sender, _disputeReasonHash);
+       143        }
+       144        
+       145        function resolve(
+
+⏺ Update(contracts/EscrowContract.sol)
+  ⎿  Updated contracts/EscrowContract.sol with 2 additions and 2 removals   
+       209        }
+       210        
+       211        function getDisputeInfo() external view returns (
+       212 -          string memory _disputeReason,
+       212 +          bytes32 _disputeReasonHash,
+       213            bytes32 _resolutionHash
+       214        ) {
+       215 -          return (disputeReason, resolutionHash);
+       215 +          return (disputeReasonHash, resolutionHash);
+       216        }
+       217        
+       218        function getTotalValue() external view returns (uint256) {
+
+⏺ Search(pattern: "**/*.test.ts", path: "~/dev/Gigentic/gigentic-escrow-minipay/apps/contracts")
+  ⎿  Found 2 files (ctrl+o to expand)
+
+⏺ Read(test/EscrowContract.test.ts)
+  ⎿  Read 905 lines
+
+⏺ Now I'll update the tests to use bytes32 hashes instead of strings:
+
+⏺ Update(test/EscrowContract.test.ts)
+  ⎿  Updated test/EscrowContract.test.ts with 2 additions and 1 removal                 
+       278          );
+       279    
+       280          // Dispute first
+       281 -        await escrowAsDepositor.write.dispute(["Test dispute reason"]);
+       281 +        const disputeHash = keccak256(toBytes("Test dispute reason"));
+       282 +        await escrowAsDepositor.write.dispute([disputeHash]);
+       283    
+       284          // Try to complete
+       285          await expect(escrowAsDepositor.write.complete()).to.be.rejectedWith(
+
+⏺ Update(test/EscrowContract.test.ts)
+  ⎿  Updated test/EscrowContract.test.ts with 4 additions and 2 removals                     
+       319            { client: { wallet: depositor } }
+       320          );
+       321    
+       322 +        const disputeHash = keccak256(toBytes("Deliverable not as specified"));
+       323          await expect(
+       324 -          escrowAsDepositor.write.dispute(["Deliverable not as specified"])
+       324 +          escrowAsDepositor.write.dispute([disputeHash])
+       325          ).to.be.fulfilled;
+       326        });
+       327    
+     ...
+       335            { client: { wallet: recipient } }
+       336          );
+       337    
+       338 +        const disputeHash = keccak256(toBytes("Depositor refusing to complete"));
+       339          await expect(
+       340 -          escrowAsRecipient.write.dispute(["Depositor refusing to complete"])
+       340 +          escrowAsRecipient.write.dispute([disputeHash])
+       341          ).to.be.fulfilled;
+       342        });
+       343    
+
+⏺ Update(test/EscrowContract.test.ts)
+  ⎿  Updated test/EscrowContract.test.ts with 4 additions and 4 removals             
+       342          ).to.be.fulfilled;
+       343        });
+       344    
+       345 -      it("Should store dispute reason", async function () {
+       345 +      it("Should store dispute reason hash", async function () {
+       346          const { escrow, depositor } = await loadFixture(
+       347            createEscrowThroughFactory
+       348          );
+       349    
+       350 -        const reason = "Deliverable incomplete";
+       350 +        const disputeHash = keccak256(toBytes("Deliverable incomplete"));
+       351    
+       352          const escrowAsDepositor = await hre.viem.getContractAt(
+       353            "EscrowContract",
+     ...
+       355            { client: { wallet: depositor } }
+       356          );
+       357    
+       358 -        await escrowAsDepositor.write.dispute([reason]);
+       358 +        await escrowAsDepositor.write.dispute([disputeHash]);
+       359    
+       360          const disputeInfo = await escrow.read.getDisputeInfo();
+       361 -        expect(disputeInfo[0]).to.equal(reason);
+       361 +        expect(disputeInfo[0]).to.equal(disputeHash);
+       362        });
+       363    
+       364        it("Should change state to DISPUTED", async function () {
+
+⏺ Update(test/EscrowContract.test.ts)
+  ⎿  Updated test/EscrowContract.test.ts with 4 additions and 2 removals                   
+       372            { client: { wallet: depositor } }
+       373          );
+       374    
+       375 -        await escrowAsDepositor.write.dispute(["Test reason"]);
+       375 +        const disputeHash = keccak256(toBytes("Test reason"));
+       376 +        await escrowAsDepositor.write.dispute([disputeHash]);
+       377    
+       378          expect(await escrow.read.state()).to.equal(1); // DISPUTED = 1
+       379        });
+     ...
+       388            { client: { wallet: depositor } }
+       389          );
+       390    
+       391 -        const hash = await escrowAsDepositor.write.dispute(["Test reason"]);
+       391 +        const disputeHash = keccak256(toBytes("Test reason"));
+       392 +        const hash = await escrowAsDepositor.write.dispute([disputeHash]);
+       393          const receipt = await publicClient.waitForTransactionReceipt({ hash });
+       394    
+       395          expect(receipt.status).to.equal("success");
+
+⏺ Update(test/EscrowContract.test.ts)
+  ⎿  Updated test/EscrowContract.test.ts with 6 additions and 22 removals                                 
+       407            { client: { wallet: otherAccount } }
+       408          );
+       409    
+       410 +        const disputeHash = keccak256(toBytes("Test reason"));
+       411          await expect(
+       412 -          escrowAsOther.write.dispute(["Test reason"])
+       412 +          escrowAsOther.write.dispute([disputeHash])
+       413          ).to.be.rejectedWith("Only parties");
+       414        });
+       415    
+       416 -      it("Should reject empty dispute reason", async function () {
+       416 +      it("Should reject zero dispute reason hash", async function () {
+       417          const { escrow, depositor } = await loadFixture(
+       418            createEscrowThroughFactory
+       419          );
+     ...
+       423            { client: { wallet: depositor } }
+       424          );
+       425    
+       426 -        await expect(escrowAsDepositor.write.dispute([""])).to.be.rejectedWith(
+       427 -          "Invalid dispute reason"
+       426 +        const zeroHash = "0x0000000000000000000000000000000000000000000000000000000000000000";
+       427 +        await expect(escrowAsDepositor.write.dispute([zeroHash])).to.be.rejectedWith(
+       428 +          "Dispute reason hash required"
+       429          );
+       430        });
+       431    
+       432 -      it("Should reject dispute reason over 256 characters", async function () {
+       433 -        const { escrow, depositor } = await loadFixture(
+       434 -          createEscrowThroughFactory
+       435 -        );
+       436 -  
+       437 -        const longReason = "a".repeat(257);
+       438 -  
+       439 -        const escrowAsDepositor = await hre.viem.getContractAt(
+       440 -          "EscrowContract",
+       441 -          escrow.address,
+       442 -          { client: { wallet: depositor } }
+       443 -        );
+       444 -  
+       445 -        await expect(
+       446 -          escrowAsDepositor.write.dispute([longReason])
+       447 -        ).to.be.rejectedWith("Invalid dispute reason");
+       448 -      });
+       449 -  
+       432        it("Should reject dispute from non-CREATED state", async function () {
+       433          const { escrow, depositor } = await loadFixture(
+       434            createEscrowThroughFactory
+
+⏺ Update(test/EscrowContract.test.ts)
+  ⎿  Updated test/EscrowContract.test.ts with 2 additions and 1 removal   
+       445          await escrowAsDepositor.write.complete();
+       446    
+       447          // Try to dispute
+       448 +        const disputeHash = keccak256(toBytes("Test reason"));
+       449          await expect(
+       450 -          escrowAsDepositor.write.dispute(["Test reason"])
+       450 +          escrowAsDepositor.write.dispute([disputeHash])
+       451          ).to.be.rejectedWith("Invalid state");
+       452        });
+       453      });
+
+⏺ Update(test/EscrowContract.test.ts)
+  ⎿  Updated test/EscrowContract.test.ts with 2 additions and 1 removal     
+       463            { client: { wallet: depositor } }
+       464          );
+       465    
+       466 -        await escrowAsDepositor.write.dispute(["Test dispute"]);
+       466 +        const disputeHash = keccak256(toBytes("Test dispute"));
+       467 +        await escrowAsDepositor.write.dispute([disputeHash]);
+       468    
+       469          return fixture;
+       470        }
+
+⏺ Update(test/EscrowContract.test.ts)
+  ⎿  Updated test/EscrowContract.test.ts with 2 additions and 1 removal     
+       569            { client: { wallet: depositor } }
+       570          );
+       571    
+       572 -        await escrowAsDepositor.write.dispute(["Test dispute"]);
+       572 +        const disputeHash = keccak256(toBytes("Test dispute"));
+       573 +        await escrowAsDepositor.write.dispute([disputeHash]);
+       574    
+       575          return fixture;
+       576        }
+
+⏺ Update(test/EscrowContract.test.ts)
+  ⎿  Updated test/EscrowContract.test.ts with 4 additions and 5 removals                                  
+       768          expect(balance).to.equal(expectedBalance);
+       769        });
+       770    
+       771 -      it("Should return empty dispute info initially", async function () {
+       771 +      it("Should return zero hash dispute info initially", async function () {
+       772          const { escrow } = await loadFixture(createEscrowThroughFactory);
+       773    
+       774          const disputeInfo = await escrow.read.getDisputeInfo();
+       775    
+       776 -        expect(disputeInfo[0]).to.equal("");
+       777 -        expect(disputeInfo[1]).to.equal(
+       778 -          "0x0000000000000000000000000000000000000000000000000000000000000000"
+       779 -        );
+       776 +        const zeroHash = "0x0000000000000000000000000000000000000000000000000000000000000000";
+       777 +        expect(disputeInfo[0]).to.equal(zeroHash);
+       778 +        expect(disputeInfo[1]).to.equal(zeroHash);
+       779        });
+       780      });
+       781    
+
+⏺ Update(test/EscrowContract.test.ts)
+  ⎿  Updated test/EscrowContract.test.ts with 2 additions and 1 removal     
+       874            escrow.address,
+       875            { client: { wallet: depositor } }
+       876          );
+       877 -        await escrowAsDepositor.write.dispute(["Test dispute"]);
+       877 +        const disputeHash = keccak256(toBytes("Test dispute"));
+       878 +        await escrowAsDepositor.write.dispute([disputeHash]);
+       879    
+       880          // Resolve
+       881          const [admin] = await hre.viem.getWalletClients();
+  ⎿  Found 5 new diagnostic issues in 1 file (ctrl-o to expand)
+
+⏺ Bash(cd /Users/marci/dev/Gigentic/gigentic-escrow-minipay/apps/contracts && pnpm compile)
+  ⎿  > hardhat@1.0.0 compile /Users/marci/dev/Gigentic/gigentic-escrow-minipay/apps/contracts
+     > hardhat compile
+
+     Compiled 2 Solidity files successfully (evm target: paris).
+
+⏺ Bash(pnpm test) timeout: 1m 0s
+  ⎿  > hardhat@1.0.0 test /Users/marci/dev/Gigentic/gigentic-escrow-minipay/apps/contracts
+     > hardhat test
+     … +164 lines (ctrl+o to expand)
+
+⏺ Perfect! All tests passed! ✅
+
+⏺ ✅ Contract Updates Complete!
+
+  Summary of Changes:
+
+  Smart Contract (EscrowContract.sol)
+
+  1. ✅ Changed string public disputeReason → bytes32 public disputeReasonHash
+  2. ✅ Updated dispute() function to accept bytes32 _disputeReasonHash instead of string memory reason
+  3. ✅ Updated getDisputeInfo() to return bytes32 _disputeReasonHash instead of string
+  4. ✅ Updated DisputeRaised event to emit bytes32 disputeReasonHash
+  5. ✅ Simplified validation: removed 256-char limit check, now just validates != bytes32(0)
+
+  Tests (EscrowContract.test.ts)
+
+  1. ✅ Updated all dispute() calls to pass keccak256(toBytes("reason")) instead of strings
+  2. ✅ Updated "Should store dispute reason" → "Should store dispute reason hash" test
+  3. ✅ Removed "256 character limit" test (no longer applicable)
+  4. ✅ Updated "empty string" test → "zero hash" test
+  5. ✅ Updated both createDisputedEscrow helper functions
+  6. ✅ Updated "empty dispute info" test to expect zero hashes
+  7. ✅ All 57 tests passing ✨
+
+
+So now we are here. I sucessfully redeployed the contract on celo sepolia testnet and verified it on celoscan. Also updated the frontend to use the new contract address.
+
+Now pls analyze the current code base and give me a plan of action how to continue.
+
+
 
 
 

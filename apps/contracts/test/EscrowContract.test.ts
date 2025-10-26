@@ -278,7 +278,8 @@ describe("EscrowContract", function () {
       );
 
       // Dispute first
-      await escrowAsDepositor.write.dispute(["Test dispute reason"]);
+      const disputeHash = keccak256(toBytes("Test dispute reason"));
+      await escrowAsDepositor.write.dispute([disputeHash]);
 
       // Try to complete
       await expect(escrowAsDepositor.write.complete()).to.be.rejectedWith(
@@ -318,8 +319,9 @@ describe("EscrowContract", function () {
         { client: { wallet: depositor } }
       );
 
+      const disputeHash = keccak256(toBytes("Deliverable not as specified"));
       await expect(
-        escrowAsDepositor.write.dispute(["Deliverable not as specified"])
+        escrowAsDepositor.write.dispute([disputeHash])
       ).to.be.fulfilled;
     });
 
@@ -334,17 +336,18 @@ describe("EscrowContract", function () {
         { client: { wallet: recipient } }
       );
 
+      const disputeHash = keccak256(toBytes("Depositor refusing to complete"));
       await expect(
-        escrowAsRecipient.write.dispute(["Depositor refusing to complete"])
+        escrowAsRecipient.write.dispute([disputeHash])
       ).to.be.fulfilled;
     });
 
-    it("Should store dispute reason", async function () {
+    it("Should store dispute reason hash", async function () {
       const { escrow, depositor } = await loadFixture(
         createEscrowThroughFactory
       );
 
-      const reason = "Deliverable incomplete";
+      const disputeHash = keccak256(toBytes("Deliverable incomplete"));
 
       const escrowAsDepositor = await hre.viem.getContractAt(
         "EscrowContract",
@@ -352,10 +355,10 @@ describe("EscrowContract", function () {
         { client: { wallet: depositor } }
       );
 
-      await escrowAsDepositor.write.dispute([reason]);
+      await escrowAsDepositor.write.dispute([disputeHash]);
 
       const disputeInfo = await escrow.read.getDisputeInfo();
-      expect(disputeInfo[0]).to.equal(reason);
+      expect(disputeInfo[0]).to.equal(disputeHash);
     });
 
     it("Should change state to DISPUTED", async function () {
@@ -369,7 +372,8 @@ describe("EscrowContract", function () {
         { client: { wallet: depositor } }
       );
 
-      await escrowAsDepositor.write.dispute(["Test reason"]);
+      const disputeHash = keccak256(toBytes("Test reason"));
+      await escrowAsDepositor.write.dispute([disputeHash]);
 
       expect(await escrow.read.state()).to.equal(1); // DISPUTED = 1
     });
@@ -385,7 +389,8 @@ describe("EscrowContract", function () {
         { client: { wallet: depositor } }
       );
 
-      const hash = await escrowAsDepositor.write.dispute(["Test reason"]);
+      const disputeHash = keccak256(toBytes("Test reason"));
+      const hash = await escrowAsDepositor.write.dispute([disputeHash]);
       const receipt = await publicClient.waitForTransactionReceipt({ hash });
 
       expect(receipt.status).to.equal("success");
@@ -402,12 +407,13 @@ describe("EscrowContract", function () {
         { client: { wallet: otherAccount } }
       );
 
+      const disputeHash = keccak256(toBytes("Test reason"));
       await expect(
-        escrowAsOther.write.dispute(["Test reason"])
+        escrowAsOther.write.dispute([disputeHash])
       ).to.be.rejectedWith("Only parties");
     });
 
-    it("Should reject empty dispute reason", async function () {
+    it("Should reject zero dispute reason hash", async function () {
       const { escrow, depositor } = await loadFixture(
         createEscrowThroughFactory
       );
@@ -418,27 +424,10 @@ describe("EscrowContract", function () {
         { client: { wallet: depositor } }
       );
 
-      await expect(escrowAsDepositor.write.dispute([""])).to.be.rejectedWith(
-        "Invalid dispute reason"
+      const zeroHash = "0x0000000000000000000000000000000000000000000000000000000000000000";
+      await expect(escrowAsDepositor.write.dispute([zeroHash])).to.be.rejectedWith(
+        "Dispute reason hash required"
       );
-    });
-
-    it("Should reject dispute reason over 256 characters", async function () {
-      const { escrow, depositor } = await loadFixture(
-        createEscrowThroughFactory
-      );
-
-      const longReason = "a".repeat(257);
-
-      const escrowAsDepositor = await hre.viem.getContractAt(
-        "EscrowContract",
-        escrow.address,
-        { client: { wallet: depositor } }
-      );
-
-      await expect(
-        escrowAsDepositor.write.dispute([longReason])
-      ).to.be.rejectedWith("Invalid dispute reason");
     });
 
     it("Should reject dispute from non-CREATED state", async function () {
@@ -456,8 +445,9 @@ describe("EscrowContract", function () {
       await escrowAsDepositor.write.complete();
 
       // Try to dispute
+      const disputeHash = keccak256(toBytes("Test reason"));
       await expect(
-        escrowAsDepositor.write.dispute(["Test reason"])
+        escrowAsDepositor.write.dispute([disputeHash])
       ).to.be.rejectedWith("Invalid state");
     });
   });
@@ -473,7 +463,8 @@ describe("EscrowContract", function () {
         { client: { wallet: depositor } }
       );
 
-      await escrowAsDepositor.write.dispute(["Test dispute"]);
+      const disputeHash = keccak256(toBytes("Test dispute"));
+      await escrowAsDepositor.write.dispute([disputeHash]);
 
       return fixture;
     }
@@ -578,7 +569,8 @@ describe("EscrowContract", function () {
         { client: { wallet: depositor } }
       );
 
-      await escrowAsDepositor.write.dispute(["Test dispute"]);
+      const disputeHash = keccak256(toBytes("Test dispute"));
+      await escrowAsDepositor.write.dispute([disputeHash]);
 
       return fixture;
     }
@@ -776,15 +768,14 @@ describe("EscrowContract", function () {
       expect(balance).to.equal(expectedBalance);
     });
 
-    it("Should return empty dispute info initially", async function () {
+    it("Should return zero hash dispute info initially", async function () {
       const { escrow } = await loadFixture(createEscrowThroughFactory);
 
       const disputeInfo = await escrow.read.getDisputeInfo();
 
-      expect(disputeInfo[0]).to.equal("");
-      expect(disputeInfo[1]).to.equal(
-        "0x0000000000000000000000000000000000000000000000000000000000000000"
-      );
+      const zeroHash = "0x0000000000000000000000000000000000000000000000000000000000000000";
+      expect(disputeInfo[0]).to.equal(zeroHash);
+      expect(disputeInfo[1]).to.equal(zeroHash);
     });
   });
 
@@ -883,7 +874,8 @@ describe("EscrowContract", function () {
         escrow.address,
         { client: { wallet: depositor } }
       );
-      await escrowAsDepositor.write.dispute(["Test dispute"]);
+      const disputeHash = keccak256(toBytes("Test dispute"));
+      await escrowAsDepositor.write.dispute([disputeHash]);
 
       // Resolve
       const [admin] = await hre.viem.getWalletClients();

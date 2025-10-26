@@ -41,17 +41,17 @@ contract EscrowContract is ReentrancyGuard {
     
     // Mutable state
     EscrowState public state;
-    string public disputeReason;
+    bytes32 public disputeReasonHash;
     bytes32 public resolutionHash;
     
     // Events
     event EscrowFunded(uint256 amount, uint256 fee, uint256 bond);
     event EscrowCompleted(address indexed recipient, uint256 amount);
     event EscrowRefunded(address indexed depositor, uint256 amount);
-    event DisputeRaised(address indexed raiser, string reason);
+    event DisputeRaised(address indexed raiser, bytes32 disputeReasonHash);
     event DisputeResolved(
-        bool favorDepositor, 
-        bytes32 resolutionHash, 
+        bool favorDepositor,
+        bytes32 resolutionHash,
         uint256 payoutAmount,
         uint256 feeAmount
     );
@@ -133,13 +133,13 @@ contract EscrowContract is ReentrancyGuard {
         emit EscrowCompleted(recipient, escrowAmount);
     }
     
-    function dispute(string memory reason) external onlyParties inState(EscrowState.CREATED) {
-        require(bytes(reason).length > 0 && bytes(reason).length <= 256, "Invalid dispute reason");
-        
+    function dispute(bytes32 _disputeReasonHash) external onlyParties inState(EscrowState.CREATED) {
+        require(_disputeReasonHash != bytes32(0), "Dispute reason hash required");
+
         state = EscrowState.DISPUTED;
-        disputeReason = reason;
-        
-        emit DisputeRaised(msg.sender, reason);
+        disputeReasonHash = _disputeReasonHash;
+
+        emit DisputeRaised(msg.sender, _disputeReasonHash);
     }
     
     function resolve(
@@ -209,10 +209,10 @@ contract EscrowContract is ReentrancyGuard {
     }
     
     function getDisputeInfo() external view returns (
-        string memory _disputeReason,
+        bytes32 _disputeReasonHash,
         bytes32 _resolutionHash
     ) {
-        return (disputeReason, resolutionHash);
+        return (disputeReasonHash, resolutionHash);
     }
     
     function getTotalValue() external view returns (uint256) {
