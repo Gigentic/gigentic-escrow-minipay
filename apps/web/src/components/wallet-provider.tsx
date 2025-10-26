@@ -76,12 +76,6 @@ const connectors = connectorsForWallets(
 
 // Create configs for each supported chain
 const chainConfigs = {
-  // celoAlfajores: createConfig({
-  //   chains: [celoAlfajores],
-  //   connectors,
-  //   transports: { [celoAlfajores.id]: http() },
-  //   ssr: true,
-  // }),
   hardhat: createConfig({
     chains: [hardhat],
     connectors,

@@ -185,36 +185,6 @@ export function ResolveForm({
           />
         </div>
 
-        {/* Evidence Considered
-        <div>
-          <label className="block text-sm font-medium mb-2">
-            Evidence Considered
-          </label>
-          {evidenceConsidered.map((evidence, index) => (
-            <div key={index} className="flex gap-2 mb-2">
-              <input
-                type="text"
-                className="flex-1 px-4 py-2 border rounded-md"
-                placeholder={`Evidence ${index + 1} (e.g., "GitHub repository", "Screenshots")`}
-                value={evidence}
-                onChange={(e) => updateEvidence(index, e.target.value)}
-              />
-              {evidenceConsidered.length > 1 && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => removeEvidence(index)}
-                >
-                  Remove
-                </Button>
-              )}
-            </div>
-          ))}
-          <Button type="button" variant="outline" onClick={addEvidence} className="mt-2">
-            Add Evidence
-          </Button>
-        </div> */}
-
         {/* Decision Rationale */}
         <div>
           <label className="block text-sm font-medium mb-2">
