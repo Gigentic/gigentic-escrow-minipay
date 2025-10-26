@@ -13,6 +13,7 @@ import { WagmiProvider, createConfig, http } from "wagmi";
 import { celo, hardhat } from 'wagmi/chains'
 import { defineChain } from 'viem'
 import { QueryClientProvider, QueryClient } from '@tanstack/react-query'
+import { useRouter } from 'next/navigation'
 import { useAutoSign } from '@/hooks/use-auto-sign'
 import { AuthSuccessNotification } from './auth-success-notification'
 import { AuthLoadingOverlay } from './auth-loading-overlay'
@@ -109,7 +110,17 @@ const queryClient = new QueryClient();
 
 function RainbowKitWithAutoAuth({ children }: { children: React.ReactNode }) {
   // Auto-trigger signature when wallet connects
-  const { showSuccess, isAuthenticating } = useAutoSign();
+  const { showSuccess, isAuthenticating, authSuccess } = useAutoSign();
+  const router = useRouter();
+
+  // Handle redirect to dashboard after successful authentication
+  useEffect(() => {
+    if (authSuccess) {
+      setTimeout(() => {
+        router.push('/dashboard');
+      }, 200);
+    }
+  }, [authSuccess, router]);
 
   return (
     <AuthContext.Provider value={{ isAuthenticating }}>

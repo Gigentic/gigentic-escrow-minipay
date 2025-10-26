@@ -3,16 +3,15 @@ import { useAccount, useSignMessage, useDisconnect } from 'wagmi';
 import { useSession } from 'next-auth/react';
 import { SiweMessage } from 'siwe';
 import { getCsrfToken, signIn } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
 
 export function useAutoSign() {
   const { address, isConnected, chainId } = useAccount();
   const { status: sessionStatus } = useSession();
   const { signMessageAsync } = useSignMessage();
   const { disconnect } = useDisconnect();
-  const router = useRouter();
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [authSuccess, setAuthSuccess] = useState(false);
   const hasTriggeredRef = useRef(false);
   const previousConnectedRef = useRef(false);
 
@@ -76,10 +75,10 @@ export function useAutoSign() {
           console.log('Authentication successful');
           // Show success state briefly
           setShowSuccess(true);
-          // Redirect to dashboard after successful auth
+          setAuthSuccess(true);
+          // Hide success notification after delay
           setTimeout(() => {
             setShowSuccess(false);
-            router.push('/dashboard');
           }, 500);
         } else {
           console.error('Authentication failed:', result?.error);
@@ -96,7 +95,7 @@ export function useAutoSign() {
     };
 
     authenticate();
-  }, [address, isConnected, chainId, sessionStatus, isAuthenticating, signMessageAsync, disconnect, router]);
+  }, [address, isConnected, chainId, sessionStatus, isAuthenticating, signMessageAsync, disconnect]);
 
   // Reset trigger when wallet disconnects
   useEffect(() => {
@@ -104,8 +103,9 @@ export function useAutoSign() {
       hasTriggeredRef.current = false;
       previousConnectedRef.current = false;
       setShowSuccess(false);
+      setAuthSuccess(false);
     }
   }, [isConnected]);
 
-  return { isAuthenticating, showSuccess };
+  return { isAuthenticating, showSuccess, authSuccess };
 }
