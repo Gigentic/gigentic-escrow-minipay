@@ -5,8 +5,6 @@ import '@rainbow-me/rainbowkit/styles.css'
 import { RainbowKitProvider, connectorsForWallets } from '@rainbow-me/rainbowkit'
 import { SessionProvider } from 'next-auth/react'
 import {
-  injectedWallet,
-  walletConnectWallet,
   metaMaskWallet,
 } from "@rainbow-me/rainbowkit/wallets";
 import { WagmiProvider, createConfig, http } from "wagmi";
@@ -15,6 +13,7 @@ import { defineChain } from 'viem'
 import { QueryClientProvider, QueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { useAutoSign } from '@/hooks/use-auto-sign'
+import { useAddressChangeLogout } from '@/hooks/use-address-change-logout'
 import { AuthSuccessNotification } from './auth-success-notification'
 import { AuthLoadingOverlay } from './auth-loading-overlay'
 
@@ -105,6 +104,10 @@ const queryClient = new QueryClient();
 function RainbowKitWithAutoAuth({ children }: { children: React.ReactNode }) {
   // Auto-trigger signature when wallet connects
   const { showSuccess, isAuthenticating, authSuccess } = useAutoSign();
+
+  // Handle wallet address changes by logging out
+  useAddressChangeLogout();
+
   const router = useRouter();
 
   // Handle redirect to dashboard after successful authentication

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useDisconnect } from 'wagmi';
 import { signOut } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import { useProfile } from '@/hooks/use-profile';
 import {
   Dialog,
@@ -25,6 +26,7 @@ interface ProfileModalProps {
 
 export function ProfileModal({ open, onOpenChange, address }: ProfileModalProps) {
   const { disconnect } = useDisconnect();
+  const router = useRouter();
   const { profile, isLoading, updateProfile, isUpdating, updateError } = useProfile(address);
 
   const [name, setName] = useState('');
@@ -73,6 +75,8 @@ export function ProfileModal({ open, onOpenChange, address }: ProfileModalProps)
     await signOut({ redirect: false });
     disconnect();
     onOpenChange(false);
+    // Redirect to homepage after logout
+    router.push('/');
   };
 
   return (
