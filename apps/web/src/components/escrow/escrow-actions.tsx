@@ -1,25 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { useAccount, useWriteContract, usePublicClient } from "wagmi";
+import { useAccount } from "wagmi";
 import { type Address } from "viem";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import {
-  ESCROW_CONTRACT_ABI,
-  EscrowState,
-  MASTER_FACTORY_ADDRESS,
-  type DisputeDocument,
-} from "@/lib/escrow-config";
-import { hashDocument } from "@/lib/hash";
-import { useQueryClient } from "@tanstack/react-query";
+import { EscrowState } from "@/lib/escrow-config";
+import { useCompleteEscrow } from "@/hooks/use-complete-escrow";
+import { useDisputeEscrow } from "@/hooks/use-dispute-escrow";
 
 interface EscrowActionsProps {
   escrowAddress: Address;
   depositor: Address;
   recipient: Address;
   state: EscrowState;
-  onSuccess?: () => void;
 }
 
 /**
@@ -31,14 +25,19 @@ export function EscrowActions({
   depositor,
   recipient,
   state,
-  onSuccess,
 }: EscrowActionsProps) {
   const { address: userAddress, isConnected } = useAccount();
-  const { writeContractAsync } = useWriteContract();
-  const publicClient = usePublicClient();
-  const queryClient = useQueryClient();
+  const {
+    completeEscrowAsync,
+    isCompleting,
+    error: completeError,
+  } = useCompleteEscrow();
+  const {
+    raiseDisputeAsync,
+    isRaisingDispute,
+    error: disputeError,
+  } = useDisputeEscrow();
 
-  const [isProcessing, setIsProcessing] = useState(false);
   const [showDisputeModal, setShowDisputeModal] = useState(false);
   const [disputeReason, setDisputeReason] = useState("");
   const [error, setError] = useState("");
@@ -53,39 +52,17 @@ export function EscrowActions({
   const handleComplete = async () => {
     if (!isConnected || !isDepositor) return;
 
-    setIsProcessing(true);
     setError("");
     setSuccess("");
 
     try {
-      const tx = await writeContractAsync({
-        address: escrowAddress,
-        abi: ESCROW_CONTRACT_ABI,
-        functionName: "complete",
-      });
-
-      console.log("Complete tx:", tx);
-
-      // Invalidate this escrow's cache
-      await queryClient.invalidateQueries({
-        queryKey: ['readContract', publicClient?.chain?.id, escrowAddress],
-      });
-
-      // Invalidate user's escrow list
-      await queryClient.invalidateQueries({
-        queryKey: ['readContract', publicClient?.chain?.id, MASTER_FACTORY_ADDRESS, 'getUserEscrows'],
-      });
-
-      setSuccess("Escrow completed successfully! Funds have been released to the recipient.");
-
-      if (onSuccess) {
-        setTimeout(() => onSuccess(), 2000);
-      }
+      await completeEscrowAsync(escrowAddress);
+      setSuccess(
+        "Escrow completed successfully! Funds have been released to the recipient."
+      );
     } catch (err: any) {
       console.error("Error completing escrow:", err);
       setError(err.message || "Failed to complete escrow");
-    } finally {
-      setIsProcessing(false);
     }
   };
 
@@ -97,70 +74,21 @@ export function EscrowActions({
       return;
     }
 
-    setIsProcessing(true);
     setError("");
     setSuccess("");
 
     try {
-      // Create dispute document
-      const disputeDoc: DisputeDocument = {
+      await raiseDisputeAsync({
         escrowAddress,
-        raiser: userAddress,
         reason: disputeReason.trim(),
-        raisedAt: Date.now(),
-      };
-
-      // Generate hash
-      const disputeHash = hashDocument(disputeDoc);
-
-      // Store dispute document in KV
-      const storeResponse = await fetch("/api/documents/store", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          hash: disputeHash,
-          document: disputeDoc,
-        }),
-      });
-
-      if (!storeResponse.ok) {
-        throw new Error("Failed to store dispute document");
-      }
-
-      console.log("Dispute document stored with hash:", disputeHash);
-
-      // Send only the hash to the blockchain
-      const tx = await writeContractAsync({
-        address: escrowAddress,
-        abi: ESCROW_CONTRACT_ABI,
-        functionName: "dispute",
-        args: [disputeHash],
-      });
-
-      console.log("Dispute tx:", tx);
-
-      // Invalidate this escrow's cache
-      await queryClient.invalidateQueries({
-        queryKey: ['readContract', publicClient?.chain?.id, escrowAddress],
-      });
-
-      // Invalidate user's escrow list (state changed)
-      await queryClient.invalidateQueries({
-        queryKey: ['readContract', publicClient?.chain?.id, MASTER_FACTORY_ADDRESS, 'getUserEscrows'],
       });
 
       setSuccess("Dispute raised successfully. An arbiter will review the case.");
       setShowDisputeModal(false);
       setDisputeReason("");
-
-      if (onSuccess) {
-        setTimeout(() => onSuccess(), 2000);
-      }
     } catch (err: any) {
       console.error("Error raising dispute:", err);
       setError(err.message || "Failed to raise dispute");
-    } finally {
-      setIsProcessing(false);
     }
   };
 
@@ -190,9 +118,11 @@ export function EscrowActions({
         <h2 className="text-xl font-semibold mb-4">Actions</h2>
 
         {/* Status messages */}
-        {error && (
+        {(error || completeError || disputeError) && (
           <div className="mb-4 bg-red-100 dark:bg-red-900 p-3 rounded-md">
-            <p className="text-sm text-red-800 dark:text-red-100">{error}</p>
+            <p className="text-sm text-red-800 dark:text-red-100">
+              {error || completeError?.message || disputeError?.message}
+            </p>
           </div>
         )}
 
@@ -213,11 +143,11 @@ export function EscrowActions({
                 </p>
                 <Button
                   onClick={handleComplete}
-                  disabled={isProcessing}
+                  disabled={isCompleting || isRaisingDispute}
                   className="w-full"
                   size="lg"
                 >
-                  {isProcessing ? "Processing..." : "Complete Escrow"}
+                  {isCompleting ? "Processing..." : "Complete Escrow"}
                 </Button>
               </div>
             )}
@@ -233,7 +163,7 @@ export function EscrowActions({
 
             <Button
               onClick={() => setShowDisputeModal(true)}
-              disabled={isProcessing}
+              disabled={isCompleting || isRaisingDispute}
               variant="outline"
               className="w-full"
             >
@@ -301,17 +231,17 @@ export function EscrowActions({
                   setDisputeReason("");
                   setError("");
                 }}
-                disabled={isProcessing}
+                disabled={isCompleting || isRaisingDispute}
                 className="flex-1"
               >
                 Cancel
               </Button>
               <Button
                 onClick={handleDisputeSubmit}
-                disabled={isProcessing || !disputeReason.trim()}
+                disabled={isCompleting || isRaisingDispute || !disputeReason.trim()}
                 className="flex-1"
               >
-                {isProcessing ? "Submitting..." : "Submit Dispute"}
+                {isRaisingDispute ? "Submitting..." : "Submit Dispute"}
               </Button>
             </div>
           </Card>

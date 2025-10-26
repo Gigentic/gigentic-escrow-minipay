@@ -4,7 +4,8 @@ import { type Address } from "viem";
 import { formatEther } from "viem";
 import { Card } from "@/components/ui/card";
 import { AddressDisplay } from "@/components/wallet/address-display";
-import { type EscrowDetails, EscrowState, formatEscrowState, type ResolutionDocument } from "@/lib/escrow-config";
+import { type EscrowDetails, EscrowState, formatEscrowState } from "@/lib/escrow-config";
+import type { ResolutionDocument } from "@/lib/types";
 import { shortenHash } from "@/lib/hash";
 
 interface EscrowDetailsDisplayProps {

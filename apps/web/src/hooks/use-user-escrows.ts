@@ -30,7 +30,7 @@ import type { EscrowListItem } from "@/lib/types";
  * @param addresses - Array of escrow contract addresses to fetch
  * @returns Array of escrow list items with loading state
  */
-export function useUserEscrows(addresses: Address[] | undefined) {
+export function useUserEscrows(addresses: readonly Address[] | Address[] | undefined) {
   const publicClient = usePublicClient();
 
   const queries = useQueries({

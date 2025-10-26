@@ -453,35 +453,6 @@ export interface FactoryStatistics {
   feesCollected: bigint;
 }
 
-export interface DeliverableDocument {
-  title: string;
-  description: string;
-  acceptanceCriteria: string[];
-  depositor: Address;
-  recipient: Address;
-  amount: string;
-  createdAt: number;
-  category?: string;
-}
-
-export interface ResolutionDocument {
-  escrowAddress: Address;
-  arbiter: Address;
-  favorDepositor: boolean;
-  disputeReason: string;
-  deliverableReview: string;
-  evidenceConsidered: string[];
-  decisionRationale: string;
-  resolvedAt: number;
-  transactionHash: string;
-}
-
-export interface DisputeDocument {
-  escrowAddress: Address;
-  raiser: Address;
-  reason: string;
-  raisedAt: number;
-}
 
 export interface UserMetadata {
   displayName?: string;

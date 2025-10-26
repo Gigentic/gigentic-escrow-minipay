@@ -1,29 +1,25 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useAccount, useReadContract, usePublicClient } from "wagmi";
+import { useState } from "react";
+import { useAccount, useReadContract } from "wagmi";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { EscrowList, type EscrowListItem } from "@/components/escrow/escrow-list";
+import { EscrowList } from "@/components/escrow/escrow-list";
 import {
   MASTER_FACTORY_ADDRESS,
   MASTER_FACTORY_ABI,
-  ESCROW_CONTRACT_ABI,
   EscrowState,
 } from "@/lib/escrow-config";
-import { type Address } from "viem";
+import { useUserEscrows } from "@/hooks/use-user-escrows";
 
 export default function DashboardPage() {
   const { address, isConnected } = useAccount();
-  const publicClient = usePublicClient();
 
-  const [escrows, setEscrows] = useState<EscrowListItem[]>([]);
   const [filter, setFilter] = useState<"all" | "depositor" | "recipient">("all");
   const [stateFilter, setStateFilter] = useState<EscrowState | "all">("all");
-  const [isLoading, setIsLoading] = useState(false);
 
-  // Fetch user's escrows from contract
+  // Fetch user's escrow addresses from contract
   const { data: userEscrowAddresses } = useReadContract({
     address: MASTER_FACTORY_ADDRESS,
     abi: MASTER_FACTORY_ABI,
@@ -36,59 +32,8 @@ export default function DashboardPage() {
     },
   });
 
-  // Fetch details for each escrow
-  useEffect(() => {
-    const fetchEscrowDetails = async () => {
-      if (!userEscrowAddresses || userEscrowAddresses.length === 0) {
-        setEscrows([]);
-        return;
-      }
-
-      setIsLoading(true);
-      try {
-        const escrowPromises = userEscrowAddresses.map(async (escrowAddress) => {
-          if (!publicClient) return null;
-
-          const details = await publicClient.readContract({
-            address: escrowAddress as Address,
-            abi: ESCROW_CONTRACT_ABI,
-            functionName: "getDetails",
-          });
-
-          // Fetch deliverable title
-          let title: string | undefined;
-          try {
-            const docResponse = await fetch(`/api/documents/${escrowAddress}`);
-            if (docResponse.ok) {
-              const docData = await docResponse.json();
-              title = docData.document?.title;
-            }
-          } catch (err) {
-            console.error("Error fetching deliverable:", err);
-          }
-
-          return {
-            address: escrowAddress as Address,
-            depositor: details[0],
-            recipient: details[1],
-            amount: details[2],
-            state: details[5] as EscrowState,
-            createdAt: details[7],
-            title,
-          };
-        });
-
-        const escrowDetails = await Promise.all(escrowPromises);
-        setEscrows(escrowDetails.filter((e) => e !== null) as EscrowListItem[]);
-      } catch (error) {
-        console.error("Error fetching escrow details:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchEscrowDetails();
-  }, [userEscrowAddresses, publicClient]);
+  // Use hook to fetch details for each escrow in parallel
+  const { escrows, isLoading } = useUserEscrows(userEscrowAddresses);
 
   if (!isConnected) {
     return (

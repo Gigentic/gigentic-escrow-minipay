@@ -1,20 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { useAccount, useWriteContract, useReadContract, usePublicClient } from "wagmi";
-import { parseEther, type Address, decodeEventLog } from "viem";
+import { useAccount, useReadContract } from "wagmi";
+import { parseEther, type Address } from "viem";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
-  MASTER_FACTORY_ADDRESS,
-  MASTER_FACTORY_ABI,
   ERC20_ABI,
   CUSD_ADDRESS,
   calculateTotalRequired,
 } from "@/lib/escrow-config";
-import { hashDocument } from "@/lib/hash";
 import { useRouter } from "next/navigation";
-import { useQueryClient } from "@tanstack/react-query";
+import { useCreateEscrow } from "@/hooks/use-create-escrow";
 
 /**
  * Create Escrow Form Component
@@ -23,34 +20,21 @@ import { useQueryClient } from "@tanstack/react-query";
 export function CreateEscrowForm() {
   const router = useRouter();
   const { address: userAddress, isConnected } = useAccount();
-  const { writeContractAsync } = useWriteContract();
-  const publicClient = usePublicClient();
-  const queryClient = useQueryClient();
+  const { createEscrowAsync, isCreating, error: createError } = useCreateEscrow();
 
   // Form state
   const [recipient, setRecipient] = useState("");
   const [amount, setAmount] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  // Check cUSD balance and allowance
+  // Check cUSD balance
   const { data: balance } = useReadContract({
     address: CUSD_ADDRESS,
     abi: ERC20_ABI,
     functionName: "balanceOf",
     args: userAddress ? [userAddress] : undefined,
-    query: {
-      enabled: !!userAddress,
-    },
-  });
-
-  const { data: allowance, refetch: refetchAllowance } = useReadContract({
-    address: CUSD_ADDRESS,
-    abi: ERC20_ABI,
-    functionName: "allowance",
-    args: userAddress ? [userAddress, MASTER_FACTORY_ADDRESS] : undefined,
     query: {
       enabled: !!userAddress,
     },
@@ -97,168 +81,27 @@ export function CreateEscrowForm() {
       return;
     }
 
-    setIsSubmitting(true);
     setError("");
 
     try {
       const amountWei = parseEther(amount);
-      const { total } = calculateTotalRequired(amountWei);
 
-      // Create deliverable document in memory (escrow address will be stored as KV key)
-      const deliverable = {
-        title,
-        description,
-        acceptanceCriteria: [],
-        depositor: userAddress,
+      // Call the hook with properly typed parameters
+      await createEscrowAsync({
         recipient: recipient as Address,
-        amount,
-        createdAt: Date.now(),
-      };
-
-      // Generate hash from deliverable
-      const deliverableHash = hashDocument(deliverable);
-
-      // Step 1: Approve tokens if needed
-      if (!allowance || allowance < total) {
-        console.log("Approving cUSD spend...");
-
-        // Estimate gas with 40% buffer for RPC reliability
-        let approveGasLimit: bigint | undefined;
-        if (publicClient) {
-          try {
-            const estimatedGas = await publicClient.estimateContractGas({
-              address: CUSD_ADDRESS,
-              abi: ERC20_ABI,
-              functionName: "approve",
-              args: [MASTER_FACTORY_ADDRESS, total],
-              account: userAddress,
-            });
-            approveGasLimit = (estimatedGas * 140n) / 100n;
-            console.log(`Approve gas estimate: ${estimatedGas}, with buffer: ${approveGasLimit}`);
-          } catch (gasEstimateError) {
-            console.warn("Approve gas estimation failed, will use default:", gasEstimateError);
-          }
-        }
-
-        const approveTxHash = await writeContractAsync({
-          address: CUSD_ADDRESS,
-          abi: ERC20_ABI,
-          functionName: "approve",
-          args: [MASTER_FACTORY_ADDRESS, total],
-          gas: approveGasLimit,
-        });
-
-        console.log("Approval tx hash:", approveTxHash);
-        console.log("Waiting for approval confirmation...");
-
-        // Wait for approval transaction to be mined
-        if (publicClient) {
-          await publicClient.waitForTransactionReceipt({
-            hash: approveTxHash,
-            confirmations: 1,
-          });
-          console.log("Approval confirmed!");
-        }
-
-        await refetchAllowance();
-      }
-
-      // Step 2: Create escrow (hash is written to blockchain here)
-      console.log("Creating escrow...");
-
-      // Estimate gas with 40% buffer for RPC reliability on Sepolia
-      let gasLimit: bigint | undefined;
-      if (publicClient) {
-        try {
-          const estimatedGas = await publicClient.estimateContractGas({
-            address: MASTER_FACTORY_ADDRESS,
-            abi: MASTER_FACTORY_ABI,
-            functionName: "createEscrow",
-            args: [recipient as Address, amountWei, deliverableHash],
-            account: userAddress,
-          });
-          // Add 40% buffer to handle RPC estimation inconsistencies
-          gasLimit = (estimatedGas * 140n) / 100n;
-          console.log(`Gas estimate: ${estimatedGas}, with buffer: ${gasLimit}`);
-        } catch (gasEstimateError) {
-          console.warn("Gas estimation failed, will use default:", gasEstimateError);
-          // If estimation fails, let wagmi handle it
-        }
-      }
-
-      const createTxHash = await writeContractAsync({
-        address: MASTER_FACTORY_ADDRESS,
-        abi: MASTER_FACTORY_ABI,
-        functionName: "createEscrow",
-        args: [recipient as Address, amountWei, deliverableHash],
-        gas: gasLimit,
+        amount: amountWei,
+        deliverable: {
+          title,
+          description,
+          acceptanceCriteria: [],
+        },
       });
 
-      console.log("Escrow tx hash:", createTxHash);
-      console.log("Waiting for escrow creation confirmation...");
-
-      // Wait for create escrow transaction to be mined and get the receipt
-      if (publicClient) {
-        const receipt = await publicClient.waitForTransactionReceipt({
-          hash: createTxHash,
-          confirmations: 1,
-        });
-        console.log("Escrow created successfully!");
-
-        // Extract escrow address from EscrowCreated event
-        const escrowCreatedLog = receipt.logs.find((log) => {
-          try {
-            const decoded = decodeEventLog({
-              abi: MASTER_FACTORY_ABI,
-              data: log.data,
-              topics: log.topics,
-            });
-            return decoded.eventName === "EscrowCreated";
-          } catch {
-            return false;
-          }
-        });
-
-        if (escrowCreatedLog) {
-          const decoded = decodeEventLog({
-            abi: MASTER_FACTORY_ABI,
-            data: escrowCreatedLog.data,
-            topics: escrowCreatedLog.topics,
-          });
-          const escrowAddress = (decoded.args as any).escrowAddress as Address;
-          console.log("Escrow address:", escrowAddress);
-
-          // Step 3: Store deliverable document using escrow address as key
-          const storeResponse = await fetch("/api/documents/store", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              hash: deliverableHash,
-              document: deliverable,
-              escrowAddress: escrowAddress,
-            }),
-          });
-
-          if (storeResponse.ok) {
-            console.log("Deliverable document stored with escrow address:", escrowAddress);
-          } else {
-            console.error("Failed to store deliverable document");
-          }
-        }
-      }
-
-      // Invalidate escrows cache so dashboard shows new escrow
-      await queryClient.invalidateQueries({
-        queryKey: ['readContract', publicClient?.chain?.id, MASTER_FACTORY_ADDRESS, 'getUserEscrows'],
-      });
-
-      // Redirect to dashboard
+      // Redirect to dashboard on success
       router.push("/dashboard");
     } catch (err: any) {
       console.error("Error creating escrow:", err);
       setError(err.message || "Failed to create escrow");
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -345,19 +188,21 @@ export function CreateEscrowForm() {
             </div>
           )}
 
-          {error && (
+          {(error || createError) && (
             <div className="bg-red-100 dark:bg-red-900 p-3 rounded-md">
-              <p className="text-sm text-red-800 dark:text-red-100">{error}</p>
+              <p className="text-sm text-red-800 dark:text-red-100">
+                {error || createError?.message}
+              </p>
             </div>
           )}
 
           <Button
             onClick={handleSubmit}
-            disabled={isSubmitting}
+            disabled={isCreating}
             className="w-full"
             size="lg"
           >
-            {isSubmitting ? "Creating..." : "Create Escrow"}
+            {isCreating ? "Creating..." : "Create Escrow"}
           </Button>
         </div>
       </Card>
