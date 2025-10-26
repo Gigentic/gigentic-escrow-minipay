@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { useAccount } from "wagmi";
+import { useSession } from "next-auth/react";
 import { type Address } from "viem";
 import { Card } from "@/components/ui/card";
 import { ResolveForm } from "@/components/admin/resolve-form";
@@ -29,29 +29,24 @@ interface DisputeDetails {
 
 export default function ResolveDisputePage() {
   const params = useParams();
-  const { address, isConnected } = useAccount();
+  const { data: session, status } = useSession();
   const escrowAddress = params.id as Address;
 
   const [dispute, setDispute] = useState<DisputeDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const isAdmin =
-    isConnected &&
-    process.env.NEXT_PUBLIC_ADMIN_WALLET_ADDRESS?.toLowerCase() === address?.toLowerCase();
-
   useEffect(() => {
     const fetchDispute = async () => {
-      if (!isAdmin || !address) {
+      if (status !== "authenticated") {
         setIsLoading(false);
         return;
       }
 
       try {
+        // Session cookie automatically included with credentials: 'include'
         const response = await fetch(`/api/admin/disputes/${escrowAddress}`, {
-          headers: {
-            "x-wallet-address": address,
-          },
+          credentials: "include",
         });
 
         if (!response.ok) {
@@ -69,31 +64,39 @@ export default function ResolveDisputePage() {
     };
 
     fetchDispute();
-  }, [isAdmin, address, escrowAddress]);
+  }, [status, escrowAddress]);
 
-  if (!isConnected) {
+  if (status === "loading") {
+    return (
+      <main className="flex-1 container mx-auto px-4 py-12">
+        <Card className="p-8 text-center max-w-md mx-auto">
+          <p className="text-muted-foreground">Loading...</p>
+        </Card>
+      </main>
+    );
+  }
+
+  if (status === "unauthenticated") {
     return (
       <main className="flex-1 container mx-auto px-4 py-12">
         <Card className="p-8 text-center max-w-md mx-auto">
           <h1 className="text-2xl font-bold mb-4">Resolve Dispute</h1>
           <p className="text-muted-foreground">
-            Please connect your admin wallet to access this page
+            Please connect your wallet to access this page
           </p>
         </Card>
       </main>
     );
   }
 
-  if (!isAdmin) {
+  if (error) {
     return (
       <main className="flex-1 container mx-auto px-4 py-12">
         <Card className="p-8 text-center max-w-md mx-auto border-red-300 dark:border-red-700">
           <h1 className="text-2xl font-bold mb-4 text-red-600 dark:text-red-400">
-            Access Denied
+            Error
           </h1>
-          <p className="text-muted-foreground">
-            You do not have admin access to this page
-          </p>
+          <p className="text-muted-foreground">{error}</p>
         </Card>
       </main>
     );
@@ -109,14 +112,14 @@ export default function ResolveDisputePage() {
     );
   }
 
-  if (error || !dispute) {
+  if (!dispute) {
     return (
       <main className="flex-1 container mx-auto px-4 py-12">
         <Card className="p-8 text-center max-w-md mx-auto border-red-300 dark:border-red-700">
           <h1 className="text-2xl font-bold mb-4 text-red-600 dark:text-red-400">
-            Error
+            Not Found
           </h1>
-          <p className="text-muted-foreground">{error || "Dispute not found"}</p>
+          <p className="text-muted-foreground">Dispute not found</p>
         </Card>
       </main>
     );
