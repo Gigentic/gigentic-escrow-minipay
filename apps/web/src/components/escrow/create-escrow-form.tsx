@@ -119,11 +119,31 @@ export function CreateEscrowForm() {
       // Step 1: Approve tokens if needed
       if (!allowance || allowance < total) {
         console.log("Approving cUSD spend...");
+
+        // Estimate gas with 40% buffer for RPC reliability
+        let approveGasLimit: bigint | undefined;
+        if (publicClient) {
+          try {
+            const estimatedGas = await publicClient.estimateContractGas({
+              address: CUSD_ADDRESS,
+              abi: ERC20_ABI,
+              functionName: "approve",
+              args: [MASTER_FACTORY_ADDRESS, total],
+              account: userAddress,
+            });
+            approveGasLimit = (estimatedGas * 140n) / 100n;
+            console.log(`Approve gas estimate: ${estimatedGas}, with buffer: ${approveGasLimit}`);
+          } catch (gasEstimateError) {
+            console.warn("Approve gas estimation failed, will use default:", gasEstimateError);
+          }
+        }
+
         const approveTxHash = await writeContractAsync({
           address: CUSD_ADDRESS,
           abi: ERC20_ABI,
           functionName: "approve",
           args: [MASTER_FACTORY_ADDRESS, total],
+          gas: approveGasLimit,
         });
 
         console.log("Approval tx hash:", approveTxHash);
@@ -143,11 +163,33 @@ export function CreateEscrowForm() {
 
       // Step 2: Create escrow (hash is written to blockchain here)
       console.log("Creating escrow...");
+
+      // Estimate gas with 40% buffer for RPC reliability on Sepolia
+      let gasLimit: bigint | undefined;
+      if (publicClient) {
+        try {
+          const estimatedGas = await publicClient.estimateContractGas({
+            address: MASTER_FACTORY_ADDRESS,
+            abi: MASTER_FACTORY_ABI,
+            functionName: "createEscrow",
+            args: [recipient as Address, amountWei, deliverableHash],
+            account: userAddress,
+          });
+          // Add 40% buffer to handle RPC estimation inconsistencies
+          gasLimit = (estimatedGas * 140n) / 100n;
+          console.log(`Gas estimate: ${estimatedGas}, with buffer: ${gasLimit}`);
+        } catch (gasEstimateError) {
+          console.warn("Gas estimation failed, will use default:", gasEstimateError);
+          // If estimation fails, let wagmi handle it
+        }
+      }
+
       const createTxHash = await writeContractAsync({
         address: MASTER_FACTORY_ADDRESS,
         abi: MASTER_FACTORY_ABI,
         functionName: "createEscrow",
         args: [recipient as Address, amountWei, deliverableHash],
+        gas: gasLimit,
       });
 
       console.log("Escrow tx hash:", createTxHash);
