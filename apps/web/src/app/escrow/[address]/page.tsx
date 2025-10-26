@@ -24,12 +24,6 @@ export default function EscrowDetailPage() {
   const [resolution, setResolution] = useState<ResolutionDocument | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
-  const [mountTrigger, setMountTrigger] = useState(0);
-
-  // Force refetch on mount
-  useEffect(() => {
-    setMountTrigger(Date.now());
-  }, []);
 
   const fetchEscrowData = async () => {
     if (!publicClient || !escrowAddress) return;
@@ -127,7 +121,7 @@ export default function EscrowDetailPage() {
 
   useEffect(() => {
     fetchEscrowData();
-  }, [escrowAddress, publicClient, mountTrigger]);
+  }, [escrowAddress, publicClient]);
 
   if (isLoading) {
     return (

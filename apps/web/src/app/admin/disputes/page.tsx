@@ -23,12 +23,6 @@ export default function AdminDisputesPage() {
   const [disputes, setDisputes] = useState<DisputedEscrow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
-  const [mountTrigger, setMountTrigger] = useState(0);
-
-  // Force refetch on mount
-  useEffect(() => {
-    setMountTrigger(Date.now());
-  }, []);
 
   useEffect(() => {
     const fetchDisputes = async () => {
@@ -58,7 +52,7 @@ export default function AdminDisputesPage() {
     };
 
     fetchDisputes();
-  }, [status, mountTrigger]);
+  }, [status]);
 
   if (status === "loading") {
     return (

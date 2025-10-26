@@ -24,22 +24,17 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   // Fetch user's escrows from contract
-  const { data: userEscrowAddresses, refetch } = useReadContract({
+  const { data: userEscrowAddresses } = useReadContract({
     address: MASTER_FACTORY_ADDRESS,
     abi: MASTER_FACTORY_ABI,
     functionName: "getUserEscrows",
     args: address ? [address] : undefined,
     query: {
       enabled: !!address,
+      staleTime: 30_000, // Fresh for 30 seconds
+      refetchOnMount: true, // Always refetch on mount if stale
     },
   });
-
-  // Force refetch on mount to get latest data
-  useEffect(() => {
-    if (address) {
-      refetch();
-    }
-  }, [address, refetch]);
 
   // Fetch details for each escrow
   useEffect(() => {
