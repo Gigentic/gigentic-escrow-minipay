@@ -34,6 +34,13 @@ export default function DashboardPage() {
     },
   });
 
+  // Force refetch on mount to get latest data
+  useEffect(() => {
+    if (address) {
+      refetch();
+    }
+  }, [address, refetch]);
+
   // Fetch details for each escrow
   useEffect(() => {
     const fetchEscrowDetails = async () => {

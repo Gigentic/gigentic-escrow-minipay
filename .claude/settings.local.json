@@ -49,7 +49,11 @@
       "mcp__upstash__redis_database_list_databases",
       "mcp__upstash__redis_database_run_redis_commands",
       "mcp__ide__getDiagnostics",
-      "mcp__chrome-devtools__fill"
+      "mcp__chrome-devtools__fill",
+      "Bash(python3:*)",
+      "mcp__chrome-devtools__select_page",
+      "mcp__chrome-devtools__wait_for",
+      "WebFetch(domain:wagmi.sh)"
     ],
     "deny": [],
     "ask": []
