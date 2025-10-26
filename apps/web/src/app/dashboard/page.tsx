@@ -27,8 +27,10 @@ export default function DashboardPage() {
     args: address ? [address] : undefined,
     query: {
       enabled: !!address,
-      staleTime: 30_000, // Fresh for 30 seconds
-      refetchOnMount: true, // Always refetch on mount if stale
+      staleTime: 0, // Always consider stale to ensure fresh data
+      refetchOnMount: "always", // Always refetch on mount
+      refetchOnWindowFocus: true, // Refetch when window regains focus
+      refetchInterval: false, // Don't poll, but refetch on mount/focus
     },
   });
 

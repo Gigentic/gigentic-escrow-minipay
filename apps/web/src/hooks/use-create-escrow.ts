@@ -2,6 +2,7 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAccount, usePublicClient, useWriteContract } from "wagmi";
+import type { Address } from "viem";
 import { queryKeys } from "@/lib/queries";
 import {
   CUSD_ADDRESS,
@@ -36,9 +37,13 @@ import type { CreateEscrowParams } from "@/lib/types";
  * - Optimistic updates for instant feedback
  * - Type-safe throughout
  *
+ * @param options - Optional callbacks for success and error handling
  * @returns Mutation hook with createEscrow function and state
  */
-export function useCreateEscrow() {
+export function useCreateEscrow(options?: {
+  onSuccess?: (data: { escrowAddress: Address; txHash: `0x${string}` }) => void | Promise<void>;
+  onError?: (error: Error) => void;
+}) {
   const { address: userAddress } = useAccount();
   const publicClient = usePublicClient();
   const { writeContractAsync } = useWriteContract();
@@ -181,27 +186,49 @@ export function useCreateEscrow() {
       };
     },
 
-    onSuccess: (data) => {
-      // Invalidate user escrows query to refresh dashboard
-      queryClient.invalidateQueries({
+    onSuccess: async (data) => {
+      // Invalidate ALL contract reads for the Master Factory
+      // This ensures any getUserEscrows queries are refetched
+      await queryClient.invalidateQueries({
+        queryKey: ["readContract"],
+        refetchType: "active", // Force immediate refetch of active queries
+      });
+
+      // Also invalidate the specific getUserEscrows query pattern
+      // wagmi uses a specific query key structure
+      await queryClient.invalidateQueries({
         queryKey: [
           "readContract",
-          publicClient?.chain?.id,
-          MASTER_FACTORY_ADDRESS,
-          "getUserEscrows",
+          {
+            address: MASTER_FACTORY_ADDRESS,
+            functionName: "getUserEscrows",
+          },
         ],
       });
 
       // Invalidate escrow details for the new escrow
-      queryClient.invalidateQueries({
+      await queryClient.invalidateQueries({
         queryKey: queryKeys.escrows.detail(data.escrowAddress),
       });
 
-      console.log("Cache invalidated for new escrow");
+      // Give a brief moment for the chain to propagate before navigation
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      console.log("Cache invalidated and refetched for new escrow");
+
+      // Call the optional onSuccess callback
+      if (options?.onSuccess) {
+        await options.onSuccess(data);
+      }
     },
 
     onError: (error) => {
       console.error("Create escrow error:", error);
+
+      // Call the optional onError callback
+      if (options?.onError) {
+        options.onError(error);
+      }
     },
   });
 

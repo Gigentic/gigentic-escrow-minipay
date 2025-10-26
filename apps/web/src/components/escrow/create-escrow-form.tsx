@@ -20,7 +20,17 @@ import { useCreateEscrow } from "@/hooks/use-create-escrow";
 export function CreateEscrowForm() {
   const router = useRouter();
   const { address: userAddress, isConnected } = useAccount();
-  const { createEscrowAsync, isCreating, error: createError } = useCreateEscrow();
+  const { createEscrowAsync, isCreating, error: createError } = useCreateEscrow({
+    onSuccess: async (data) => {
+      console.log("Escrow created successfully:", data.escrowAddress);
+      // Navigate to dashboard after successful creation and cache invalidation
+      router.push("/dashboard");
+    },
+    onError: (err) => {
+      console.error("Error in create escrow hook:", err);
+      setError(err.message || "Failed to create escrow");
+    },
+  });
 
   // Form state
   const [recipient, setRecipient] = useState("");
@@ -87,6 +97,7 @@ export function CreateEscrowForm() {
       const amountWei = parseEther(amount);
 
       // Call the hook with properly typed parameters
+      // Navigation to dashboard is handled in the onSuccess callback
       await createEscrowAsync({
         recipient: recipient as Address,
         amount: amountWei,
@@ -96,12 +107,13 @@ export function CreateEscrowForm() {
           acceptanceCriteria: [],
         },
       });
-
-      // Redirect to dashboard on success
-      router.push("/dashboard");
     } catch (err: any) {
+      // Error handling is done in the onError callback, but we still catch
+      // in case there's an error with parameter validation
       console.error("Error creating escrow:", err);
-      setError(err.message || "Failed to create escrow");
+      if (!createError) {
+        setError(err.message || "Failed to create escrow");
+      }
     }
   };
 

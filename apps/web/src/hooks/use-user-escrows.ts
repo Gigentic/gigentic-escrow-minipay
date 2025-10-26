@@ -75,8 +75,10 @@ export function useUserEscrows(addresses: readonly Address[] | Address[] | undef
         }
       },
       enabled: !!publicClient && !!escrowAddress,
-      staleTime: 30_000, // Fresh for 30 seconds
+      staleTime: 5_000, // Fresh for only 5 seconds to ensure more frequent updates
       retry: 1, // Only retry once on failure
+      refetchOnMount: true, // Refetch when component mounts
+      refetchOnWindowFocus: true, // Refetch when window gains focus
     })),
   });
 
