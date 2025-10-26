@@ -47,7 +47,9 @@
       "Bash(pnpm dev)",
       "Bash(git revert:*)",
       "mcp__upstash__redis_database_list_databases",
-      "mcp__upstash__redis_database_run_redis_commands"
+      "mcp__upstash__redis_database_run_redis_commands",
+      "mcp__ide__getDiagnostics",
+      "mcp__chrome-devtools__fill"
     ],
     "deny": [],
     "ask": []

@@ -53,8 +53,7 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       session.user = {
         ...session.user,
-        // @ts-ignore
-        address: token.sub,
+        address: token.sub as string,
       };
       return session;
     },
