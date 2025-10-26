@@ -1,5 +1,6 @@
 import type { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox-viem";
+import "@nomicfoundation/hardhat-verify";
 import "dotenv/config";
 
 const config: HardhatUserConfig = {
@@ -64,8 +65,8 @@ const config: HardhatUserConfig = {
         network: "sepolia",
         chainId: 11142220,
         urls: {
-          apiURL: "https://api-celo-sepolia.blockscout.com/api",
-          browserURL: "https://celo-sepolia.blockscout.com",
+          apiURL: "https://api.etherscan.io/v2/api?chainid=11142220",
+          browserURL: "https://sepolia.celoscan.io/",
         },
       },
     ],

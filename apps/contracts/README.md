@@ -14,19 +14,12 @@ pnpm compile
 # Run tests
 pnpm test
 
-# Deploy to Sepolia testnet
-pnpm deploy:sepolia
-
-# Deploy to Celo mainnet
-pnpm deploy:celo
 ```
 
 ## 📜 Available Scripts
 
 - `pnpm compile` - Compile smart contracts
 - `pnpm test` - Run contract tests
-- `pnpm deploy` - Deploy to local network
-- `pnpm deploy:celo` - Deploy to Celo mainnet
 - `pnpm verify` - Verify contracts on Celoscan
 - `pnpm clean` - Clean artifacts and cache
 
@@ -54,6 +47,37 @@ pnpm deploy:celo
    ```env
    PRIVATE_KEY=your_private_key_without_0x_prefix
    CELOSCAN_API_KEY=your_celoscan_api_key
+   ```
+
+## 🚀 Deployment
+1. For LOCAL/HARDHAT:
+   - Deploy MockCUSD first:
+      ```bash
+      pnpm exec hardhat ignition deploy ignition/modules/MockCUSD.ts --network localhost
+      ```
+      -> copy the resulting contract address e.g. 
+      ```env
+      0x5FbDB2315678afecb367f032d93F642f64180aa3
+      ```
+
+   - Deploy Factory with MockCUSD address:
+      ```bash
+      pnpm exec hardhat ignition deploy ignition/modules/Factory.ts --network localhost --parameters '{"FactoryModule":{"cUSDAddress":"0x5FbDB2315678afecb367f032d93F642f64180aa3"}}'
+      ```
+
+2. For TESTNETS/MAINNET (use real cUSD):
+   ```bash
+   pnpm exec hardhat ignition deploy ignition/modules/Factory.ts --network sepolia --parameters '{"FactoryModule":{"cUSDAddress":"0xdE9e4C3ce781b4bA68120d6261cbad65ce0aB00b"}}'
+   ```
+
+   - cUSD addresses:
+      - Celo Mainnet: `0x765de816845861e75a25fca122bb6898b8b1282a`
+      - Sepolia Testnet: `0xdE9e4C3ce781b4bA68120d6261cbad65ce0aB00b`
+
+3. Verify contracts on Etherscan
+   -> example for Sepolia Testnet:
+   ```bash
+   pnpm exec hardhat ignition verify chain-11142220 --include-unrelated-contracts --show-stack-traces
    ```
 
 ## 📁 Project Structure
