@@ -45,7 +45,9 @@
       "Bash(cat:*)",
       "mcp__chrome-devtools__get_network_request",
       "Bash(pnpm dev)",
-      "Bash(git revert:*)"
+      "Bash(git revert:*)",
+      "mcp__upstash__redis_database_list_databases",
+      "mcp__upstash__redis_database_run_redis_commands"
     ],
     "deny": [],
     "ask": []
