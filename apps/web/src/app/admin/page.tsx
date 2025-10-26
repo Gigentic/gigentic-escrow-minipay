@@ -1,42 +1,16 @@
-"use client";
-
-import { useAccount } from "wagmi";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { requireAdmin } from "@/lib/server-auth";
+import { redirect } from "next/navigation";
 
-export default function AdminDashboardPage() {
-  const { address, isConnected } = useAccount();
-
-  // Check if user is admin (in real implementation, check against ADMIN_WALLET_ADDRESS)
-  const isAdmin = isConnected && process.env.NEXT_PUBLIC_ADMIN_WALLET_ADDRESS?.toLowerCase() === address?.toLowerCase();
-
-  if (!isConnected) {
-    return (
-      <main className="flex-1 container mx-auto px-4 py-12">
-        <Card className="p-8 text-center max-w-md mx-auto">
-          <h1 className="text-2xl font-bold mb-4">Admin Dashboard</h1>
-          <p className="text-muted-foreground">
-            Please connect your admin wallet to access this page
-          </p>
-        </Card>
-      </main>
-    );
-  }
-
-  if (!isAdmin) {
-    return (
-      <main className="flex-1 container mx-auto px-4 py-12">
-        <Card className="p-8 text-center max-w-md mx-auto border-red-300 dark:border-red-700">
-          <h1 className="text-2xl font-bold mb-4 text-red-600 dark:text-red-400">
-            Access Denied
-          </h1>
-          <p className="text-muted-foreground">
-            You do not have admin access to this page
-          </p>
-        </Card>
-      </main>
-    );
+export default async function AdminDashboardPage() {
+  // Server-side admin check - redirects if not admin
+  try {
+    await requireAdmin();
+  } catch (error) {
+    // Redirect unauthorized users to home page
+    redirect("/");
   }
 
   return (

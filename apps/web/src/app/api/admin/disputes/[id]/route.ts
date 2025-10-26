@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createPublicClient, http, type Address } from "viem";
 import { celoSepolia, hardhat, celo } from "viem/chains";
-import { isAdmin } from "@/lib/wallet-auth";
+import { requireAdmin } from "@/lib/server-auth";
 import {
   ESCROW_CONTRACT_ABI,
   EscrowState,
@@ -33,14 +33,8 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    // Check admin authorization
-    const adminAddress = request.headers.get("x-wallet-address") as Address | null;
-    if (!adminAddress || !isAdmin(adminAddress)) {
-      return NextResponse.json(
-        { error: "Unauthorized - Admin access required" },
-        { status: 401 }
-      );
-    }
+    // Check admin authorization using session
+    await requireAdmin();
 
     const escrowAddress = params.id as Address;
 
@@ -116,6 +110,20 @@ export async function GET(
       deliverable,
     });
   } catch (error) {
+    if (error instanceof Error) {
+      if (error.message === "UNAUTHORIZED") {
+        return NextResponse.json(
+          { error: "Authentication required" },
+          { status: 401 }
+        );
+      }
+      if (error.message === "FORBIDDEN") {
+        return NextResponse.json(
+          { error: "Admin access required" },
+          { status: 403 }
+        );
+      }
+    }
     console.error("Error fetching dispute details:", error);
     return NextResponse.json(
       { error: "Failed to fetch dispute details" },

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useAccount } from "wagmi";
+import { useSession } from "next-auth/react";
 import { Card } from "@/components/ui/card";
 import { formatEther } from "viem";
 
@@ -19,27 +19,21 @@ interface PlatformStats {
 }
 
 export default function AdminStatsPage() {
-  const { address, isConnected } = useAccount();
+  const { data: session, status } = useSession();
   const [stats, setStats] = useState<PlatformStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const isAdmin =
-    isConnected &&
-    process.env.NEXT_PUBLIC_ADMIN_WALLET_ADDRESS?.toLowerCase() === address?.toLowerCase();
-
   useEffect(() => {
     const fetchStats = async () => {
-      if (!isAdmin || !address) {
+      if (status !== "authenticated") {
         setIsLoading(false);
         return;
       }
 
       try {
         const response = await fetch("/api/admin/stats", {
-          headers: {
-            "x-wallet-address": address,
-          },
+          credentials: "include",
         });
 
         if (!response.ok) {
@@ -57,30 +51,25 @@ export default function AdminStatsPage() {
     };
 
     fetchStats();
-  }, [isAdmin, address]);
+  }, [status]);
 
-  if (!isConnected) {
+  if (status === "loading") {
     return (
       <main className="flex-1 container mx-auto px-4 py-12">
         <Card className="p-8 text-center max-w-md mx-auto">
-          <h1 className="text-2xl font-bold mb-4">Platform Statistics</h1>
-          <p className="text-muted-foreground">
-            Please connect your admin wallet to access this page
-          </p>
+          <p className="text-muted-foreground">Loading...</p>
         </Card>
       </main>
     );
   }
 
-  if (!isAdmin) {
+  if (status === "unauthenticated") {
     return (
       <main className="flex-1 container mx-auto px-4 py-12">
-        <Card className="p-8 text-center max-w-md mx-auto border-red-300 dark:border-red-700">
-          <h1 className="text-2xl font-bold mb-4 text-red-600 dark:text-red-400">
-            Access Denied
-          </h1>
+        <Card className="p-8 text-center max-w-md mx-auto">
+          <h1 className="text-2xl font-bold mb-4">Platform Statistics</h1>
           <p className="text-muted-foreground">
-            You do not have admin access to this page
+            Please connect your wallet to access this page
           </p>
         </Card>
       </main>

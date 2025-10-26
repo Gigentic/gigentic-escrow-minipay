@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { isAdmin } from "@/lib/wallet-auth";
+import { requireAdmin } from "@/lib/server-auth";
 import { hashDocument } from "@/lib/hash";
 import { kvKeys, getKVClient } from "@/lib/kv";
 import { type Address } from "viem";
@@ -22,14 +22,8 @@ import { type Address } from "viem";
  */
 export async function POST(request: Request) {
   try {
-    // Check admin authorization
-    const adminAddress = request.headers.get("x-wallet-address") as Address | null;
-    if (!adminAddress || !isAdmin(adminAddress)) {
-      return NextResponse.json(
-        { error: "Unauthorized - Admin access required" },
-        { status: 401 }
-      );
-    }
+    // Check admin authorization using session
+    const admin = await requireAdmin();
 
     const body = await request.json();
     const {
@@ -59,7 +53,7 @@ export async function POST(request: Request) {
     // Create resolution document
     const resolutionDocument = {
       escrowAddress,
-      arbiter: adminAddress,
+      arbiter: admin.address, // Use authenticated admin address from session
       favorDepositor,
       disputeReason,
       deliverableReview,
@@ -82,6 +76,20 @@ export async function POST(request: Request) {
       message: "Resolution document stored. Use this hash to call escrow.resolve() on-chain.",
     });
   } catch (error) {
+    if (error instanceof Error) {
+      if (error.message === "UNAUTHORIZED") {
+        return NextResponse.json(
+          { error: "Authentication required" },
+          { status: 401 }
+        );
+      }
+      if (error.message === "FORBIDDEN") {
+        return NextResponse.json(
+          { error: "Admin access required" },
+          { status: 403 }
+        );
+      }
+    }
     console.error("Error storing resolution:", error);
     return NextResponse.json(
       { error: "Failed to store resolution" },

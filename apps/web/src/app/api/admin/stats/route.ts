@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createPublicClient, http, type Address } from "viem";
 import { celoSepolia, hardhat, celo } from "viem/chains";
-import { isAdmin } from "@/lib/wallet-auth";
+import { requireAdmin } from "@/lib/server-auth";
 import {
   MASTER_FACTORY_ADDRESS,
   MASTER_FACTORY_ABI,
@@ -34,14 +34,8 @@ function getChain() {
  */
 export async function GET(request: Request) {
   try {
-    // Check admin authorization
-    const adminAddress = request.headers.get("x-wallet-address") as Address | null;
-    if (!adminAddress || !isAdmin(adminAddress)) {
-      return NextResponse.json(
-        { error: "Unauthorized - Admin access required" },
-        { status: 401 }
-      );
-    }
+    // Check admin authorization using session
+    await requireAdmin();
 
     // Create public client
     const publicClient = createPublicClient({
@@ -114,6 +108,20 @@ export async function GET(request: Request) {
           : "0",
     });
   } catch (error) {
+    if (error instanceof Error) {
+      if (error.message === "UNAUTHORIZED") {
+        return NextResponse.json(
+          { error: "Authentication required" },
+          { status: 401 }
+        );
+      }
+      if (error.message === "FORBIDDEN") {
+        return NextResponse.json(
+          { error: "Admin access required" },
+          { status: 403 }
+        );
+      }
+    }
     console.error("Error fetching stats:", error);
     return NextResponse.json(
       { error: "Failed to fetch statistics" },

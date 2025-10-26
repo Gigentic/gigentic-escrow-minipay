@@ -5,7 +5,10 @@ import { type Address } from "viem";
  */
 
 /**
- * Check if an address is the admin
+ * Check if an address is the admin (CLIENT-SIDE ONLY - UI DISPLAY PURPOSES)
+ *
+ * ⚠️ WARNING: This function is NOT secure and should ONLY be used for UI hints.
+ * For actual authorization, use server-side functions in lib/server-auth.ts
  *
  * @param address - Address to check
  * @returns true if address is admin, false otherwise
