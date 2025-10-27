@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ConnectButton as RainbowKitConnectButton } from "@rainbow-me/rainbowkit";
 import { useAccount } from "wagmi";
 import { useSession } from "next-auth/react";
@@ -16,9 +16,17 @@ export function ConnectButton() {
   const { profile } = useProfile(address);
   const { isAuthenticating, signIn } = useAuthState();
   const [profileModalOpen, setProfileModalOpen] = useState(false);
+  const [isMiniPay, setIsMiniPay] = useState(false);
 
   const isDev = process.env.NEXT_PUBLIC_APP_ENV !== "prod";
   const isAuthenticated = sessionStatus === 'authenticated';
+
+  // Detect MiniPay environment
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.ethereum?.isMiniPay) {
+      setIsMiniPay(true);
+    }
+  }, []);
 
   return (
     <div className="flex items-center gap-3">
@@ -52,6 +60,16 @@ export function ConnectButton() {
             >
               {(() => {
                 if (!connected) {
+                  // In MiniPay, show "Connecting..." since auto-connect is happening
+                  if (isMiniPay) {
+                    return (
+                      <Button type="button" disabled variant="outline" className="flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span>Connecting...</span>
+                      </Button>
+                    );
+                  }
+
                   return (
                     <Button onClick={openConnectModal} type="button">
                       Connect Wallet

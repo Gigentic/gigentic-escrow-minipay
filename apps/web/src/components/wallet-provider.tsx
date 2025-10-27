@@ -6,8 +6,9 @@ import { RainbowKitProvider, connectorsForWallets } from '@rainbow-me/rainbowkit
 import { SessionProvider } from 'next-auth/react'
 import {
   metaMaskWallet,
+  injectedWallet,
 } from "@rainbow-me/rainbowkit/wallets";
-import { WagmiProvider, createConfig, http } from "wagmi";
+import { WagmiProvider, createConfig, http, useConnect, useAccount } from "wagmi";
 import { celo, hardhat } from 'wagmi/chains'
 import { defineChain } from 'viem'
 import { QueryClientProvider, QueryClient } from '@tanstack/react-query'
@@ -61,9 +62,9 @@ const connectors = connectorsForWallets(
     {
       groupName: "Recommended",
       wallets: [
+        injectedWallet,
         metaMaskWallet,
         // walletConnectWallet,
-        // injectedWallet,
       ],
     },
   ],
@@ -120,6 +121,24 @@ function RainbowKitWithAutoAuth({ children }: { children: React.ReactNode }) {
   useAddressChangeLogout();
 
   const router = useRouter();
+  const { connect, connectors } = useConnect();
+  const { isConnected } = useAccount();
+
+  // Auto-connect for MiniPay environment
+  useEffect(() => {
+    if (typeof window !== 'undefined' &&
+        window.ethereum?.isMiniPay &&
+        !isConnected) {
+      // Find the injected connector and connect automatically
+      const injectedConnector = connectors.find(
+        connector => connector.type === 'injected'
+      );
+
+      if (injectedConnector) {
+        connect({ connector: injectedConnector });
+      }
+    }
+  }, [isConnected, connect, connectors]);
 
   // Handle redirect to dashboard after successful authentication
   useEffect(() => {
