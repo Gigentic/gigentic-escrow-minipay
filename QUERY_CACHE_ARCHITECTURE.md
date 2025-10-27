@@ -22,11 +22,9 @@
 - Parallel queries with `useQueries`
 
 ### What Needs Enhancement ⚠️
-- Authentication flow integration (SIWE) with query cache
 - Optimistic updates for instant UI feedback
-- Query key consistency across wagmi and custom queries
 - Block-based cache invalidation for real-time blockchain updates
-- Persisted cache for offline support
+- Persisted cache for offline support (optional)
 - Global cache management utilities
 
 ---
@@ -37,57 +35,45 @@
 
 ```mermaid
 graph TD
-    A[Root Query Keys] --> B[auth]
-    A --> C[profiles]
-    A --> D[escrows]
-    A --> E[documents]
-    A --> F[readContract - wagmi]
-    A --> G[admin]
+    A[Root Query Keys] --> B[profiles]
+    A --> C[escrows]
+    A --> D[documents]
+    A --> E[readContract - wagmi]
+    A --> F[admin]
 
-    B --> B1[session]
-    B --> B2[nonce]
+    B --> B1[all]
+    B1 --> B2["detail(address)"]
 
     C --> C1[all]
-    C1 --> C2["detail(address)"]
+    C1 --> C2[lists]
+    C2 --> C3["list(filters)"]
+    C1 --> C4[details]
+    C4 --> C5["detail(address)"]
+    C5 --> C6["detail(address) + 'dispute'"]
+    C5 --> C7["detail(address) + 'resolution'"]
+    C5 --> C8["detail(address) + 'listItem'"]
 
     D --> D1[all]
-    D1 --> D2[lists]
-    D2 --> D3["list(filters)"]
-    D1 --> D4[details]
-    D4 --> D5["detail(address)"]
-    D5 --> D6["detail(address) + 'dispute'"]
-    D5 --> D7["detail(address) + 'resolution'"]
-    D5 --> D8["detail(address) + 'listItem'"]
+    D1 --> D2["detail(hash/address)"]
 
-    E --> E1[all]
-    E1 --> E2["detail(hash/address)"]
+    E --> E1[chainId]
+    E1 --> E2[contractAddress]
+    E2 --> E3[functionName]
+    E3 --> E4[args...]
 
-    F --> F1[chainId]
-    F1 --> F2[contractAddress]
-    F2 --> F3[functionName]
-    F3 --> F4[args...]
-
-    G --> G1[disputes]
-    G --> G2[stats]
+    F --> F1[disputes]
+    F --> F2[stats]
 
     style A fill:#e1f5ff
-    style D fill:#fff4e1
-    style F fill:#ffe1e1
-    style B fill:#e1ffe1
+    style C fill:#fff4e1
+    style E fill:#ffe1e1
 ```
 
 ### Enhanced Query Key Factory
 
 ```typescript
-// Enhanced lib/queries.ts structure
+// lib/queries.ts structure (current + enhanced)
 export const queryKeys = {
-  // Authentication queries (NEW)
-  auth: {
-    all: ["auth"] as const,
-    session: () => [...queryKeys.auth.all, "session"] as const,
-    nonce: (address: Address) => [...queryKeys.auth.all, "nonce", address] as const,
-  },
-
   // Profile queries (EXISTING)
   profiles: {
     all: ["profiles"] as const,
@@ -144,34 +130,30 @@ graph LR
     end
 
     subgraph "Query Cache"
-        D[Auth Queries]
-        E[Profile Queries]
-        F[Escrow Queries]
-        G[Document Queries]
-        H[Wagmi Queries]
+        D[Profile Queries]
+        E[Escrow Queries]
+        F[Document Queries]
+        G[Wagmi Queries]
     end
 
     subgraph "UI Components"
-        I[Dashboard]
-        J[Escrow Details]
-        K[Profile]
-        L[Admin Panel]
+        H[Dashboard]
+        I[Escrow Details]
+        J[Profile]
+        K[Admin Panel]
     end
 
-    A -->|useReadContract| H
-    A -->|usePublicClient| F
-    B -->|fetch| E
+    A -->|useReadContract| G
+    A -->|usePublicClient| E
     B -->|fetch| D
-    C -->|fetch| G
+    C -->|fetch| F
 
-    H --> F
-    F --> I
-    F --> J
-    E --> K
+    G --> E
+    E --> H
     E --> I
-    G --> J
-    D --> I
-    D --> K
+    D --> J
+    D --> H
+    F --> I
 
     style A fill:#e1f5ff
     style B fill:#fff4e1
@@ -183,12 +165,6 @@ graph LR
 ```typescript
 // Recommended cache times by data type
 const CACHE_TIMES = {
-  // Auth data - short lived, security sensitive
-  auth: {
-    staleTime: 0,           // Always revalidate
-    gcTime: 1000 * 60 * 5,  // Keep in cache for 5 min
-  },
-
   // Profile data - medium lived, user controlled
   profile: {
     staleTime: 1000 * 60 * 5,     // Fresh for 5 min
@@ -237,54 +213,49 @@ const CACHE_TIMES = {
 graph TD
     A[User Action] --> B{Mutation Type}
 
-    B -->|Sign In| C[Auth Mutation]
-    B -->|Update Profile| D[Profile Mutation]
-    B -->|Create Escrow| E[Escrow Creation]
-    B -->|Dispute| F[Dispute Mutation]
-    B -->|Complete| G[Complete Mutation]
-    B -->|Resolve| H[Resolve Mutation]
-    B -->|Sign Out| I[Sign Out Mutation]
+    B -->|Update Profile| C[Profile Mutation]
+    B -->|Create Escrow| D[Escrow Creation]
+    B -->|Dispute| E[Dispute Mutation]
+    B -->|Complete| F[Complete Mutation]
+    B -->|Resolve| G[Resolve Mutation]
+    B -->|Sign Out| H[Disconnect Wallet]
 
-    C --> C1["Invalidate: auth.session"]
-    C --> C2["Invalidate: profiles.detail(address)"]
-    C --> C3["Set: auth data"]
+    C --> C1["Invalidate: profiles.detail(address)"]
+    C --> C2["Set: new profile data"]
 
-    D --> D1["Invalidate: profiles.detail(address)"]
-    D --> D2["Set: new profile data"]
+    D --> D1["Invalidate: ALL readContract"]
+    D --> D2["Invalidate: getUserEscrows query"]
+    D --> D3["Invalidate: escrows.lists()"]
+    D --> D4["Wait 500ms for chain propagation"]
+    D --> D5["Navigate to new escrow"]
 
-    E --> E1["Invalidate: ALL readContract"]
-    E --> E2["Invalidate: getUserEscrows query"]
-    E --> E3["Invalidate: escrows.lists()"]
-    E --> E4["Wait 500ms for chain propagation"]
-    E --> E5["Navigate to new escrow"]
+    E --> E1["Invalidate: escrows.detail(address)"]
+    E --> E2["Invalidate: dispute sub-query"]
+    E --> E3["Invalidate: documents.detail()"]
+    E --> E4["Invalidate: readContract"]
+    E --> E5["Wait 1000ms for propagation"]
+    E --> E6["Refetch: all escrow queries"]
 
     F --> F1["Invalidate: escrows.detail(address)"]
     F --> F2["Invalidate: dispute sub-query"]
-    F --> F3["Invalidate: documents.detail()"]
-    F --> F4["Invalidate: readContract"]
-    F --> F5["Wait 1000ms for propagation"]
-    F --> F6["Refetch: all escrow queries"]
+    F --> F3["Invalidate: readContract"]
+    F --> F4["Wait 1000ms for propagation"]
+    F --> F5["Refetch: all escrow queries"]
 
     G --> G1["Invalidate: escrows.detail(address)"]
-    G --> G2["Invalidate: dispute sub-query"]
-    G --> G3["Invalidate: readContract"]
-    G --> G4["Wait 1000ms for propagation"]
-    G --> G5["Refetch: all escrow queries"]
+    G --> G2["Invalidate: resolution sub-query"]
+    G --> G3["Invalidate: admin.disputes()"]
+    G --> G4["Invalidate: readContract"]
 
-    H --> H1["Invalidate: escrows.detail(address)"]
-    H --> H2["Invalidate: resolution sub-query"]
-    H --> H3["Invalidate: admin.disputes()"]
-    H --> H4["Invalidate: readContract"]
-
-    I --> I1["Clear: auth.session"]
-    I --> I2["Clear: profiles.detail()"]
-    I --> I3["Disconnect wallet"]
-    I --> I4["Clear ALL user-specific data"]
+    H --> H1["Clear: profiles.detail()"]
+    H --> H2["Clear: escrows.lists()"]
+    H --> H3["Disconnect wallet"]
+    H --> H4["Clear session cookie via API"]
 
     style A fill:#e1f5ff
-    style E fill:#fff4e1
-    style F fill:#ffe1f1
-    style G fill:#e1ffe1
+    style D fill:#fff4e1
+    style E fill:#ffe1f1
+    style F fill:#e1ffe1
 ```
 
 ### Invalidation Patterns by Scope
@@ -335,27 +306,26 @@ sequenceDiagram
     UI->>Wallet: Request Connection
     Wallet-->>UI: Address + Chain
 
-    UI->>Cache: Check auth.session
-    Cache-->>UI: No session / stale
+    Note over UI: useAccount() from wagmi<br/>provides wallet state
 
     UI->>API: Request SIWE nonce
-    API-->>Cache: Store nonce in auth.nonce(address)
     API-->>UI: Return nonce
 
     UI->>Wallet: Sign SIWE message
     Wallet-->>UI: Signed message
 
     UI->>API: Verify signature
-    API-->>UI: JWT token
+    API->>API: Set session cookie
+    API-->>UI: Success
 
-    UI->>Cache: Set auth.session
-    UI->>Cache: Invalidate profiles.detail(address)
-
-    Cache->>API: Fetch profile
-    API-->>Cache: Store profile
-    Cache-->>UI: Profile data
+    UI->>Cache: Fetch useProfile(address)
+    Cache->>API: GET /api/profile/:address
+    API-->>Cache: Profile data
+    Cache-->>UI: Profile cached
 
     UI-->>User: Authenticated + Profile loaded
+
+    Note over Cache,API: Session managed by cookie<br/>No auth query caching needed
 ```
 
 ### 2. Dashboard Flow
@@ -370,8 +340,7 @@ sequenceDiagram
 
     User->>Dashboard: Navigate to /dashboard
 
-    Dashboard->>Cache: Query auth.session
-    Cache-->>Dashboard: Session data
+    Note over Dashboard: useAccount() provides<br/>wallet address
 
     Dashboard->>Cache: Query getUserEscrows(address)
 
@@ -558,90 +527,26 @@ sequenceDiagram
 
     User->>UI: Click "Sign Out"
 
-    UI->>Cache: useSignOut mutation
-
-    Cache->>API: POST /api/auth/logout
+    UI->>API: POST /api/auth/logout
     API->>API: Clear session cookie
-    API-->>Cache: Success
+    API-->>UI: Success
 
-    Cache->>Cache: Clear auth.session
-    Cache->>Cache: Clear auth.nonce
-    Cache->>Cache: Clear profiles.detail(address)
-    Cache->>Cache: Clear escrows.lists()
-    Cache->>Cache: Optional: Clear ALL user data
+    UI->>Cache: Clear profiles.detail(address)
+    UI->>Cache: Clear escrows.lists()
 
-    Cache->>Wallet: disconnect()
-    Wallet-->>Cache: Disconnected
+    UI->>Wallet: disconnect() via wagmi
+    Wallet-->>UI: Disconnected
 
-    Cache-->>UI: Sign out complete
     UI-->>User: Redirect to landing page
+
+    Note over Cache: Session cleared via cookie<br/>Profile/escrow cache cleared<br/>Wallet disconnected
 ```
 
 ---
 
 ## Implementation Recommendations
 
-### 1. Add Authentication Queries
-
-```typescript
-// hooks/use-auth.ts (NEW)
-export function useAuth() {
-  const { address } = useAccount();
-  const queryClient = useQueryClient();
-
-  // Check session
-  const sessionQuery = useQuery({
-    queryKey: queryKeys.auth.session(),
-    queryFn: async () => {
-      const response = await fetch('/api/auth/session');
-      if (!response.ok) return null;
-      return response.json();
-    },
-    staleTime: 0, // Always revalidate
-    gcTime: 1000 * 60 * 5,
-  });
-
-  // Sign in mutation
-  const signInMutation = useMutation({
-    mutationFn: async (signature: `0x${string}`) => {
-      const response = await fetch('/api/auth/signin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ signature }),
-      });
-      if (!response.ok) throw new Error('Sign in failed');
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.auth.session() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.profiles.detail(address!) });
-    },
-  });
-
-  // Sign out mutation
-  const signOutMutation = useMutation({
-    mutationFn: async () => {
-      await fetch('/api/auth/logout', { method: 'POST' });
-    },
-    onSuccess: () => {
-      // Clear ALL user-specific cache
-      queryClient.removeQueries({ queryKey: queryKeys.auth.all });
-      queryClient.removeQueries({ queryKey: queryKeys.profiles.detail(address!) });
-      queryClient.removeQueries({ queryKey: queryKeys.escrows.lists() });
-    },
-  });
-
-  return {
-    session: sessionQuery.data,
-    isAuthenticated: !!sessionQuery.data,
-    isLoading: sessionQuery.isLoading,
-    signIn: signInMutation.mutate,
-    signOut: signOutMutation.mutate,
-  };
-}
-```
-
-### 2. Add Global Cache Utilities
+### 1. Add Global Cache Utilities
 
 ```typescript
 // lib/cache-utils.ts (NEW)
@@ -658,7 +563,6 @@ export class CacheManager {
   clearUserData(address: Address) {
     this.queryClient.removeQueries({ queryKey: queryKeys.profiles.detail(address) });
     this.queryClient.removeQueries({ queryKey: queryKeys.escrows.lists() });
-    this.queryClient.removeQueries({ queryKey: queryKeys.auth.all });
   }
 
   /**
@@ -715,7 +619,7 @@ export const createCacheManager = (queryClient: QueryClient) =>
   new CacheManager(queryClient);
 ```
 
-### 3. Add Optimistic Updates
+### 2. Add Optimistic Updates
 
 ```typescript
 // Enhanced mutation with optimistic update
@@ -781,7 +685,7 @@ export function useCompleteEscrow(options?: {
 }
 ```
 
-### 4. Add Block-Based Invalidation
+### 3. Add Block-Based Invalidation
 
 ```typescript
 // hooks/use-block-watcher.ts (NEW)
@@ -833,7 +737,7 @@ export function useBlockWatcher(enabled = true) {
 }
 ```
 
-### 5. Add Cache Persistence (Optional)
+### 4. Add Cache Persistence (Optional)
 
 ```typescript
 // lib/query-client.ts
@@ -867,7 +771,7 @@ export const persister = createSyncStoragePersister({
 // </PersistQueryClientProvider>
 ```
 
-### 6. Add Query Devtools Setup
+### 5. Add Query Devtools Setup
 
 ```typescript
 // components/query-devtools.tsx (NEW)
@@ -928,25 +832,24 @@ graph LR
 graph TD
     A[Mutation Complete] --> B{What Changed?}
 
-    B -->|User Auth| C["Invalidate: auth, profiles"]
-    B -->|Profile Data| D["Invalidate: profiles.detail()"]
-    B -->|Escrow Created| E["Invalidate: lists, getUserEscrows"]
-    B -->|Escrow State| F["Invalidate: escrow.detail()"]
-    B -->|Document Stored| G["Invalidate: documents.detail()"]
+    B -->|Profile Data| C["Invalidate: profiles.detail()"]
+    B -->|Escrow Created| D["Invalidate: lists, getUserEscrows"]
+    B -->|Escrow State| E["Invalidate: escrow.detail()"]
+    B -->|Document Stored| F["Invalidate: documents.detail()"]
 
-    F --> H{Specific State?}
-    H -->|Disputed| I["Also invalidate: dispute sub-query"]
-    H -->|Completed| J["Also invalidate: user lists"]
-    H -->|Resolved| K["Also invalidate: resolution, admin queries"]
+    E --> G{Specific State?}
+    G -->|Disputed| H["Also invalidate: dispute sub-query"]
+    G -->|Completed| I["Also invalidate: user lists"]
+    G -->|Resolved| J["Also invalidate: resolution, admin queries"]
 
-    E --> L["Wait for chain propagation"]
-    F --> L
-    L --> M["Refetch active queries"]
-    M --> N[UI Updates]
+    D --> K["Wait for chain propagation"]
+    E --> K
+    K --> L["Refetch active queries"]
+    L --> M[UI Updates]
 
     style A fill:#e1f5ff
-    style L fill:#fff4e1
-    style N fill:#e1ffe1
+    style K fill:#fff4e1
+    style M fill:#e1ffe1
 ```
 
 ---
@@ -954,15 +857,14 @@ graph TD
 ## Next Steps
 
 1. ✅ Review this architecture with your team
-2. [ ] Implement `use-auth.ts` hook
-3. [ ] Add `cache-utils.ts` utilities
-4. [ ] Enhance mutation hooks with optimistic updates
-5. [ ] Add `use-block-watcher.ts` for real-time updates
-6. [ ] Consider cache persistence for offline support
-7. [ ] Add React Query Devtools for debugging
-8. [ ] Update all mutation hooks to use new invalidation patterns
-9. [ ] Test cache invalidation flows thoroughly
-10. [ ] Monitor cache performance and adjust stale times
+2. [ ] Add `cache-utils.ts` utilities
+3. [ ] Enhance mutation hooks with optimistic updates
+4. [ ] Add `use-block-watcher.ts` for real-time updates
+5. [ ] Consider cache persistence for offline support (optional)
+6. [ ] Add React Query Devtools for debugging
+7. [ ] Update all mutation hooks to use new invalidation patterns
+8. [ ] Test cache invalidation flows thoroughly
+9. [ ] Monitor cache performance and adjust stale times
 
 ---
 
