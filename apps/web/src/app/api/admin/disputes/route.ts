@@ -53,47 +53,49 @@ export async function GET() {
       functionName: "getAllEscrows",
     });
 
-    // Filter for disputed escrows
-    const disputedEscrows = [];
-
-    for (const escrowAddress of allEscrows) {
-      try {
-        const details = await publicClient.readContract({
-          address: escrowAddress as Address,
-          abi: ESCROW_CONTRACT_ABI,
-          functionName: "getDetails",
-        });
-
-        const state = details[5] as EscrowState;
-
-        if (state === EscrowState.DISPUTED) {
-          const disputeInfo = await publicClient.readContract({
+    // Filter for disputed escrows - parallel execution for performance
+    const disputedEscrows = await Promise.all(
+      allEscrows.map(async (escrowAddress) => {
+        try {
+          const details = await publicClient.readContract({
             address: escrowAddress as Address,
             abi: ESCROW_CONTRACT_ABI,
-            functionName: "getDisputeInfo",
+            functionName: "getDetails",
           });
 
-          // Fetch dispute reason from KV directly
-          const [disputeReasonHash] = disputeInfo;
-          const disputeDoc = await kv.get<DisputeDocument>(kvKeys.dispute(disputeReasonHash as string));
-          const actualDisputeReason = disputeDoc?.reason || "Dispute reason not found";
+          const state = details[5] as EscrowState;
 
-          disputedEscrows.push({
-            address: escrowAddress,
-            depositor: details[0],
-            recipient: details[1],
-            escrowAmount: details[2].toString(),
-            platformFee: details[3].toString(),
-            disputeBond: details[4].toString(),
-            deliverableHash: details[6],
-            createdAt: details[7].toString(),
-            disputeReason: actualDisputeReason,
-          });
+          if (state === EscrowState.DISPUTED) {
+            const disputeInfo = await publicClient.readContract({
+              address: escrowAddress as Address,
+              abi: ESCROW_CONTRACT_ABI,
+              functionName: "getDisputeInfo",
+            });
+
+            // Fetch dispute reason from KV directly
+            const [disputeReasonHash] = disputeInfo;
+            const disputeDoc = await kv.get<DisputeDocument>(kvKeys.dispute(disputeReasonHash as string));
+            const actualDisputeReason = disputeDoc?.reason || "Dispute reason not found";
+
+            return {
+              address: escrowAddress,
+              depositor: details[0],
+              recipient: details[1],
+              escrowAmount: details[2].toString(),
+              platformFee: details[3].toString(),
+              disputeBond: details[4].toString(),
+              deliverableHash: details[6],
+              createdAt: details[7].toString(),
+              disputeReason: actualDisputeReason,
+            };
+          }
+          return null;
+        } catch (error) {
+          console.error(`Error fetching escrow ${escrowAddress}:`, error);
+          return null;
         }
-      } catch (error) {
-        console.error(`Error fetching escrow ${escrowAddress}:`, error);
-      }
-    }
+      })
+    ).then(results => results.filter((escrow): escrow is NonNullable<typeof escrow> => escrow !== null));
 
     return NextResponse.json({
       count: disputedEscrows.length,
