@@ -60,7 +60,8 @@
       "mcp__chrome-devtools__evaluate_script",
       "Bash(tsc:*)",
       "WebFetch(domain:docs.minipay.xyz)",
-      "Bash(pnpm list:*)"
+      "Bash(pnpm list:*)",
+      "Bash(lsof:*)"
     ],
     "deny": [],
     "ask": []

@@ -14,12 +14,6 @@ import {
 import { useRouter } from "next/navigation";
 import { useCreateEscrow } from "@/hooks/use-create-escrow";
 import { useApproveSpendingCap } from "@/hooks/use-approve-spending-cap";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { Info } from "lucide-react";
 
 /**
@@ -48,6 +42,7 @@ export function CreateEscrowForm() {
   const [description, setDescription] = useState("");
   const [error, setError] = useState("");
   const [allowanceRefetchKey, setAllowanceRefetchKey] = useState(0);
+  const [showSpendingCapInfo, setShowSpendingCapInfo] = useState(false);
 
   // Check cUSD balance
   const { data: balance } = useReadContract({
@@ -60,6 +55,10 @@ export function CreateEscrowForm() {
     },
   });
 
+  // Calculate if spending cap is sufficient
+  const amountWei = amount ? parseEther(amount) : 0n;
+  const { total: totalRequired } = calculateTotalRequired(amountWei);
+
   // Check current spending cap (allowance)
   const { data: currentAllowance, refetch: refetchAllowance } = useReadContract({
     address: CUSD_ADDRESS,
@@ -68,16 +67,32 @@ export function CreateEscrowForm() {
     args: userAddress ? [userAddress, MASTER_FACTORY_ADDRESS] : undefined,
     query: {
       enabled: !!userAddress,
+      refetchInterval: allowanceRefetchKey > 0 ? 1000 : false, // Poll every 1s after approval
     },
   });
 
+  // Log current spending cap when it changes
+  useEffect(() => {
+    if (currentAllowance !== undefined) {
+      const humanReadable = (Number(currentAllowance) / 1e18).toFixed(4);
+      console.log("Current spending cap (allowance):", currentAllowance.toString(), `(${humanReadable} cUSD)`);
+
+      // Stop polling if allowance is now sufficient
+      if (allowanceRefetchKey > 0 && amount && currentAllowance >= totalRequired) {
+        console.log("✅ Allowance is now sufficient, stopping polling");
+        setAllowanceRefetchKey(0);
+      }
+    }
+  }, [currentAllowance, allowanceRefetchKey, totalRequired, amount]);
+
   // Hook for approving spending cap
   const { approveSpendingCapAsync, isApproving, error: approvalError } = useApproveSpendingCap({
-    onSuccess: async () => {
+    onSuccess: async (txHash) => {
       console.log("Spending cap approved, refetching allowance...");
-      // Refetch allowance after successful approval
-      await refetchAllowance();
+      // Enable polling to refetch allowance
       setAllowanceRefetchKey((prev) => prev + 1);
+      // Also manually refetch immediately
+      await refetchAllowance();
       setError("");
     },
     onError: (err) => {
@@ -86,9 +101,6 @@ export function CreateEscrowForm() {
     },
   });
 
-  // Calculate if spending cap is sufficient
-  const amountWei = amount ? parseEther(amount) : 0n;
-  const { total: totalRequired } = calculateTotalRequired(amountWei);
   const needsApproval = amount && currentAllowance !== undefined && currentAllowance < totalRequired;
   const hasValidAmount = amount && parseFloat(amount) > 0;
 
@@ -227,41 +239,40 @@ export function CreateEscrowForm() {
 
             {/* Spending Cap Approval Section */}
             {needsApproval && (
-              <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-md space-y-2">
+              <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-md space-y-3">
                 <p className="text-sm text-amber-800 dark:text-amber-200 font-medium">
                   ⚠️ Insufficient spending cap
                 </p>
-                <div className="flex items-center gap-2">
+                <div className="space-y-2">
                   <Button
                     onClick={handleApproveSpendingCap}
                     disabled={isApproving}
                     variant="outline"
                     size="sm"
-                    className="border-amber-300 dark:border-amber-700"
+                    className="w-full sm:w-auto border-amber-300 dark:border-amber-700"
                   >
                     {isApproving ? "Approving..." : "Increase Spending Cap"}
                   </Button>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button
-                          type="button"
-                          className="text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300"
-                        >
-                          <Info className="h-4 w-4" />
-                          <span className="sr-only">What is the spending cap?</span>
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-xs">
-                        <p className="text-sm">
-                          This authorizes the Gigentic Escrow contract to transfer{" "}
-                          <strong>{(parseFloat(amount) * 1.05).toFixed(2)} cUSD</strong> tokens from your
-                          wallet to create the escrow. This is how ERC-20 tokens work - you must approve
-                          the contract before it can move your tokens.
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+
+                  {/* Expandable info section */}
+                  <div className="text-xs text-amber-700 dark:text-amber-300">
+                    <button
+                      type="button"
+                      onClick={() => setShowSpendingCapInfo(!showSpendingCapInfo)}
+                      className="flex items-center gap-2 font-medium hover:text-amber-800 dark:hover:text-amber-200"
+                    >
+                      <Info className="h-4 w-4 flex-shrink-0" />
+                      <span>What is the spending cap?</span>
+                    </button>
+                    {showSpendingCapInfo && (
+                      <p className="mt-2 ml-6 leading-relaxed">
+                        This authorizes the Gigentic Escrow contract to transfer{" "}
+                        <strong>{(parseFloat(amount) * 1.05).toFixed(2)} cUSD</strong> from your
+                        wallet to create the escrow. This is how ERC-20 tokens work - you must approve
+                        the contract before it can move your tokens.
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
