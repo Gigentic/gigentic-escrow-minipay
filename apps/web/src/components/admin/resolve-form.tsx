@@ -40,16 +40,19 @@ export function ResolveForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
 
+  // Currently not used
   const addEvidence = () => {
     setEvidenceConsidered([...evidenceConsidered, ""]);
   };
-
+  
+  // Currently not used
   const updateEvidence = (index: number, value: string) => {
     const newEvidence = [...evidenceConsidered];
     newEvidence[index] = value;
     setEvidenceConsidered(newEvidence);
   };
-
+  
+  // Currently not used
   const removeEvidence = (index: number) => {
     if (evidenceConsidered.length > 1) {
       setEvidenceConsidered(evidenceConsidered.filter((_, i) => i !== index));
