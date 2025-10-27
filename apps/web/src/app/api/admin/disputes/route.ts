@@ -9,7 +9,7 @@ import {
   EscrowState,
   CHAIN_ID,
 } from "@/lib/escrow-config";
-import { fetchDisputeDocument } from "@/lib/document-fetchers";
+import { getKVClient, kvKeys } from "@/lib/kv";
 
 // Tell Next.js this route must be dynamic (server-rendered on demand)
 export const dynamic = 'force-dynamic';
@@ -38,11 +38,12 @@ export async function GET() {
     // Check admin authorization using session
     await requireAdmin();
 
-    // Create public client
+    // Create public client and KV client
     const publicClient = createPublicClient({
       chain: getChain(),
       transport: http(),
     });
+    const kv = getKVClient();
 
     // Get all escrows
     const allEscrows = await publicClient.readContract({
@@ -71,12 +72,10 @@ export async function GET() {
             functionName: "getDisputeInfo",
           });
 
-          // Fetch dispute reason from KV using centralized helper
-          const [disputeReasonHash] = disputeInfo; // Auto-typed by wagmi
-          const disputeDoc = await fetchDisputeDocument(
-            disputeReasonHash as `0x${string}`
-          );
-          const actualDisputeReason = disputeDoc.reason;
+          // Fetch dispute reason from KV directly
+          const [disputeReasonHash] = disputeInfo;
+          const disputeDoc: any = await kv.get(kvKeys.dispute(disputeReasonHash as string));
+          const actualDisputeReason = disputeDoc?.reason || "Dispute reason not found";
 
           disputedEscrows.push({
             address: escrowAddress,
