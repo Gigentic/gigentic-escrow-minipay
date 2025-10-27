@@ -12,6 +12,7 @@ import {
   EscrowState,
 } from "@/lib/escrow-config";
 import { useUserEscrows } from "@/hooks/use-user-escrows";
+import { useEscrowEvents } from "@/hooks/use-escrow-events";
 
 export default function DashboardPage() {
   const { address, isConnected } = useAccount();
@@ -20,6 +21,7 @@ export default function DashboardPage() {
   const [stateFilter, setStateFilter] = useState<EscrowState | "all">("all");
 
   // Fetch user's escrow addresses from contract
+  // Event listeners will keep this cache fresh automatically
   const { data: userEscrowAddresses } = useReadContract({
     address: MASTER_FACTORY_ADDRESS,
     abi: MASTER_FACTORY_ABI,
@@ -27,15 +29,18 @@ export default function DashboardPage() {
     args: address ? [address] : undefined,
     query: {
       enabled: !!address,
-      staleTime: 0, // Always consider stale to ensure fresh data
-      refetchOnMount: "always", // Always refetch on mount
-      refetchOnWindowFocus: true, // Refetch when window regains focus
-      refetchInterval: false, // Don't poll, but refetch on mount/focus
+      // Rely on event listeners for cache freshness instead of aggressive refetching
+      staleTime: 60_000, // Consider fresh for 1 minute
+      refetchOnMount: false, // Don't refetch on mount, trust cache + events
+      refetchOnWindowFocus: false, // Don't refetch on focus, trust cache + events
     },
   });
 
   // Use hook to fetch details for each escrow in parallel
   const { escrows, isLoading } = useUserEscrows(userEscrowAddresses);
+
+  // Listen to blockchain events and update cache in real-time
+  useEscrowEvents(userEscrowAddresses);
 
   if (!isConnected) {
     return (
