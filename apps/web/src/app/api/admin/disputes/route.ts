@@ -10,6 +10,7 @@ import {
   CHAIN_ID,
 } from "@/lib/escrow-config";
 import { getKVClient, kvKeys } from "@/lib/kv";
+import type { DisputeDocument } from "@/lib/types";
 
 // Tell Next.js this route must be dynamic (server-rendered on demand)
 export const dynamic = 'force-dynamic';
@@ -74,7 +75,7 @@ export async function GET() {
 
           // Fetch dispute reason from KV directly
           const [disputeReasonHash] = disputeInfo;
-          const disputeDoc: any = await kv.get(kvKeys.dispute(disputeReasonHash as string));
+          const disputeDoc = await kv.get<DisputeDocument>(kvKeys.dispute(disputeReasonHash as string));
           const actualDisputeReason = disputeDoc?.reason || "Dispute reason not found";
 
           disputedEscrows.push({

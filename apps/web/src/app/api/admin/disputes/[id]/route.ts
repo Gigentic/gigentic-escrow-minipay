@@ -7,10 +7,8 @@ import {
   EscrowState,
   CHAIN_ID,
 } from "@/lib/escrow-config";
-import {
-  fetchDisputeDocument,
-  fetchDeliverableDocument,
-} from "@/lib/document-fetchers";
+import { getKVClient, kvKeys } from "@/lib/kv";
+import type { DisputeDocument, DeliverableDocument } from "@/lib/types";
 
 // Helper to get the correct chain based on CHAIN_ID
 function getChain() {
@@ -41,11 +39,12 @@ export async function GET(
 
     const escrowAddress = params.id as Address;
 
-    // Create public client
+    // Create public client and KV client
     const publicClient = createPublicClient({
       chain: getChain(),
       transport: http(),
     });
+    const kv = getKVClient();
 
     // Get escrow details
     const details = await publicClient.readContract({
@@ -70,15 +69,13 @@ export async function GET(
       functionName: "getDisputeInfo",
     });
 
-    // Fetch dispute reason from KV using centralized helper
-    const [disputeReasonHash] = disputeInfo; // Auto-typed by wagmi
-    const disputeDoc = await fetchDisputeDocument(
-      disputeReasonHash as `0x${string}`
-    );
-    const actualDisputeReason = disputeDoc.reason;
+    // Fetch dispute reason from KV directly
+    const [disputeReasonHash] = disputeInfo;
+    const disputeDoc = await kv.get<DisputeDocument>(kvKeys.dispute(disputeReasonHash as string));
+    const actualDisputeReason = disputeDoc?.reason || "Dispute reason not found";
 
-    // Get deliverable document using centralized helper
-    const deliverable = await fetchDeliverableDocument(escrowAddress);
+    // Get deliverable document from KV directly
+    const deliverable = await kv.get<DeliverableDocument>(kvKeys.deliverable(escrowAddress));
 
     return NextResponse.json({
       address: escrowAddress,
