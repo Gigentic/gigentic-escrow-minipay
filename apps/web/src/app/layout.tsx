@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import dynamic from 'next/dynamic';
-
+import { Analytics } from "@vercel/analytics/next"
 import { Navbar } from '@/components/navbar';
 
 // Load WalletProvider only on client-side to avoid IndexedDB errors during SSR/build
@@ -35,6 +35,7 @@ export default function RootLayout({
             </main>
           </WalletProvider>
         </div>
+        <Analytics />
       </body>
     </html>
   );
