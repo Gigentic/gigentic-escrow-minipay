@@ -6,7 +6,7 @@ import type { Address } from "viem";
 import { queryKeys } from "@/lib/queries";
 import { ESCROW_CONTRACT_ABI } from "@/lib/escrow-config";
 import { hashDocument } from "@/lib/hash";
-import type { DisputeParams, DisputeDocument } from "@/lib/types";
+import type { DisputeParams, DisputeDocument, EscrowListItem } from "@/lib/types";
 
 /**
  * Hook to raise a dispute on an escrow
@@ -40,6 +40,26 @@ export function useDisputeEscrow(options?: {
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
+    // Optimistic update: Show disputed state immediately
+    onMutate: async (params: DisputeParams) => {
+      console.log("[Optimistic] Marking escrow as disputed");
+
+      // Get current escrow data
+      const detailQueryKey = [...queryKeys.escrows.detail(params.escrowAddress), "listItem"];
+      const previousEscrow = queryClient.getQueryData<EscrowListItem>(detailQueryKey);
+
+      // Optimistically update to DISPUTED state (1)
+      if (previousEscrow) {
+        queryClient.setQueryData<EscrowListItem>(detailQueryKey, {
+          ...previousEscrow,
+          state: 1, // DISPUTED
+        });
+      }
+
+      // Return context with previous value for rollback
+      return { previousEscrow };
+    },
+
     mutationFn: async (params: DisputeParams) => {
       if (!userAddress) {
         throw new Error("Wallet not connected");
@@ -100,54 +120,24 @@ export function useDisputeEscrow(options?: {
     },
 
     onSuccess: async (data, variables) => {
-      // Wait a moment for blockchain state to propagate
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      console.log("[Optimistic] Transaction confirmed, dispute raised");
 
-      // Invalidate and refetch ALL queries related to this escrow
-      // Use exact same query key structure as useEscrowDetails hook
-
-      // 1. Invalidate the main escrow details query
+      // The event listener will handle the final cache update
+      // But we'll invalidate to ensure all related data is fresh
       await queryClient.invalidateQueries({
         queryKey: queryKeys.escrows.detail(variables.escrowAddress),
-        exact: false, // Match all queries that start with this key
+        exact: false,
       });
 
-      // 2. Invalidate the dispute info query
-      await queryClient.invalidateQueries({
-        queryKey: [
-          ...queryKeys.escrows.detail(variables.escrowAddress),
-          "dispute",
-        ],
-      });
-
-      // 3. Invalidate document queries (for the dispute document)
       await queryClient.invalidateQueries({
         queryKey: queryKeys.documents.detail(variables.escrowAddress),
       });
 
-      // Also invalidate with the dispute hash as key
       await queryClient.invalidateQueries({
         queryKey: queryKeys.documents.detail(data.disputeHash),
       });
 
-      // 4. Invalidate ALL readContract queries to catch any wagmi cached reads
-      await queryClient.invalidateQueries({
-        queryKey: ["readContract"],
-      });
-
-      // 5. Force refetch all queries for this escrow address
-      await queryClient.refetchQueries({
-        queryKey: queryKeys.escrows.detail(variables.escrowAddress),
-        exact: false,
-        type: 'active',
-      });
-
-      // 6. Also refetch document queries
-      await queryClient.refetchQueries({
-        queryKey: queryKeys.documents.detail(variables.escrowAddress),
-      });
-
-      console.log("Cache invalidated and refetched after dispute for escrow:", variables.escrowAddress);
+      console.log("[Optimistic] Cache invalidated after dispute for escrow:", variables.escrowAddress);
 
       // Call the optional onSuccess callback
       if (options?.onSuccess) {
@@ -155,8 +145,16 @@ export function useDisputeEscrow(options?: {
       }
     },
 
-    onError: (error) => {
+    onError: (error, variables, context) => {
+      console.error("[Optimistic] Transaction failed, rolling back");
       console.error("Dispute error:", error);
+
+      // Rollback: Restore previous state
+      if (context?.previousEscrow) {
+        const detailQueryKey = [...queryKeys.escrows.detail(variables.escrowAddress), "listItem"];
+        queryClient.setQueryData(detailQueryKey, context.previousEscrow);
+        console.log("[Optimistic] Rollback complete");
+      }
 
       // Call the optional onError callback
       if (options?.onError) {

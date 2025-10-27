@@ -16,18 +16,11 @@ import type { EscrowListItem } from "./types";
  */
 export function addEscrowToUserCache(
   queryClient: QueryClient,
-  userAddress: Address,
+  _userAddress: Address,
   newEscrow: EscrowListItem
 ) {
   // Update the wagmi readContract cache for getUserEscrows
   // This is where the escrow addresses array is cached
-  const wagmiQueryKey = [
-    "readContract",
-    {
-      address: undefined, // Will be set by wagmi with MASTER_FACTORY_ADDRESS
-      functionName: "getUserEscrows",
-    },
-  ];
 
   // Get all queries that match the getUserEscrows pattern
   const queries = queryClient.getQueriesData({

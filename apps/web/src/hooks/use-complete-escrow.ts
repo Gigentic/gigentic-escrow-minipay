@@ -5,6 +5,7 @@ import { usePublicClient, useWriteContract } from "wagmi";
 import type { Address } from "viem";
 import { queryKeys } from "@/lib/queries";
 import { ESCROW_CONTRACT_ABI } from "@/lib/escrow-config";
+import type { EscrowListItem } from "@/lib/types";
 
 /**
  * Hook to complete an escrow (release funds to recipient)
@@ -37,6 +38,26 @@ export function useCompleteEscrow(options?: {
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
+    // Optimistic update: Show completed state immediately
+    onMutate: async (escrowAddress: Address) => {
+      console.log("[Optimistic] Marking escrow as completed");
+
+      // Get current escrow data
+      const detailQueryKey = [...queryKeys.escrows.detail(escrowAddress), "listItem"];
+      const previousEscrow = queryClient.getQueryData<EscrowListItem>(detailQueryKey);
+
+      // Optimistically update to COMPLETED state (2)
+      if (previousEscrow) {
+        queryClient.setQueryData<EscrowListItem>(detailQueryKey, {
+          ...previousEscrow,
+          state: 2, // COMPLETED
+        });
+      }
+
+      // Return context with previous value for rollback
+      return { previousEscrow };
+    },
+
     mutationFn: async (escrowAddress: Address) => {
       if (!publicClient) throw new Error("Public client not available");
 
@@ -57,49 +78,20 @@ export function useCompleteEscrow(options?: {
     },
 
     onSuccess: async (data, escrowAddress) => {
-      // Wait a moment for blockchain state to propagate
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      console.log("[Optimistic] Transaction confirmed, escrow completed");
 
-      // Invalidate and refetch ALL queries related to this escrow
-      // Use exact same query key structure as useEscrowDetails hook
-
-      // 1. Invalidate the main escrow details query
+      // The event listener will handle the final cache update
+      // But we'll invalidate to ensure all related data is fresh
       await queryClient.invalidateQueries({
-        queryKey: queryKeys.escrows.detail(escrowAddress),
-        exact: false, // Match all queries that start with this key
-      });
-
-      // 2. Invalidate the dispute info query
-      await queryClient.invalidateQueries({
-        queryKey: [
-          ...queryKeys.escrows.detail(escrowAddress),
-          "dispute",
-        ],
-      });
-
-      // 3. Invalidate document queries
-      await queryClient.invalidateQueries({
-        queryKey: queryKeys.documents.detail(escrowAddress),
-      });
-
-      // 4. Invalidate ALL readContract queries to catch any wagmi cached reads
-      await queryClient.invalidateQueries({
-        queryKey: ["readContract"],
-      });
-
-      // 5. Force refetch all queries for this escrow address
-      await queryClient.refetchQueries({
         queryKey: queryKeys.escrows.detail(escrowAddress),
         exact: false,
-        type: 'active',
       });
 
-      // 6. Also refetch document queries
-      await queryClient.refetchQueries({
+      await queryClient.invalidateQueries({
         queryKey: queryKeys.documents.detail(escrowAddress),
       });
 
-      console.log("Cache invalidated and refetched after completion for escrow:", escrowAddress);
+      console.log("[Optimistic] Cache invalidated after completion for escrow:", escrowAddress);
 
       // Call the optional onSuccess callback
       if (options?.onSuccess) {
@@ -107,8 +99,16 @@ export function useCompleteEscrow(options?: {
       }
     },
 
-    onError: (error) => {
+    onError: (error, escrowAddress, context) => {
+      console.error("[Optimistic] Transaction failed, rolling back");
       console.error("Complete escrow error:", error);
+
+      // Rollback: Restore previous state
+      if (context?.previousEscrow) {
+        const detailQueryKey = [...queryKeys.escrows.detail(escrowAddress), "listItem"];
+        queryClient.setQueryData(detailQueryKey, context.previousEscrow);
+        console.log("[Optimistic] Rollback complete");
+      }
 
       // Call the optional onError callback
       if (options?.onError) {

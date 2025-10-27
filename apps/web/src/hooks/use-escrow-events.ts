@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAccount, usePublicClient, useWatchContractEvent } from "wagmi";
-import type { Address, Log } from "viem";
+import type { Address } from "viem";
 import {
   MASTER_FACTORY_ADDRESS,
   MASTER_FACTORY_ABI,
@@ -49,7 +49,7 @@ export function useEscrowEvents(userEscrowAddresses?: readonly Address[] | Addre
       if (!userAddress || !publicClient) return;
 
       for (const log of logs) {
-        const { escrowAddress, depositor, recipient, amount, deliverableHash } = log.args;
+        const { escrowAddress, depositor, recipient, amount } = log.args;
 
         // Only handle events where the connected user is involved
         const isUserInvolved =

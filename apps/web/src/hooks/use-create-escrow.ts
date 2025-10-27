@@ -13,7 +13,8 @@ import {
 } from "@/lib/escrow-config";
 import { hashDocument } from "@/lib/hash";
 import { extractEscrowCreatedAddress } from "@/lib/contract-helpers";
-import type { CreateEscrowParams } from "@/lib/types";
+import { addEscrowToUserCache } from "@/lib/cache-utils";
+import type { CreateEscrowParams, EscrowListItem } from "@/lib/types";
 
 /**
  * Hook to create a new escrow with optimistic updates
@@ -50,6 +51,32 @@ export function useCreateEscrow(options?: {
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
+    // Optimistic update: Show escrow in dashboard immediately
+    onMutate: async (params: CreateEscrowParams) => {
+      if (!userAddress) return;
+
+      console.log("[Optimistic] Creating temporary escrow entry");
+
+      // Create a temporary escrow address (will be replaced when tx confirms)
+      const tempAddress = `0x${"0".repeat(40)}` as Address;
+
+      // Create optimistic escrow entry
+      const optimisticEscrow: EscrowListItem = {
+        address: tempAddress,
+        depositor: userAddress,
+        recipient: params.recipient,
+        amount: params.amount,
+        state: 0, // CREATED
+        createdAt: BigInt(Math.floor(Date.now() / 1000)),
+        title: params.deliverable.title,
+      };
+
+      // Add to cache immediately (user sees it right away)
+      addEscrowToUserCache(queryClient, userAddress, optimisticEscrow);
+
+      return { optimisticEscrow };
+    },
+
     mutationFn: async (params: CreateEscrowParams) => {
       if (!userAddress || !publicClient) {
         throw new Error("Wallet not connected");
@@ -186,24 +213,21 @@ export function useCreateEscrow(options?: {
       };
     },
 
-    onSuccess: async (data) => {
-      // Invalidate ALL contract reads for the Master Factory
-      // This ensures any getUserEscrows queries are refetched
+    onSuccess: async (data, variables, context) => {
+      console.log("[Optimistic] Transaction confirmed, updating with real escrow");
+
+      // Remove the optimistic entry (temp address)
+      if (context?.optimisticEscrow && userAddress) {
+        const tempAddress = context.optimisticEscrow.address;
+        const detailQueryKey = [...queryKeys.escrows.detail(tempAddress), "listItem"];
+        queryClient.removeQueries({ queryKey: detailQueryKey });
+      }
+
+      // The event listener will add the real escrow to the cache automatically
+      // But we'll also invalidate to ensure consistency
       await queryClient.invalidateQueries({
         queryKey: ["readContract"],
-        refetchType: "active", // Force immediate refetch of active queries
-      });
-
-      // Also invalidate the specific getUserEscrows query pattern
-      // wagmi uses a specific query key structure
-      await queryClient.invalidateQueries({
-        queryKey: [
-          "readContract",
-          {
-            address: MASTER_FACTORY_ADDRESS,
-            functionName: "getUserEscrows",
-          },
-        ],
+        refetchType: "active",
       });
 
       // Invalidate escrow details for the new escrow
@@ -211,10 +235,7 @@ export function useCreateEscrow(options?: {
         queryKey: queryKeys.escrows.detail(data.escrowAddress),
       });
 
-      // Give a brief moment for the chain to propagate before navigation
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      console.log("Cache invalidated and refetched for new escrow");
+      console.log("[Optimistic] Real escrow added to cache:", data.escrowAddress);
 
       // Call the optional onSuccess callback
       if (options?.onSuccess) {
@@ -222,8 +243,40 @@ export function useCreateEscrow(options?: {
       }
     },
 
-    onError: (error) => {
+    onError: (error, variables, context) => {
+      console.error("[Optimistic] Transaction failed, rolling back");
       console.error("Create escrow error:", error);
+
+      // Rollback: Remove the optimistic entry
+      if (context?.optimisticEscrow && userAddress) {
+        const tempAddress = context.optimisticEscrow.address;
+        const detailQueryKey = [...queryKeys.escrows.detail(tempAddress), "listItem"];
+        queryClient.removeQueries({ queryKey: detailQueryKey });
+
+        // Also remove from getUserEscrows cache
+        const queries = queryClient.getQueriesData({
+          queryKey: ["readContract"],
+          exact: false
+        });
+
+        for (const [key, data] of queries) {
+          const keyArray = key as unknown[];
+          if (
+            Array.isArray(keyArray) &&
+            keyArray.length >= 2 &&
+            typeof keyArray[1] === "object" &&
+            keyArray[1] !== null &&
+            "functionName" in keyArray[1] &&
+            keyArray[1].functionName === "getUserEscrows"
+          ) {
+            const addresses = (data as Address[] | undefined) || [];
+            const filtered = addresses.filter(addr => addr !== tempAddress);
+            queryClient.setQueryData(key, filtered);
+          }
+        }
+
+        console.log("[Optimistic] Rollback complete");
+      }
 
       // Call the optional onError callback
       if (options?.onError) {
