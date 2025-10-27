@@ -59,7 +59,8 @@
       "Bash(pnpm test:*)",
       "mcp__chrome-devtools__evaluate_script",
       "Bash(tsc:*)",
-      "WebFetch(domain:docs.minipay.xyz)"
+      "WebFetch(domain:docs.minipay.xyz)",
+      "Bash(pnpm list:*)"
     ],
     "deny": [],
     "ask": []

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAccount, useReadContract } from "wagmi";
 import { parseEther, type Address } from "viem";
 import { Card } from "@/components/ui/card";
@@ -8,10 +8,19 @@ import { Button } from "@/components/ui/button";
 import {
   ERC20_ABI,
   CUSD_ADDRESS,
+  MASTER_FACTORY_ADDRESS,
   calculateTotalRequired,
 } from "@/lib/escrow-config";
 import { useRouter } from "next/navigation";
 import { useCreateEscrow } from "@/hooks/use-create-escrow";
+import { useApproveSpendingCap } from "@/hooks/use-approve-spending-cap";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Info } from "lucide-react";
 
 /**
  * Create Escrow Form Component
@@ -38,6 +47,7 @@ export function CreateEscrowForm() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [error, setError] = useState("");
+  const [allowanceRefetchKey, setAllowanceRefetchKey] = useState(0);
 
   // Check cUSD balance
   const { data: balance } = useReadContract({
@@ -49,6 +59,38 @@ export function CreateEscrowForm() {
       enabled: !!userAddress,
     },
   });
+
+  // Check current spending cap (allowance)
+  const { data: currentAllowance, refetch: refetchAllowance } = useReadContract({
+    address: CUSD_ADDRESS,
+    abi: ERC20_ABI,
+    functionName: "allowance",
+    args: userAddress ? [userAddress, MASTER_FACTORY_ADDRESS] : undefined,
+    query: {
+      enabled: !!userAddress,
+    },
+  });
+
+  // Hook for approving spending cap
+  const { approveSpendingCapAsync, isApproving, error: approvalError } = useApproveSpendingCap({
+    onSuccess: async () => {
+      console.log("Spending cap approved, refetching allowance...");
+      // Refetch allowance after successful approval
+      await refetchAllowance();
+      setAllowanceRefetchKey((prev) => prev + 1);
+      setError("");
+    },
+    onError: (err) => {
+      console.error("Error approving spending cap:", err);
+      setError(err.message || "Failed to approve spending cap");
+    },
+  });
+
+  // Calculate if spending cap is sufficient
+  const amountWei = amount ? parseEther(amount) : 0n;
+  const { total: totalRequired } = calculateTotalRequired(amountWei);
+  const needsApproval = amount && currentAllowance !== undefined && currentAllowance < totalRequired;
+  const hasValidAmount = amount && parseFloat(amount) > 0;
 
   // Validation
   const validateForm = (): boolean => {
@@ -87,6 +129,26 @@ export function CreateEscrowForm() {
 
     setError("");
     return true;
+  };
+
+  const handleApproveSpendingCap = async () => {
+    if (!hasValidAmount) {
+      setError("Please enter a valid amount");
+      return;
+    }
+
+    setError("");
+
+    try {
+      const amountWei = parseEther(amount);
+      const { total } = calculateTotalRequired(amountWei);
+      await approveSpendingCapAsync(total);
+    } catch (err: any) {
+      console.error("Error approving spending cap:", err);
+      if (!approvalError) {
+        setError(err.message || "Failed to approve spending cap");
+      }
+    }
   };
 
   const handleSubmit = async () => {
@@ -162,7 +224,47 @@ export function CreateEscrowForm() {
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
             />
-            <p className="text-xs text-muted-foreground mt-1">Maximum: $100</p>
+
+            {/* Spending Cap Approval Section */}
+            {needsApproval && (
+              <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-md space-y-2">
+                <p className="text-sm text-amber-800 dark:text-amber-200 font-medium">
+                  ⚠️ Insufficient spending cap
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    onClick={handleApproveSpendingCap}
+                    disabled={isApproving}
+                    variant="outline"
+                    size="sm"
+                    className="border-amber-300 dark:border-amber-700"
+                  >
+                    {isApproving ? "Approving..." : "Increase Spending Cap"}
+                  </Button>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          className="text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300"
+                        >
+                          <Info className="h-4 w-4" />
+                          <span className="sr-only">What is the spending cap?</span>
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p className="text-sm">
+                          This authorizes the Gigentic Escrow contract to transfer{" "}
+                          <strong>{(parseFloat(amount) * 1.05).toFixed(2)} cUSD</strong> tokens from your
+                          wallet to create the escrow. This is how ERC-20 tokens work - you must approve
+                          the contract before it can move your tokens.
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+              </div>
+            )}
           </div>
 
           <div>
@@ -217,12 +319,18 @@ export function CreateEscrowForm() {
 
           <Button
             onClick={handleSubmit}
-            disabled={isCreating}
+            disabled={isCreating || !!needsApproval}
             className="w-full"
             size="lg"
           >
             {isCreating ? "Creating..." : "Create Escrow"}
           </Button>
+
+          {needsApproval && (
+            <p className="text-sm text-amber-600 dark:text-amber-400 text-center -mt-2">
+              Please increase spending cap first
+            </p>
+          )}
         </div>
       </Card>
     </div>

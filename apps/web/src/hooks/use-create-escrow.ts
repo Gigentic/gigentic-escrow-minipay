@@ -5,8 +5,6 @@ import { useAccount, usePublicClient, useWriteContract } from "wagmi";
 import type { Address } from "viem";
 import { queryKeys } from "@/lib/queries";
 import {
-  CUSD_ADDRESS,
-  ERC20_ABI,
   MASTER_FACTORY_ADDRESS,
   MASTER_FACTORY_ABI,
   calculateTotalRequired,
@@ -16,26 +14,16 @@ import { extractEscrowCreatedAddress } from "@/lib/contract-helpers";
 import type { CreateEscrowParams } from "@/lib/types";
 
 /**
- * Hook to create a new escrow with optimistic updates
+ * Hook to create a new escrow
  *
- * This hook replaces the inline mutation logic in create-escrow-form.tsx (lines 100-263)
- * with a reusable hook that provides:
- * - Granular mutation steps (APPROVING → CREATING → CONFIRMING → STORING)
- * - Optimistic updates (show escrow in dashboard immediately)
- * - Type-safe event extraction (no more `as any`)
+ * This hook handles the escrow creation transaction and assumes that
+ * the spending cap (ERC-20 approval) has already been set by the user.
+ *
+ * Features:
+ * - Creates escrow via MasterFactory contract
+ * - Stores deliverable document off-chain
+ * - Type-safe event extraction
  * - Automatic cache invalidation
- *
- * BEFORE (Inline):
- * - 160+ lines of mutation logic in component
- * - Generic isSubmitting boolean
- * - Manual cache invalidation
- * - Type-unsafe event extraction
- *
- * AFTER (Hook):
- * - Reusable mutation hook
- * - Granular loading states for better UX
- * - Optimistic updates for instant feedback
- * - Type-safe throughout
  *
  * @param options - Optional callbacks for success and error handling
  * @returns Mutation hook with createEscrow function and state
@@ -74,51 +62,7 @@ export function useCreateEscrow(options?: {
       // Generate hash from deliverable
       const deliverableHash = hashDocument(deliverableDoc);
 
-      // Step 1: Approve tokens
-      // Check current allowance
-      const currentAllowance = await publicClient.readContract({
-        address: CUSD_ADDRESS,
-        abi: ERC20_ABI,
-        functionName: "allowance",
-        args: [userAddress, MASTER_FACTORY_ADDRESS],
-      });
-
-      if (currentAllowance < total) {
-        console.log("Approving cUSD spend...");
-
-        // Estimate gas with 40% buffer
-        let approveGasLimit: bigint | undefined;
-        try {
-          const estimatedGas = await publicClient.estimateContractGas({
-            address: CUSD_ADDRESS,
-            abi: ERC20_ABI,
-            functionName: "approve",
-            args: [MASTER_FACTORY_ADDRESS, total],
-            account: userAddress,
-          });
-          approveGasLimit = (estimatedGas * 140n) / 100n;
-          console.log(`Approve gas: ${estimatedGas}, buffered: ${approveGasLimit}`);
-        } catch (gasError) {
-          console.warn("Approve gas estimation failed, using default:", gasError);
-        }
-
-        const approveTxHash = await writeContractAsync({
-          address: CUSD_ADDRESS,
-          abi: ERC20_ABI,
-          functionName: "approve",
-          args: [MASTER_FACTORY_ADDRESS, total],
-          gas: approveGasLimit,
-        });
-
-        console.log("Approval tx:", approveTxHash);
-        await publicClient.waitForTransactionReceipt({
-          hash: approveTxHash,
-          confirmations: 1,
-        });
-        console.log("Approval confirmed");
-      }
-
-      // Step 2: Create escrow
+      // Create escrow (assumes approval already completed)
       console.log("Creating escrow...");
 
       // Estimate gas with 40% buffer
@@ -147,7 +91,7 @@ export function useCreateEscrow(options?: {
 
       console.log("Create tx:", createTxHash);
 
-      // Step 3: Wait for confirmation and extract escrow address
+      // Wait for confirmation and extract escrow address
       const receipt = await publicClient.waitForTransactionReceipt({
         hash: createTxHash,
         confirmations: 1,
@@ -162,7 +106,7 @@ export function useCreateEscrow(options?: {
 
       console.log("Escrow address:", escrowAddress);
 
-      // Step 4: Store deliverable document
+      // Store deliverable document
       const storeResponse = await fetch("/api/documents/store", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
