@@ -12,7 +12,7 @@ import { celo, hardhat } from 'wagmi/chains'
 import { defineChain } from 'viem'
 import { QueryClientProvider, QueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
-import { useAutoSign } from '@/hooks/use-auto-sign'
+import { useManualSign } from '@/hooks/use-manual-sign'
 import { useAddressChangeLogout } from '@/hooks/use-address-change-logout'
 import { AuthSuccessNotification } from './auth-success-notification'
 import { AuthLoadingOverlay } from './auth-loading-overlay'
@@ -112,8 +112,8 @@ const queryClient = new QueryClient({
 });
 
 function RainbowKitWithAutoAuth({ children }: { children: React.ReactNode }) {
-  // Auto-trigger signature when wallet connects
-  const { showSuccess, isAuthenticating, authSuccess } = useAutoSign();
+  // Manual sign-in with SIWE (no auto-trigger)
+  const { showSuccess, isAuthenticating, authSuccess } = useManualSign();
 
   // Handle wallet address changes by logging out
   useAddressChangeLogout();

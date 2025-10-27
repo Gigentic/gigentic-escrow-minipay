@@ -6,6 +6,7 @@ import { useAccount } from "wagmi";
 import { useSession } from "next-auth/react";
 import { useProfile } from "@/hooks/use-profile";
 import { useAuthState } from "@/components/wallet-provider";
+import { useManualSign } from "@/hooks/use-manual-sign";
 import { Button } from "@/components/ui/button";
 import { ProfileModal } from "@/components/profile-modal";
 import { Loader2 } from "lucide-react";
@@ -15,6 +16,7 @@ export function ConnectButton() {
   const { status: sessionStatus } = useSession();
   const { profile } = useProfile(address);
   const { isAuthenticating } = useAuthState();
+  const { signIn } = useManualSign();
   const [profileModalOpen, setProfileModalOpen] = useState(false);
 
   const isDev = process.env.NEXT_PUBLIC_APP_ENV !== "prod";
@@ -54,7 +56,7 @@ export function ConnectButton() {
                 if (!connected) {
                   return (
                     <Button onClick={openConnectModal} type="button">
-                      Login / Register
+                      Connect Wallet
                     </Button>
                   );
                 }
@@ -110,11 +112,10 @@ export function ConnectButton() {
                   );
                 }
 
-                // Fallback: connected but not authenticated and not authenticating
-                // This should rarely happen due to auto-disconnect on failure
+                // Connected but not authenticated: show Sign In button
                 return (
-                  <Button onClick={openConnectModal} type="button">
-                    Login / Register
+                  <Button onClick={signIn} type="button" variant="default">
+                    Sign In
                   </Button>
                 );
               })()}
