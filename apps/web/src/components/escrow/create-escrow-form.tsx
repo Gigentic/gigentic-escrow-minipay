@@ -70,6 +70,11 @@ export function CreateEscrowForm() {
       return false;
     }
 
+    if (amountNum > 100) {
+      setError("Amount cannot exceed $100 in beta testing");
+      return false;
+    }
+
     // Check if user has enough balance
     if (balance) {
       const amountWei = parseEther(amount);
@@ -151,11 +156,13 @@ export function CreateEscrowForm() {
               type="number"
               step="0.01"
               min="0"
+              max="100"
               className="w-full px-4 py-2 border rounded-md"
               placeholder="100.00"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
             />
+            <p className="text-xs text-muted-foreground mt-1">Maximum: $100</p>
           </div>
 
           <div>
