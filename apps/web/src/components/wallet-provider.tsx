@@ -20,6 +20,7 @@ import { AuthLoadingOverlay } from './auth-loading-overlay'
 // Create context for authentication state
 interface AuthContextValue {
   isAuthenticating: boolean;
+  signIn: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -113,7 +114,7 @@ const queryClient = new QueryClient({
 
 function RainbowKitWithAutoAuth({ children }: { children: React.ReactNode }) {
   // Manual sign-in with SIWE (no auto-trigger)
-  const { showSuccess, isAuthenticating, authSuccess } = useManualSign();
+  const { showSuccess, isAuthenticating, authSuccess, signIn } = useManualSign();
 
   // Handle wallet address changes by logging out
   useAddressChangeLogout();
@@ -130,7 +131,7 @@ function RainbowKitWithAutoAuth({ children }: { children: React.ReactNode }) {
   }, [authSuccess, router]);
 
   return (
-    <AuthContext.Provider value={{ isAuthenticating }}>
+    <AuthContext.Provider value={{ isAuthenticating, signIn }}>
       <RainbowKitProvider modalSize="compact">
         {children}
         <AuthLoadingOverlay isAuthenticating={isAuthenticating} />

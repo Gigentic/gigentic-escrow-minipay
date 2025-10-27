@@ -6,7 +6,6 @@ import { useAccount } from "wagmi";
 import { useSession } from "next-auth/react";
 import { useProfile } from "@/hooks/use-profile";
 import { useAuthState } from "@/components/wallet-provider";
-import { useManualSign } from "@/hooks/use-manual-sign";
 import { Button } from "@/components/ui/button";
 import { ProfileModal } from "@/components/profile-modal";
 import { Loader2 } from "lucide-react";
@@ -15,8 +14,7 @@ export function ConnectButton() {
   const { chain, address } = useAccount();
   const { status: sessionStatus } = useSession();
   const { profile } = useProfile(address);
-  const { isAuthenticating } = useAuthState();
-  const { signIn } = useManualSign();
+  const { isAuthenticating, signIn } = useAuthState();
   const [profileModalOpen, setProfileModalOpen] = useState(false);
 
   const isDev = process.env.NEXT_PUBLIC_APP_ENV !== "prod";
