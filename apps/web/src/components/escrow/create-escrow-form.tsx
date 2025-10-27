@@ -227,14 +227,18 @@ export function CreateEscrowForm() {
           <div>
             <label className="block text-sm font-medium mb-2">Amount (cUSD)</label>
             <input
-              type="number"
-              step="0.01"
-              min="0"
-              max="100"
+              type="text"
+              inputMode="decimal"
               className="w-full px-4 py-2 border rounded-md"
               placeholder="100.00"
               value={amount}
-              onChange={(e) => setAmount(e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value;
+                // Allow only numbers and decimal point
+                if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                  setAmount(value);
+                }
+              }}
             />
 
             {/* Spending Cap Approval Section */}

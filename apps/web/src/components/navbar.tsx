@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation"
 import { ExternalLink } from "lucide-react"
 
 import { ConnectButton } from "@/components/connect-button"
+import { ThemeToggle } from "@/components/theme-toggle"
 
 const navLinks = [
   { name: "Dashboard", href: "/dashboard", external: false },
@@ -47,7 +48,8 @@ export function Navbar() {
             </Link>
           ))}
 
-          <div className="flex items-center">
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
             <ConnectButton />
           </div>
         </nav>
