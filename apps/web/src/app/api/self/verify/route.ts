@@ -26,12 +26,12 @@ class CustomConfigStore implements IConfigStorage {
     return 'verify-human';
   }
 
-  async getConfig(actionId: string): Promise<any> {
+  async getConfig(_actionId: string): Promise<any> {
     // Return the base verification config
     return this.baseConfig;
   }
 
-  async setConfig(actionId: string, config: any): Promise<boolean> {
+  async setConfig(_actionId: string, _config: any): Promise<boolean> {
     // Not needed for our use case, but required by interface
     // In a full implementation, this would store configs for different actions
     return true;
@@ -78,7 +78,6 @@ export async function POST(request: NextRequest) {
     // Get configuration from environment
     const scope = process.env.NEXT_PUBLIC_SELF_SCOPE || 'gigentic';
     const endpoint = process.env.NEXT_PUBLIC_SELF_ENDPOINT || '';
-    const rpcEndpoint = process.env.NEXT_PUBLIC_SELF_RPC || 'https://forno.celo.org';
 
     // Initialize Self Backend Verifier
     // mockPassport: true for testing (use false for production)

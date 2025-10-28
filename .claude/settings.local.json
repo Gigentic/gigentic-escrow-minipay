@@ -65,7 +65,9 @@
       "mcp__composer-kit-mcp__list_components",
       "mcp__composer-kit-mcp__get_installation_guide",
       "Read(//Users/marci/dev/Gigentic/composer-kit/**)",
-      "mcp__composer-kit-mcp__get_component"
+      "mcp__composer-kit-mcp__get_component",
+      "WebFetch(domain:stackoverflow.com)",
+      "WebFetch(domain:docs.self.xyz)"
     ],
     "deny": [],
     "ask": []
