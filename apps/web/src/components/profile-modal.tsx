@@ -17,6 +17,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { VerificationBadge } from '@/components/verification-badge';
+import { SelfVerificationQR } from '@/components/self-verification-qr';
+import { Shield } from 'lucide-react';
 
 interface ProfileModalProps {
   open: boolean;
@@ -27,11 +30,12 @@ interface ProfileModalProps {
 export function ProfileModal({ open, onOpenChange, address }: ProfileModalProps) {
   const { disconnect } = useDisconnect();
   const router = useRouter();
-  const { profile, isLoading, updateProfile, isUpdating, updateError } = useProfile(address);
+  const { profile, isLoading, updateProfile, isUpdating, updateError, refetch } = useProfile(address);
 
   const [name, setName] = useState('');
   const [bio, setBio] = useState('');
   const [errors, setErrors] = useState<{ name?: string; bio?: string }>({});
+  const [showVerificationQR, setShowVerificationQR] = useState(false);
 
   // Initialize form with existing profile data
   useEffect(() => {
@@ -79,6 +83,13 @@ export function ProfileModal({ open, onOpenChange, address }: ProfileModalProps)
     router.push('/');
   };
 
+  const handleVerificationSuccess = () => {
+    // Close QR code display
+    setShowVerificationQR(false);
+    // Refetch profile to get updated verification status
+    refetch();
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
@@ -96,6 +107,52 @@ export function ProfileModal({ open, onOpenChange, address }: ProfileModalProps)
             <div className="text-sm text-muted-foreground font-mono truncate">
               {address}
             </div>
+          </div>
+
+          {/* Verification Section */}
+          <div className="grid gap-2">
+            <Label className="flex items-center gap-2">
+              <Shield className="h-4 w-4" />
+              Human Verification
+            </Label>
+
+            {profile?.isVerified ? (
+              // Show verification badge if verified
+              <div className="flex items-center justify-between p-3 border rounded-lg bg-green-50 dark:bg-green-950/20">
+                <VerificationBadge
+                  isVerified={profile.isVerified}
+                  verifiedAt={profile.verifiedAt}
+                  size="sm"
+                />
+              </div>
+            ) : showVerificationQR ? (
+              // Show QR code inline when button is clicked
+              <SelfVerificationQR
+                onSuccess={handleVerificationSuccess}
+                onClose={() => setShowVerificationQR(false)}
+              />
+            ) : (
+              // Show verification button if not verified
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  Verify your humanity to build trust with other users
+                </p>
+                <Button
+                  onClick={() => setShowVerificationQR(true)}
+                  variant="outline"
+                  className="w-full"
+                  disabled={!profile}
+                >
+                  <Shield className="h-4 w-4 mr-2" />
+                  Verify Humanity
+                </Button>
+                {!profile && (
+                  <p className="text-xs text-muted-foreground">
+                    Please save your profile first before verifying
+                  </p>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Name Input */}

@@ -65,6 +65,8 @@ export interface UserProfile {
   name: string;
   bio: string;
   updatedAt: number;
+  isVerified?: boolean;
+  verifiedAt?: number;
 }
 
 // Profile Helper Functions
