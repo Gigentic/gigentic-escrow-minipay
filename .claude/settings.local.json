@@ -61,7 +61,11 @@
       "Bash(tsc:*)",
       "WebFetch(domain:docs.minipay.xyz)",
       "Bash(pnpm list:*)",
-      "Bash(lsof:*)"
+      "Bash(lsof:*)",
+      "mcp__composer-kit-mcp__list_components",
+      "mcp__composer-kit-mcp__get_installation_guide",
+      "Read(//Users/marci/dev/Gigentic/composer-kit/**)",
+      "mcp__composer-kit-mcp__get_component"
     ],
     "deny": [],
     "ask": []
