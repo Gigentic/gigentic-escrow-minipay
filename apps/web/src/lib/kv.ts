@@ -77,7 +77,7 @@ export async function getProfile(address: string): Promise<UserProfile | null> {
   return profile;
 }
 
-export async function setProfile(address: string, profile: Omit<UserProfile, 'updatedAt'>): Promise<void> {
+export async function setProfile(address: string, profile: Omit<UserProfile, 'updatedAt'>): Promise<UserProfile> {
   const kv = getKVClient();
   const key = kvKeys.profile(address);
   const data: UserProfile = {
@@ -85,6 +85,7 @@ export async function setProfile(address: string, profile: Omit<UserProfile, 'up
     updatedAt: Date.now(),
   };
   await kv.set(key, data);
+  return data; // Return the saved profile to avoid unnecessary refetch
 }
 
 export async function deleteProfile(address: string): Promise<void> {

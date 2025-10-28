@@ -64,14 +64,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Save profile
-    await setProfile(userAddress, {
+    // Get existing profile to preserve verification fields
+    const existingProfile = await getProfile(userAddress);
+
+    // Save profile, preserving verification status
+    // setProfile now returns the saved profile, avoiding a second fetch
+    const updatedProfile = await setProfile(userAddress, {
       name: name.trim(),
       bio: bio.trim(),
+      // Preserve verification fields if they exist
+      isVerified: existingProfile?.isVerified,
+      verifiedAt: existingProfile?.verifiedAt,
     });
-
-    // Fetch and return the updated profile
-    const updatedProfile = await getProfile(userAddress);
 
     return NextResponse.json({
       success: true,

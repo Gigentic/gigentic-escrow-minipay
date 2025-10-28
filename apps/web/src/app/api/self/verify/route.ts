@@ -126,11 +126,20 @@ export async function POST(request: NextRequest) {
 
         if (existingProfile) {
           // Update existing profile with verification status
-          await setProfile(userAddress, {
+          const updatedProfile = await setProfile(userAddress, {
             name: existingProfile.name,
             bio: existingProfile.bio,
             isVerified: true,
             verifiedAt: Date.now(),
+          });
+
+          // Return success response with the saved profile data
+          return NextResponse.json({
+            status: 'success',
+            result: true,
+            message: 'Human verification successful',
+            credentialSubject: result.discloseOutput,
+            verifiedAt: updatedProfile.verifiedAt,
           });
         } else {
           // User doesn't have a profile yet
@@ -143,15 +152,6 @@ export async function POST(request: NextRequest) {
             { status: 400 }
           );
         }
-
-        // Return success response
-        return NextResponse.json({
-          status: 'success',
-          result: true,
-          message: 'Human verification successful',
-          credentialSubject: result.discloseOutput,
-          verifiedAt: Date.now(),
-        });
       } catch (kvError) {
         console.error('Error updating profile in KV store:', kvError);
         return NextResponse.json(
