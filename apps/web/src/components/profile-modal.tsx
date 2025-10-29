@@ -96,18 +96,18 @@ export function ProfileModal({ open, onOpenChange, address }: ProfileModalProps)
         <DialogHeader>
           <DialogTitle>Profile Settings</DialogTitle>
           <DialogDescription>
-            Update your profile information. This will be visible to others when you create or participate in escrows.
+            {/* Update your profile information. This will be visible to others when you create or participate in escrows. */}
           </DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-4 py-4">
           {/* Wallet Address Display */}
-          <div className="grid gap-2">
+          {/* <div className="grid gap-2">
             <Label htmlFor="address">Wallet Address</Label>
             <div className="text-sm text-muted-foreground font-mono truncate">
               {address}
             </div>
-          </div>
+          </div> */}
 
           {/* Verification Section */}
           <div className="grid gap-2">
