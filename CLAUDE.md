@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Gigentic Escrow is a decentralized escrow protocol built on Celo blockchain, designed for secure peer-to-peer transactions in emerging markets. The platform combines smart contract-based escrow with optional identity verification (Self Protocol) and admin-controlled dispute resolution, optimized for mobile users via MiniPay and Valora wallets.
+CheckPay is a decentralized escrow protocol built on Celo blockchain, designed for secure peer-to-peer transactions in emerging markets. The platform combines smart contract-based escrow with optional identity verification (Self Protocol) and admin-controlled dispute resolution, optimized for mobile users via MiniPay and Valora wallets.
 
 **Core Value Proposition:** Enable trustless transactions between parties without traditional banking, with built-in dispute resolution and optional identity verification for enhanced trust.
 

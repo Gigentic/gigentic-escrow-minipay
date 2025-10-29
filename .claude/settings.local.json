@@ -67,7 +67,9 @@
       "Read(//Users/marci/dev/Gigentic/composer-kit/**)",
       "mcp__composer-kit-mcp__get_component",
       "WebFetch(domain:stackoverflow.com)",
-      "WebFetch(domain:docs.self.xyz)"
+      "WebFetch(domain:docs.self.xyz)",
+      "mcp__playwright__browser_evaluate",
+      "mcp__playwright__browser_wait_for"
     ],
     "deny": [],
     "ask": []
