@@ -76,8 +76,8 @@ export async function POST(request: NextRequest) {
     const configStore = new CustomConfigStore(verificationConfig);
 
     // Get configuration from environment
-    const scope = process.env.NEXT_PUBLIC_SELF_SCOPE || 'gigentic';
-    const endpoint = process.env.NEXT_PUBLIC_SELF_ENDPOINT || '';
+    const scope = process.env.NEXT_PUBLIC_SELF_SCOPE!;
+    const endpoint = process.env.NEXT_PUBLIC_SELF_ENDPOINT!;
 
     // Initialize Self Backend Verifier
     // mockPassport: true for testing (use false for production)

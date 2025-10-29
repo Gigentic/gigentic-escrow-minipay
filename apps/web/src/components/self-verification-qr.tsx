@@ -33,10 +33,9 @@ export function SelfVerificationQR({ onSuccess, onClose }: SelfVerificationQRPro
 
     try {
       // Get configuration from environment variables
-      const scope = process.env.NEXT_PUBLIC_SELF_SCOPE || 'gigentic';
-      const appName = process.env.NEXT_PUBLIC_SELF_APP_NAME || 'Gigentic Escrow';
-      const endpoint = process.env.NEXT_PUBLIC_SELF_ENDPOINT || '';
-      const rpcEndpoint = process.env.NEXT_PUBLIC_SELF_RPC || 'https://forno.celo.org';
+      const scope = process.env.NEXT_PUBLIC_SELF_SCOPE!;
+      const appName = process.env.NEXT_PUBLIC_SELF_APP_NAME!;
+      const endpoint = process.env.NEXT_PUBLIC_SELF_ENDPOINT!;
 
       if (!endpoint) {
         throw new Error('NEXT_PUBLIC_SELF_ENDPOINT environment variable is not set');
@@ -60,10 +59,6 @@ export function SelfVerificationQR({ onSuccess, onClose }: SelfVerificationQRPro
           minimumAge: 18,
           excludedCountries: ['IRN', 'PRK'], // Direct ISO codes
           ofac: false,
-
-          // Disclosure requests (what users reveal)
-          nationality: true,
-          gender: true,
         },
       }).build();
 
@@ -89,7 +84,7 @@ export function SelfVerificationQR({ onSuccess, onClose }: SelfVerificationQRPro
 
   const openSelfApp = () => {
     if (universalLink) {
-      window.open(universalLink, '_blank');
+      window.location.href = universalLink;
     }
   };
 
