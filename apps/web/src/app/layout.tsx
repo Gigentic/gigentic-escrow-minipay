@@ -43,8 +43,8 @@ export default function RootLayout({
               </main>
             </WalletProvider>
           </div>
-          {/* <Analytics /> */}
-          {/* <SpeedInsights /> */}
+          <Analytics />
+          <SpeedInsights />
         </ThemeProvider>
       </body>
     </html>
