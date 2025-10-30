@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useAccount } from 'wagmi';
 import { useSession } from 'next-auth/react';
 
@@ -30,6 +30,7 @@ import { useSession } from 'next-auth/react';
 export function useRequireAuth() {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { isConnected } = useAccount();
   const { status: sessionStatus } = useSession();
 
@@ -47,11 +48,14 @@ export function useRequireAuth() {
 
     // Redirect if needed
     if (!isLoading && (!isConnected || !isAuthenticated)) {
-      const redirectUrl = `/auth/signin?redirectTo=${encodeURIComponent(pathname)}`;
+      // Build full URL with query parameters
+      const queryString = searchParams.toString();
+      const fullPath = queryString ? `${pathname}?${queryString}` : pathname;
+      const redirectUrl = `/auth/signin?redirectTo=${encodeURIComponent(fullPath)}`;
       console.log('Auth required - redirecting to:', redirectUrl);
       router.push(redirectUrl);
     }
-  }, [isConnected, isAuthenticated, isLoading, pathname, router]);
+  }, [isConnected, isAuthenticated, isLoading, pathname, searchParams, router]);
 
   return {
     // Only render content when:
