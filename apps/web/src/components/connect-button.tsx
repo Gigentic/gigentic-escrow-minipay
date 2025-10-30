@@ -102,6 +102,17 @@ export function ConnectButton() {
                   return (
                     <div className="flex items-center gap-2">
                       <Button
+                        onClick={() => logout()}
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        title="Sign Out"
+                        className="flex items-center"
+                      >
+                        <LogOut className="h-4 w-4" />
+                      </Button>
+
+                      <Button
                         onClick={() => setProfileModalOpen(true)}
                         type="button"
                         variant="outline"
@@ -117,17 +128,6 @@ export function ConnectButton() {
                         <span>
                           {profile?.name || account.displayName}
                         </span>
-                      </Button>
-
-                      <Button
-                        onClick={() => logout()}
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        title="Sign Out"
-                        className="flex items-center"
-                      >
-                        <LogOut className="h-4 w-4" />
                       </Button>
 
                       {address && (

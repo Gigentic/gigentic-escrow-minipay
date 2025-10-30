@@ -23,7 +23,7 @@ export default function DashboardPage() {
 
   const [filter, setFilter] = useState<"all" | "depositor" | "recipient">("all");
   const [stateFilter, setStateFilter] = useState<EscrowState | "all">("all");
-  const [showFilters, setShowFilters] = useState(true);
+  const [showFilters, setShowFilters] = useState(false);
 
   // Fetch user's escrow addresses from contract
   const { data: userEscrowAddresses } = useReadContract({
@@ -95,6 +95,9 @@ export default function DashboardPage() {
     refunded: escrows.filter((e) => e.state === EscrowState.REFUNDED).length,
   };
 
+  // Check if filters are active (non-default values)
+  const hasActiveFilters = filter !== "all" || stateFilter !== "all";
+
   return (
     <main className="flex-1 container mx-auto px-4 py-12">
       <div className="max-w-7xl mx-auto">
@@ -134,19 +137,17 @@ export default function DashboardPage() {
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-4">
             <Button
-              variant="outline"
+              variant={showFilters ? "default" : "outline"}
               size="sm"
               onClick={() => setShowFilters(!showFilters)}
-              className="gap-2"
+              className="relative"
             >
               <SlidersHorizontal className="h-4 w-4" />
-              {showFilters ? "Hide" : "Show"} Filters
+              {/* Indicator dot when filters are active but hidden */}
+              {!showFilters && hasActiveFilters && (
+                <span className="absolute -top-0.5 -right-0.5 h-2 w-2 bg-primary rounded-full border border-background" />
+              )}
             </Button>
-            {!showFilters && (filter !== "all" || stateFilter !== "all") && (
-              <span className="text-sm text-muted-foreground">
-                (Filters active)
-              </span>
-            )}
           </div>
 
           {showFilters && (
