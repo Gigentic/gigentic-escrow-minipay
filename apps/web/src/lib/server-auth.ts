@@ -15,6 +15,7 @@ export async function getAuthenticatedUser(): Promise<AuthenticatedSession | nul
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.address) {
+    console.log("[Auth] No session or address found");
     return null;
   }
 
@@ -23,9 +24,15 @@ export async function getAuthenticatedUser(): Promise<AuthenticatedSession | nul
   // Use server-only environment variable (no NEXT_PUBLIC_ prefix)
   const adminAddress = process.env.ADMIN_WALLET_ADDRESS?.toLowerCase();
 
+  const isAdmin = adminAddress ? address.toLowerCase() === adminAddress : false;
+
+  console.log("[Auth] User address:", address.toLowerCase());
+  console.log("[Auth] Admin address:", adminAddress);
+  console.log("[Auth] Is admin:", isAdmin);
+
   return {
     address,
-    isAdmin: adminAddress ? address.toLowerCase() === adminAddress : false,
+    isAdmin,
   };
 }
 
