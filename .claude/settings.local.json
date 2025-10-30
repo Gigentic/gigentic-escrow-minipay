@@ -70,7 +70,8 @@
       "WebFetch(domain:docs.self.xyz)",
       "mcp__playwright__browser_evaluate",
       "mcp__playwright__browser_wait_for",
-      "Bash(pnpm dlx shadcn@latest add:*)"
+      "Bash(pnpm dlx shadcn@latest add:*)",
+      "Bash(git log:*)"
     ],
     "deny": [],
     "ask": []

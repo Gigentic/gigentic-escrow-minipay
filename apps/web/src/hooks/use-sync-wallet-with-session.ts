@@ -21,26 +21,39 @@ import { useLogout } from './use-logout';
  * ```
  */
 export function useSyncWalletWithSession() {
-  const { isConnected, address } = useAccount();
+  const { isConnected, address, status } = useAccount();
   const { status: sessionStatus } = useSession();
   const logout = useLogout();
   const hasLoggedOutRef = useRef(false);
+  const prevConnectedRef = useRef<boolean | undefined>(undefined);
 
   useEffect(() => {
     // Only check if we have an authenticated session
     if (sessionStatus !== 'authenticated') {
       hasLoggedOutRef.current = false;
+      prevConnectedRef.current = undefined;
       return;
     }
 
-    // Invalid state: authenticated but wallet not connected
-    if (!isConnected || !address) {
+    // Skip check while Wagmi is still initializing (prevents race condition)
+    if (status === 'connecting' || status === 'reconnecting') {
+      return;
+    }
+
+    // Skip check on first mount - wait for initial connection state to stabilize
+    if (prevConnectedRef.current === undefined) {
+      prevConnectedRef.current = isConnected;
+      return;
+    }
+
+    // Invalid state: wallet WAS connected and NOW disconnected (actual user disconnect)
+    if (prevConnectedRef.current && !isConnected) {
       // Prevent multiple logout attempts
       if (hasLoggedOutRef.current) {
         return;
       }
 
-      console.warn('Invalid state detected: authenticated session but no wallet connected');
+      console.warn('Invalid state detected: authenticated session but wallet disconnected');
       console.log('Session status:', sessionStatus);
       console.log('Wallet connected:', isConnected);
       console.log('Wallet address:', address);
@@ -53,5 +66,8 @@ export function useSyncWalletWithSession() {
         console.log('Logged out due to wallet disconnect');
       });
     }
-  }, [isConnected, address, sessionStatus, logout]);
+
+    // Update previous connection state
+    prevConnectedRef.current = isConnected;
+  }, [isConnected, address, sessionStatus, status, logout]);
 }
