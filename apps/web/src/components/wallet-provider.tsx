@@ -12,7 +12,6 @@ import { WagmiProvider, createConfig, http, useConnect, useAccount } from "wagmi
 import { celo, hardhat } from 'wagmi/chains'
 import { defineChain } from 'viem'
 import { QueryClientProvider, QueryClient } from '@tanstack/react-query'
-import { useRouter } from 'next/navigation'
 import { useManualSign } from '@/hooks/use-manual-sign'
 import { useAddressChangeLogout } from '@/hooks/use-address-change-logout'
 import { AuthSuccessNotification } from './auth-success-notification'
@@ -115,12 +114,11 @@ const queryClient = new QueryClient({
 
 function RainbowKitWithAutoAuth({ children }: { children: React.ReactNode }) {
   // Manual sign-in with SIWE (no auto-trigger)
-  const { showSuccess, isAuthenticating, authSuccess, signIn } = useManualSign();
+  const { showSuccess, isAuthenticating, signIn } = useManualSign();
 
   // Handle wallet address changes by logging out
   useAddressChangeLogout();
 
-  const router = useRouter();
   const { connect, connectors } = useConnect();
   const { isConnected } = useAccount();
 
@@ -140,14 +138,9 @@ function RainbowKitWithAutoAuth({ children }: { children: React.ReactNode }) {
     }
   }, [isConnected, connect, connectors]);
 
-  // Handle redirect to dashboard after successful authentication
-  useEffect(() => {
-    if (authSuccess) {
-      setTimeout(() => {
-        router.push('/dashboard');
-      }, 200);
-    }
-  }, [authSuccess, router]);
+  // Note: Redirect logic is now handled in /auth/signin page
+  // based on the redirectTo query parameter
+  // We don't auto-redirect here to avoid conflicts
 
   return (
     <AuthContext.Provider value={{ isAuthenticating, signIn }}>

@@ -4,6 +4,16 @@ import { useSession } from 'next-auth/react';
 import { SiweMessage } from 'siwe';
 import { getCsrfToken, signIn } from 'next-auth/react';
 
+/**
+ * CURRENTLY UNUSED - Kept for potential future use
+ *
+ * This hook was previously used to auto-trigger sign-in when wallet connects,
+ * but it caused bugs on mobile and in MiniPay environment.
+ *
+ * We now use useManualSign with an explicit sign-in button in /auth/signin page.
+ * This hook is kept here in case we want to revisit auto-sign-in in the future
+ * with better mobile handling.
+ */
 export function useAutoSign() {
   const { address, isConnected, chainId } = useAccount();
   const { status: sessionStatus } = useSession();

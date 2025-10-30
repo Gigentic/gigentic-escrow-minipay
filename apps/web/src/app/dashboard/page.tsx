@@ -12,8 +12,13 @@ import {
   EscrowState,
 } from "@/lib/escrow-config";
 import { useUserEscrows } from "@/hooks/use-user-escrows";
+import { useRequireAuth } from "@/hooks/use-require-auth";
+import { Loader2 } from "lucide-react";
 
 export default function DashboardPage() {
+  // Protect this route - requires authentication
+  const { isLoading: isAuthLoading } = useRequireAuth();
+
   const { address, isConnected } = useAccount();
 
   const [filter, setFilter] = useState<"all" | "depositor" | "recipient">("all");
@@ -37,17 +42,22 @@ export default function DashboardPage() {
   // Use hook to fetch details for each escrow in parallel
   const { escrows, isLoading } = useUserEscrows(userEscrowAddresses);
 
-  if (!isConnected) {
+  // Show loading state while checking authentication
+  if (isAuthLoading) {
     return (
-      <main className="flex-1 container mx-auto px-4 py-12">
-        <Card className="p-8 text-center max-w-md mx-auto">
-          <h1 className="text-2xl font-bold mb-4">Dashboard</h1>
-          <p className="text-muted-foreground mb-6">
-            Please connect your wallet to view your escrows
-          </p>
-        </Card>
+      <main className="flex-1 flex items-center justify-center min-h-[calc(100vh-4rem)]">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
       </main>
     );
+  }
+
+  // Auth guard will redirect if not authenticated, so this code only runs when authenticated
+  if (!isConnected) {
+    // This should never happen due to useRequireAuth, but keep as fallback
+    return null;
   }
 
   // Filter escrows
