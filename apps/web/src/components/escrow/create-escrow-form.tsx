@@ -20,7 +20,7 @@ import { Info } from "lucide-react";
  * Create Escrow Form Component
  * Multi-step form for creating a new escrow
  */
-export function CreateEscrowForm() {
+export function CreateEscrowForm({ initialAmount }: { initialAmount?: string }) {
   const router = useRouter();
   const { address: userAddress, isConnected } = useAccount();
   const { createEscrowAsync, isCreating, error: createError } = useCreateEscrow({
@@ -37,7 +37,7 @@ export function CreateEscrowForm() {
 
   // Form state
   const [recipient, setRecipient] = useState("");
-  const [amount, setAmount] = useState("");
+  const [amount, setAmount] = useState(initialAmount || "");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [error, setError] = useState("");
@@ -208,11 +208,6 @@ export function CreateEscrowForm() {
     <div className="max-w-2xl mx-auto">
       <Card className="p-6">
         <div className="space-y-6">
-          <div>
-            <h2 className="text-2xl font-bold mb-2">Create New Escrow</h2>
-            <p className="text-muted-foreground">Lock funds securely and define deliverables for trustless transactions</p>
-          </div>
-
           <div>
             <label className="block text-sm font-medium mb-2">Recipient Address</label>
             <input

@@ -2,6 +2,7 @@
 
 import { useParams } from "next/navigation";
 import { type Address } from "viem";
+import { useAccount } from "wagmi";
 import { EscrowDetailsDisplay } from "@/components/escrow/escrow-details";
 import { EscrowActions } from "@/components/escrow/escrow-actions";
 import { useEscrowDetails } from "@/hooks/use-escrow-details";
@@ -9,10 +10,18 @@ import { useEscrowDetails } from "@/hooks/use-escrow-details";
 export default function EscrowDetailPage() {
   const params = useParams();
   const escrowAddress = params.address as Address;
+  const { address: userAddress, isConnected } = useAccount();
 
   // Use the hook for parallel data fetching
   const { details, deliverable, disputeInfo, resolution, isLoading, error, refetchAll } =
     useEscrowDetails(escrowAddress);
+
+  // Check if current user is a party to this escrow
+  const isParty =
+    userAddress &&
+    details &&
+    (userAddress.toLowerCase() === details.depositor.toLowerCase() ||
+      userAddress.toLowerCase() === details.recipient.toLowerCase());
 
   if (isLoading) {
     return (
@@ -55,6 +64,8 @@ export default function EscrowDetailPage() {
           deliverable={deliverable || undefined}
           disputeInfo={disputeInfo || undefined}
           resolution={resolution || undefined}
+          isParty={!!isParty}
+          isConnected={isConnected}
         />
 
         <EscrowActions

@@ -2,11 +2,14 @@
 
 import { type Address } from "viem";
 import { formatEther } from "viem";
+import Link from "next/link";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { AddressDisplay } from "@/components/wallet/address-display";
 import { type EscrowDetails, EscrowState, formatEscrowState } from "@/lib/escrow-config";
 import type { ResolutionDocument } from "@/lib/types";
 import { shortenHash } from "@/lib/hash";
+import { Lock } from "lucide-react";
 
 interface EscrowDetailsDisplayProps {
   escrowAddress: Address;
@@ -22,6 +25,8 @@ interface EscrowDetailsDisplayProps {
     resolutionHash?: string;
   };
   resolution?: ResolutionDocument;
+  isParty: boolean;
+  isConnected: boolean;
 }
 
 /**
@@ -34,6 +39,8 @@ export function EscrowDetailsDisplay({
   deliverable,
   disputeInfo,
   resolution,
+  isParty,
+  isConnected,
 }: EscrowDetailsDisplayProps) {
   const stateText = formatEscrowState(details.state);
   const stateColor = {
@@ -97,8 +104,26 @@ export function EscrowDetailsDisplay({
         </div>
       </Card>
 
-      {/* Deliverable */}
-      {deliverable && (
+      {/* Sign In CTA for non-authenticated users */}
+      {!isConnected && (
+        <Card className="p-6 bg-muted border-2">
+          <div className="flex items-center gap-4">
+            <Lock className="h-8 w-8 text-muted-foreground" />
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold mb-1">Sign In to View Full Details</h3>
+              <p className="text-sm text-muted-foreground mb-3">
+                Connect your wallet to see deliverable information, acceptance criteria, and more.
+              </p>
+              <Link href={`/auth/signin?redirectTo=/escrow/${escrowAddress}`}>
+                <Button>Sign In</Button>
+              </Link>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Deliverable - Full view for parties, hidden for public */}
+      {deliverable && isParty && (
         <Card className="p-6">
           <h2 className="text-xl font-semibold mb-4">Deliverable</h2>
           <div className="space-y-4">
@@ -131,8 +156,8 @@ export function EscrowDetailsDisplay({
         </Card>
       )}
 
-      {/* Dispute Info */}
-      {details.state === EscrowState.DISPUTED && disputeInfo && (
+      {/* Dispute Info - Only visible to parties */}
+      {details.state === EscrowState.DISPUTED && disputeInfo && isParty && (
         <Card className="p-6 border-yellow-300 dark:border-yellow-700">
           <h2 className="text-xl font-semibold mb-4 text-yellow-800 dark:text-yellow-200">
             Dispute Information
@@ -149,9 +174,10 @@ export function EscrowDetailsDisplay({
         </Card>
       )}
 
-      {/* Resolution Info */}
+      {/* Resolution Info - Only visible to parties */}
       {(details.state === EscrowState.COMPLETED || details.state === EscrowState.REFUNDED) &&
-        resolution && (
+        resolution &&
+        isParty && (
           <Card className="p-6">
             <h2 className="text-xl font-semibold mb-4">Resolution</h2>
             <div className="space-y-4">

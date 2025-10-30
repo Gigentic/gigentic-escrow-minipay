@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { FeeCalculatorWidget } from "@/components/fee-calculator-widget";
 
 export default function Home() {
   return (
@@ -65,6 +66,22 @@ export default function Home() {
                 Depositor confirms completion and releases funds. If there's a dispute, an arbiter resolves it.
               </p>
             </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* Fee Calculator Section */}
+      <section className="container mx-auto px-4 py-16">
+        <div className="max-w-4xl mx-auto">
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-8">
+            Calculate Your Costs
+          </h2>
+          <p className="text-center text-muted-foreground mb-8 max-w-2xl mx-auto">
+            See exactly what you'll pay with our transparent fee calculator.
+            No hidden fees, just 1% platform fee and a 4% refundable dispute bond.
+          </p>
+          <div className="flex justify-center">
+            <FeeCalculatorWidget />
           </div>
         </div>
       </section>

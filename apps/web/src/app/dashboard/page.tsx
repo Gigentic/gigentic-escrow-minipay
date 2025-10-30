@@ -13,7 +13,7 @@ import {
 } from "@/lib/escrow-config";
 import { useUserEscrows } from "@/hooks/use-user-escrows";
 import { useRequireAuth } from "@/hooks/use-require-auth";
-import { Loader2 } from "lucide-react";
+import { Loader2, SlidersHorizontal } from "lucide-react";
 
 export default function DashboardPage() {
   // Protect this route - requires authentication
@@ -23,6 +23,7 @@ export default function DashboardPage() {
 
   const [filter, setFilter] = useState<"all" | "depositor" | "recipient">("all");
   const [stateFilter, setStateFilter] = useState<EscrowState | "all">("all");
+  const [showFilters, setShowFilters] = useState(true);
 
   // Fetch user's escrow addresses from contract
   const { data: userEscrowAddresses } = useReadContract({
@@ -100,8 +101,7 @@ export default function DashboardPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
           <div>
-            <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
-            <p className="text-muted-foreground">Manage your escrows</p>
+            <h1 className="text-3xl font-bold mb-2">Payments</h1>
           </div>
           <Link href="/create">
             <Button size="lg">Create New Escrow</Button>
@@ -109,7 +109,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Statistics Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        {/* <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <Card className="p-4">
             <p className="text-sm text-muted-foreground mb-1">Total Escrows</p>
             <p className="text-2xl font-bold">{stats.total}</p>
@@ -128,64 +128,85 @@ export default function DashboardPage() {
               {stats.completed}
             </p>
           </Card>
-        </div>
+        </div> */}
 
         {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-4 mb-6">
-          <div className="flex gap-2">
+        <div className="mb-6">
+          <div className="flex items-center gap-2 mb-4">
             <Button
-              variant={filter === "all" ? "default" : "outline"}
-              onClick={() => setFilter("all")}
+              variant="outline"
               size="sm"
+              onClick={() => setShowFilters(!showFilters)}
+              className="gap-2"
             >
-              All Roles
+              <SlidersHorizontal className="h-4 w-4" />
+              {showFilters ? "Hide" : "Show"} Filters
             </Button>
-            <Button
-              variant={filter === "depositor" ? "default" : "outline"}
-              onClick={() => setFilter("depositor")}
-              size="sm"
-            >
-              As Depositor
-            </Button>
-            <Button
-              variant={filter === "recipient" ? "default" : "outline"}
-              onClick={() => setFilter("recipient")}
-              size="sm"
-            >
-              As Recipient
-            </Button>
+            {!showFilters && (filter !== "all" || stateFilter !== "all") && (
+              <span className="text-sm text-muted-foreground">
+                (Filters active)
+              </span>
+            )}
           </div>
 
-          <div className="flex gap-2 flex-wrap">
-            <Button
-              variant={stateFilter === "all" ? "default" : "outline"}
-              onClick={() => setStateFilter("all")}
-              size="sm"
-            >
-              All States
-            </Button>
-            <Button
-              variant={stateFilter === EscrowState.CREATED ? "default" : "outline"}
-              onClick={() => setStateFilter(EscrowState.CREATED)}
-              size="sm"
-            >
-              Created
-            </Button>
-            <Button
-              variant={stateFilter === EscrowState.DISPUTED ? "default" : "outline"}
-              onClick={() => setStateFilter(EscrowState.DISPUTED)}
-              size="sm"
-            >
-              Disputed
-            </Button>
-            <Button
-              variant={stateFilter === EscrowState.COMPLETED ? "default" : "outline"}
-              onClick={() => setStateFilter(EscrowState.COMPLETED)}
-              size="sm"
-            >
-              Completed
-            </Button>
-          </div>
+          {showFilters && (
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex gap-2">
+                <Button
+                  variant={filter === "all" ? "default" : "outline"}
+                  onClick={() => setFilter("all")}
+                  size="sm"
+                >
+                  All Roles
+                </Button>
+                <Button
+                  variant={filter === "depositor" ? "default" : "outline"}
+                  onClick={() => setFilter("depositor")}
+                  size="sm"
+                >
+                  As Depositor
+                </Button>
+                <Button
+                  variant={filter === "recipient" ? "default" : "outline"}
+                  onClick={() => setFilter("recipient")}
+                  size="sm"
+                >
+                  As Recipient
+                </Button>
+              </div>
+
+              <div className="flex gap-2 flex-wrap">
+                <Button
+                  variant={stateFilter === "all" ? "default" : "outline"}
+                  onClick={() => setStateFilter("all")}
+                  size="sm"
+                >
+                  All States
+                </Button>
+                <Button
+                  variant={stateFilter === EscrowState.CREATED ? "default" : "outline"}
+                  onClick={() => setStateFilter(EscrowState.CREATED)}
+                  size="sm"
+                >
+                  Created
+                </Button>
+                <Button
+                  variant={stateFilter === EscrowState.DISPUTED ? "default" : "outline"}
+                  onClick={() => setStateFilter(EscrowState.DISPUTED)}
+                  size="sm"
+                >
+                  Disputed
+                </Button>
+                <Button
+                  variant={stateFilter === EscrowState.COMPLETED ? "default" : "outline"}
+                  onClick={() => setStateFilter(EscrowState.COMPLETED)}
+                  size="sm"
+                >
+                  Completed
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Escrow List */}
