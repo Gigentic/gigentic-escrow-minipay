@@ -149,7 +149,7 @@ The Next.js app may require environment variables for API routes and external se
 1. Components go in `apps/web/src/components/`
 2. Pages use Next.js App Router in `apps/web/src/app/`
 3. Utilities in `apps/web/src/lib/`
-4. Run dev server: `pnpm dev` (from root) or `cd apps/web && pnpm dev`
+4. You should assume that the user is already running the development server (`pnpm dev`) on localhost:3000. The user is responsible for managing the running and restarting of it. Always assume that it's running on localhost:3000 and if there is an error that you cannot reach it ask the user for instructions or help.
 
 ### Working with Mobile Responsive Design
 When working on mobile responsive design using Chrome DevTools:
