@@ -14,7 +14,6 @@ import { type Address } from "viem";
 import {
   MASTER_FACTORY_ADDRESS,
   MASTER_FACTORY_ABI,
-  EscrowState,
 } from "@/lib/escrow-config";
 
 export default function ProfilePage({ params }: { params: { address: string } }) {

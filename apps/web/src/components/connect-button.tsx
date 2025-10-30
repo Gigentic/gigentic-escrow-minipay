@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { ConnectButton as RainbowKitConnectButton } from "@rainbow-me/rainbowkit";
 import { useAccount } from "wagmi";
 import { useSession } from "next-auth/react";
@@ -8,16 +9,15 @@ import { useProfile } from "@/hooks/use-profile";
 import { useAuthState } from "@/components/wallet-provider";
 import { useLogout } from "@/hooks/use-logout";
 import { Button } from "@/components/ui/button";
-import { ProfileModal } from "@/components/profile-modal";
 import { Loader2, LogOut } from "lucide-react";
 
 export function ConnectButton() {
+  const router = useRouter();
   const { chain, address } = useAccount();
   const { status: sessionStatus } = useSession();
   const { profile } = useProfile(address);
   const { isAuthenticating, signIn } = useAuthState();
   const logout = useLogout();
-  const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [isMiniPay, setIsMiniPay] = useState(false);
 
   const isDev = process.env.NEXT_PUBLIC_APP_ENV !== "prod";
@@ -113,7 +113,7 @@ export function ConnectButton() {
                       </Button>
 
                       <Button
-                        onClick={() => setProfileModalOpen(true)}
+                        onClick={() => address && router.push(`/profile/${address}`)}
                         type="button"
                         variant="outline"
                         className="flex items-center gap-2"
@@ -129,14 +129,6 @@ export function ConnectButton() {
                           {profile?.name || account.displayName}
                         </span>
                       </Button>
-
-                      {address && (
-                        <ProfileModal
-                          open={profileModalOpen}
-                          onOpenChange={setProfileModalOpen}
-                          address={address}
-                        />
-                      )}
                     </div>
                   );
                 }
