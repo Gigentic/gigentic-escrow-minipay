@@ -6,15 +6,17 @@ import { useAccount } from "wagmi";
 import { useSession } from "next-auth/react";
 import { useProfile } from "@/hooks/use-profile";
 import { useAuthState } from "@/components/wallet-provider";
+import { useLogout } from "@/hooks/use-logout";
 import { Button } from "@/components/ui/button";
 import { ProfileModal } from "@/components/profile-modal";
-import { Loader2 } from "lucide-react";
+import { Loader2, LogOut } from "lucide-react";
 
 export function ConnectButton() {
   const { chain, address } = useAccount();
   const { status: sessionStatus } = useSession();
   const { profile } = useProfile(address);
   const { isAuthenticating, signIn } = useAuthState();
+  const logout = useLogout();
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [isMiniPay, setIsMiniPay] = useState(false);
 
@@ -95,10 +97,10 @@ export function ConnectButton() {
                   );
                 }
 
-                // Show profile button only when authenticated
+                // Show profile button and sign out button when authenticated
                 if (isAuthenticated) {
                   return (
-                    <>
+                    <div className="flex items-center gap-2">
                       <Button
                         onClick={() => setProfileModalOpen(true)}
                         type="button"
@@ -117,6 +119,17 @@ export function ConnectButton() {
                         </span>
                       </Button>
 
+                      <Button
+                        onClick={() => logout()}
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        title="Sign Out"
+                        className="flex items-center"
+                      >
+                        <LogOut className="h-4 w-4" />
+                      </Button>
+
                       {address && (
                         <ProfileModal
                           open={profileModalOpen}
@@ -124,7 +137,7 @@ export function ConnectButton() {
                           address={address}
                         />
                       )}
-                    </>
+                    </div>
                   );
                 }
 

@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useAccount, useSignMessage, useDisconnect } from 'wagmi';
+import { useAccount, useSignMessage } from 'wagmi';
 import { useSession } from 'next-auth/react';
 import { SiweMessage } from 'siwe';
 import { getCsrfToken, signIn as nextAuthSignIn } from 'next-auth/react';
+import { useLogout } from './use-logout';
 
 export function useManualSign() {
   const { address, isConnected, chainId } = useAccount();
   const { status: sessionStatus } = useSession();
   const { signMessageAsync } = useSignMessage();
-  const { disconnect } = useDisconnect();
+  const logout = useLogout();
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [authSuccess, setAuthSuccess] = useState(false);
@@ -28,7 +29,7 @@ export function useManualSign() {
       const nonce = await getCsrfToken();
       if (!nonce) {
         console.error('Failed to get CSRF token');
-        disconnect();
+        await logout({ redirect: false });
         return;
       }
 
@@ -69,17 +70,17 @@ export function useManualSign() {
       } else {
         console.error('Authentication failed:', result?.error);
         // Disconnect wallet on authentication failure
-        disconnect();
+        await logout({ redirect: false });
       }
     } catch (error) {
       console.error('Sign-in error:', error);
       // Disconnect wallet when user cancels signature
-      disconnect();
+      await logout({ redirect: false });
     } finally {
       setIsAuthenticating(false);
       isAuthenticatingRef.current = false;
     }
-  }, [address, chainId, isConnected, signMessageAsync, disconnect]);
+  }, [address, chainId, isConnected, signMessageAsync, logout]);
 
   // Reset state when wallet disconnects
   useEffect(() => {

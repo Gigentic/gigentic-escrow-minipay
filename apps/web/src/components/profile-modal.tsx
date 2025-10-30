@@ -1,10 +1,8 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useDisconnect } from 'wagmi';
-import { signOut } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
 import { useProfile } from '@/hooks/use-profile';
+import { useLogout } from '@/hooks/use-logout';
 import {
   Dialog,
   DialogContent,
@@ -28,8 +26,7 @@ interface ProfileModalProps {
 }
 
 export function ProfileModal({ open, onOpenChange, address }: ProfileModalProps) {
-  const { disconnect } = useDisconnect();
-  const router = useRouter();
+  const logout = useLogout();
   const { profile, isLoading, updateProfile, isUpdating, updateError, refetch } = useProfile(address);
 
   const [name, setName] = useState('');
@@ -76,11 +73,8 @@ export function ProfileModal({ open, onOpenChange, address }: ProfileModalProps)
   };
 
   const handleLogout = async () => {
-    await signOut({ redirect: false });
-    disconnect();
+    await logout(); // Uses centralized logout hook
     onOpenChange(false);
-    // Redirect to homepage after logout
-    router.push('/');
   };
 
   const handleVerificationSuccess = () => {

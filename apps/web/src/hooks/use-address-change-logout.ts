@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
-import { useAccount, useDisconnect } from 'wagmi';
-import { useSession, signOut } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useAccount } from 'wagmi';
+import { useSession } from 'next-auth/react';
+import { useLogout } from './use-logout';
 
 /**
  * Hook to handle wallet address changes by logging out the user
@@ -17,8 +17,7 @@ import { useRouter } from 'next/navigation';
 export function useAddressChangeLogout() {
   const { address, isConnected } = useAccount();
   const { status: sessionStatus } = useSession();
-  const { disconnect } = useDisconnect();
-  const router = useRouter();
+  const logout = useLogout();
   const previousAddressRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
@@ -46,20 +45,11 @@ export function useAddressChangeLogout() {
       // Update the ref immediately to prevent multiple triggers
       previousAddressRef.current = address;
 
-      // Sign out the current session if authenticated
-      if (sessionStatus === 'authenticated') {
-        signOut({ redirect: false }).then(() => {
-          console.log('Session invalidated due to address change');
-          // Redirect to homepage after logout
-          router.push('/');
-        });
-      } else {
-        // If not authenticated, still redirect to homepage
-        router.push('/');
-      }
-
-      // Disconnect the wallet to force re-authentication
-      disconnect();
+      // Use centralized logout (includes signOut → disconnect → redirect)
+      // This fixes race condition by awaiting signOut before disconnect
+      logout().then(() => {
+        console.log('User logged out due to address change');
+      });
     }
-  }, [address, isConnected, sessionStatus, disconnect, router]);
+  }, [address, isConnected, sessionStatus, logout]);
 }

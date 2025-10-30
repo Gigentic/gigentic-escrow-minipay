@@ -14,6 +14,7 @@ import { defineChain } from 'viem'
 import { QueryClientProvider, QueryClient } from '@tanstack/react-query'
 import { useManualSign } from '@/hooks/use-manual-sign'
 import { useAddressChangeLogout } from '@/hooks/use-address-change-logout'
+import { useSyncWalletWithSession } from '@/hooks/use-sync-wallet-with-session'
 import { AuthSuccessNotification } from './auth-success-notification'
 import { AuthLoadingOverlay } from './auth-loading-overlay'
 
@@ -118,6 +119,9 @@ function RainbowKitWithAutoAuth({ children }: { children: React.ReactNode }) {
 
   // Handle wallet address changes by logging out
   useAddressChangeLogout();
+
+  // Sync wallet connection with session (prevent invalid states)
+  useSyncWalletWithSession();
 
   const { connect, connectors } = useConnect();
   const { isConnected } = useAccount();
