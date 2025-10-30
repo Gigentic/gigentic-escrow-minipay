@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAccount } from "wagmi";
 import { useSession } from "next-auth/react";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { ConnectButton as RainbowKitConnectButton } from "@rainbow-me/rainbowkit";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useAuthState } from "@/components/wallet-provider";
@@ -111,14 +111,22 @@ export default function SignInPage() {
         {/* Action Buttons */}
         <div className="space-y-3">
           {!isConnected ? (
-            // Step 1: Connect Wallet
+            // Step 1: Connect Wallet (Custom styled to match brand)
             <div className="space-y-3">
               <p className="text-sm text-center text-muted-foreground">
                 First, connect your wallet:
               </p>
-              <div className="flex justify-center">
-                <ConnectButton />
-              </div>
+              <RainbowKitConnectButton.Custom>
+                {({ openConnectModal }) => (
+                  <Button
+                    onClick={openConnectModal}
+                    size="lg"
+                    className="w-full"
+                  >
+                    Connect Wallet
+                  </Button>
+                )}
+              </RainbowKitConnectButton.Custom>
             </div>
           ) : (
             // Step 2: Sign In with Wallet

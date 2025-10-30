@@ -6,10 +6,10 @@ import { Loader2 } from "lucide-react";
 
 export default function CreatePage() {
   // Protect this route - requires authentication
-  const { isLoading: isAuthLoading } = useRequireAuth();
+  const { shouldRenderContent, isCheckingAuth } = useRequireAuth();
 
-  // Show loading state while checking authentication
-  if (isAuthLoading) {
+  // Show loading while checking auth (prevents flicker)
+  if (isCheckingAuth) {
     return (
       <main className="flex-1 flex items-center justify-center min-h-[calc(100vh-4rem)]">
         <div className="text-center">
@@ -20,7 +20,12 @@ export default function CreatePage() {
     );
   }
 
-  // Auth guard will redirect if not authenticated, so this code only runs when authenticated
+  // Don't render content until auth verified (prevents flicker)
+  if (!shouldRenderContent) {
+    return null;
+  }
+
+  // Auth guard ensures we only reach here when authenticated
   return (
     <main className="flex-1 container mx-auto px-4 py-12">
       <div className="max-w-4xl mx-auto">

@@ -17,7 +17,7 @@ import { Loader2 } from "lucide-react";
 
 export default function DashboardPage() {
   // Protect this route - requires authentication
-  const { isLoading: isAuthLoading } = useRequireAuth();
+  const { shouldRenderContent, isCheckingAuth } = useRequireAuth();
 
   const { address, isConnected } = useAccount();
 
@@ -42,8 +42,8 @@ export default function DashboardPage() {
   // Use hook to fetch details for each escrow in parallel
   const { escrows, isLoading } = useUserEscrows(userEscrowAddresses);
 
-  // Show loading state while checking authentication
-  if (isAuthLoading) {
+  // Show loading while checking auth (prevents flicker)
+  if (isCheckingAuth) {
     return (
       <main className="flex-1 flex items-center justify-center min-h-[calc(100vh-4rem)]">
         <div className="text-center">
@@ -54,9 +54,14 @@ export default function DashboardPage() {
     );
   }
 
-  // Auth guard will redirect if not authenticated, so this code only runs when authenticated
+  // Don't render content until auth verified (prevents flicker)
+  if (!shouldRenderContent) {
+    return null;
+  }
+
+  // Auth guard ensures we only reach here when authenticated
   if (!isConnected) {
-    // This should never happen due to useRequireAuth, but keep as fallback
+    // This should never happen, but keep as fallback
     return null;
   }
 

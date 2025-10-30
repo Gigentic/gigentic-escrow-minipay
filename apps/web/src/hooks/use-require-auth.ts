@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAccount } from 'wagmi';
 import { useSession } from 'next-auth/react';
@@ -6,12 +6,16 @@ import { useSession } from 'next-auth/react';
 /**
  * Hook to protect routes that require authentication
  *
+ * IMPORTANT: This hook prevents flicker by tracking auth check state.
+ * Content should NOT render until auth is verified.
+ *
  * Usage:
  * ```tsx
  * export default function ProtectedPage() {
- *   const { isLoading } = useRequireAuth();
+ *   const { shouldRenderContent, isCheckingAuth } = useRequireAuth();
  *
- *   if (isLoading) return <LoadingSpinner />;
+ *   if (isCheckingAuth) return <LoadingSpinner />;
+ *   if (!shouldRenderContent) return null;
  *
  *   return <ProtectedContent />;
  * }
@@ -19,9 +23,9 @@ import { useSession } from 'next-auth/react';
  *
  * Flow:
  * 1. Check if wallet is connected
- * 2. If not connected, redirect to /auth/signin with redirectTo param
- * 3. If connected but not authenticated, redirect to /auth/signin
- * 4. If authenticated, allow access
+ * 2. Check if session is authenticated
+ * 3. Redirect to /auth/signin if needed
+ * 4. Only allow content render after auth verified
  */
 export function useRequireAuth() {
   const router = useRouter();
@@ -29,15 +33,20 @@ export function useRequireAuth() {
   const { isConnected } = useAccount();
   const { status: sessionStatus } = useSession();
 
+  // Track if we've completed initial auth check
+  const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
+
   const isAuthenticated = sessionStatus === 'authenticated';
   const isLoading = sessionStatus === 'loading';
 
   useEffect(() => {
-    // Wait for session to load
-    if (isLoading) return;
+    // Mark that we've started checking (after session loads)
+    if (!isLoading) {
+      setHasCheckedAuth(true);
+    }
 
-    // If not connected or not authenticated, redirect to sign-in
-    if (!isConnected || !isAuthenticated) {
+    // Redirect if needed
+    if (!isLoading && (!isConnected || !isAuthenticated)) {
       const redirectUrl = `/auth/signin?redirectTo=${encodeURIComponent(pathname)}`;
       console.log('Auth required - redirecting to:', redirectUrl);
       router.push(redirectUrl);
@@ -45,8 +54,16 @@ export function useRequireAuth() {
   }, [isConnected, isAuthenticated, isLoading, pathname, router]);
 
   return {
-    isLoading,
-    isAuthenticated,
-    isConnected,
+    // Only render content when:
+    // 1. Not loading
+    // 2. Has checked auth at least once
+    // 3. Is authenticated
+    shouldRenderContent: !isLoading && hasCheckedAuth && isAuthenticated,
+
+    // Show loading when:
+    // 1. Session is loading, OR
+    // 2. Haven't checked auth yet, OR
+    // 3. Not authenticated (will redirect)
+    isCheckingAuth: isLoading || !hasCheckedAuth || !isAuthenticated,
   };
 }
