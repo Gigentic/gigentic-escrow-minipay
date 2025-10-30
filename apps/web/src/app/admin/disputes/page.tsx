@@ -2,9 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { DisputeList } from "@/components/admin/dispute-list";
+import { useIsAdmin } from "@/hooks/use-is-admin";
 import { type Address } from "viem";
+import { ShieldAlert } from "lucide-react";
 
 interface DisputedEscrow {
   address: Address;
@@ -19,7 +23,9 @@ interface DisputedEscrow {
 }
 
 export default function AdminDisputesPage() {
+  const router = useRouter();
   const { data: session, status } = useSession();
+  const { isAdmin, isLoading: isCheckingAdmin } = useIsAdmin();
   const [disputes, setDisputes] = useState<DisputedEscrow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -54,7 +60,8 @@ export default function AdminDisputesPage() {
     fetchDisputes();
   }, [status]);
 
-  if (status === "loading") {
+  // Show loading while checking auth or admin status
+  if (status === "loading" || isCheckingAdmin) {
     return (
       <main className="flex-1 container mx-auto px-4 py-12">
         <Card className="p-8 text-center max-w-md mx-auto">
@@ -72,6 +79,22 @@ export default function AdminDisputesPage() {
           <p className="text-muted-foreground">
             Please connect your wallet to access this page
           </p>
+        </Card>
+      </main>
+    );
+  }
+
+  // Check if user is admin
+  if (!isAdmin) {
+    return (
+      <main className="flex-1 container mx-auto px-4 py-12">
+        <Card className="p-8 text-center max-w-md mx-auto border-yellow-300 dark:border-yellow-700">
+          <ShieldAlert className="h-12 w-12 mx-auto mb-4 text-yellow-600 dark:text-yellow-400" />
+          <h1 className="text-2xl font-bold mb-4">Access Denied</h1>
+          <p className="text-muted-foreground mb-6">
+            You must be an admin to access the dispute resolution panel.
+          </p>
+          <Button onClick={() => router.push("/")}>Go to Homepage</Button>
         </Card>
       </main>
     );

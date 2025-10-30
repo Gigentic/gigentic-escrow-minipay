@@ -1,13 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { type Address } from "viem";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { ResolveForm } from "@/components/admin/resolve-form";
 import { AddressDisplay } from "@/components/wallet/address-display";
+import { useIsAdmin } from "@/hooks/use-is-admin";
 import { formatEther } from "viem";
+import { ShieldAlert } from "lucide-react";
 
 interface DisputeDetails {
   address: Address;
@@ -29,7 +32,9 @@ interface DisputeDetails {
 
 export default function ResolveDisputePage() {
   const params = useParams();
+  const router = useRouter();
   const { data: session, status } = useSession();
+  const { isAdmin, isLoading: isCheckingAdmin } = useIsAdmin();
   const escrowAddress = params.id as Address;
 
   const [dispute, setDispute] = useState<DisputeDetails | null>(null);
@@ -66,7 +71,8 @@ export default function ResolveDisputePage() {
     fetchDispute();
   }, [status, escrowAddress]);
 
-  if (status === "loading") {
+  // Show loading while checking auth or admin status
+  if (status === "loading" || isCheckingAdmin) {
     return (
       <main className="flex-1 container mx-auto px-4 py-12">
         <Card className="p-8 text-center max-w-md mx-auto">
@@ -84,6 +90,22 @@ export default function ResolveDisputePage() {
           <p className="text-muted-foreground">
             Please connect your wallet to access this page
           </p>
+        </Card>
+      </main>
+    );
+  }
+
+  // Check if user is admin
+  if (!isAdmin) {
+    return (
+      <main className="flex-1 container mx-auto px-4 py-12">
+        <Card className="p-8 text-center max-w-md mx-auto border-yellow-300 dark:border-yellow-700">
+          <ShieldAlert className="h-12 w-12 mx-auto mb-4 text-yellow-600 dark:text-yellow-400" />
+          <h1 className="text-2xl font-bold mb-4">Access Denied</h1>
+          <p className="text-muted-foreground mb-6">
+            You must be an admin to resolve disputes.
+          </p>
+          <Button onClick={() => router.push("/")}>Go to Homepage</Button>
         </Card>
       </main>
     );
