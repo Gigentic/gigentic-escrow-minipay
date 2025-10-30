@@ -210,7 +210,7 @@ export function ProfileModal({ open, onOpenChange, address }: ProfileModalProps)
             onClick={handleLogout}
             disabled={isUpdating}
           >
-            Logout
+            Sign Out
           </Button>
           <Button onClick={handleSave} disabled={isUpdating || isLoading}>
             {isUpdating ? 'Saving...' : 'Save Changes'}
