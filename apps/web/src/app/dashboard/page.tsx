@@ -111,28 +111,6 @@ export default function DashboardPage() {
           </Link>
         </div>
 
-        {/* Statistics Cards */}
-        {/* <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <Card className="p-4">
-            <p className="text-sm text-muted-foreground mb-1">Total Escrows</p>
-            <p className="text-2xl font-bold">{stats.total}</p>
-          </Card>
-          <Card className="p-4">
-            <p className="text-sm text-muted-foreground mb-1">As Depositor</p>
-            <p className="text-2xl font-bold">{stats.asDepositor}</p>
-          </Card>
-          <Card className="p-4">
-            <p className="text-sm text-muted-foreground mb-1">As Recipient</p>
-            <p className="text-2xl font-bold">{stats.asRecipient}</p>
-          </Card>
-          <Card className="p-4">
-            <p className="text-sm text-muted-foreground mb-1">Completed</p>
-            <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-              {stats.completed}
-            </p>
-          </Card>
-        </div> */}
-
         {/* Filters */}
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-4">

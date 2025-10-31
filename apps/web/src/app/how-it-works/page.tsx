@@ -7,49 +7,20 @@ export default function HowItWorksPage() {
     <main className="flex-1 container mx-auto px-4 py-12">
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold mb-4">How Gigentic Escrow Works</h1>
+          <h1 className="text-4xl font-bold mb-4">How Gigentic CheckPay Works</h1>
           <p className="text-xl text-muted-foreground">
-            A comprehensive guide to secure peer-to-peer transactions on Celo
+            A comprehensive guide to secure peer-to-peer escrowed payments
           </p>
         </div>
 
         {/* The Basics */}
         <Card className="p-8 mb-8">
-          <h2 className="text-2xl font-bold mb-4">The Basics</h2>
+          <h2 className="text-2xl font-bold mb-4">Gigentic CheckPay</h2>
           <p className="text-muted-foreground mb-4">
-            Gigentic Escrow is a trustless platform for secure transactions between parties who don't
-            necessarily trust each other. Built on Celo blockchain, it locks funds in a smart contract
+            is a secure platform for trust-minimized transactions between parties who don't
+            necessarily trust each other. It locks funds in a smart contract
             until agreed-upon conditions are met.
           </p>
-          <div className="grid md:grid-cols-3 gap-6 mt-6">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-2xl mx-auto mb-3">
-                🔒
-              </div>
-              <h3 className="font-semibold mb-2">Secure</h3>
-              <p className="text-sm text-muted-foreground">
-                Funds locked in smart contract until conditions met
-              </p>
-            </div>
-            <div className="text-center">
-              <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-2xl mx-auto mb-3">
-                ⚡
-              </div>
-              <h3 className="font-semibold mb-2">Fast</h3>
-              <p className="text-sm text-muted-foreground">
-                Near-instant transactions on Celo with low fees
-              </p>
-            </div>
-            <div className="text-center">
-              <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-2xl mx-auto mb-3">
-                ⚖️
-              </div>
-              <h3 className="font-semibold mb-2">Fair</h3>
-              <p className="text-sm text-muted-foreground">
-                Dispute resolution by trained arbiters
-              </p>
-            </div>
-          </div>
         </Card>
 
         {/* Step by Step */}
@@ -77,7 +48,7 @@ export default function HowItWorksPage() {
                 <h3 className="font-semibold mb-2">Funds Locked in Contract</h3>
                 <p className="text-sm text-muted-foreground">
                   The depositor approves and transfers cUSD to the escrow contract. Total required is
-                  105% of escrow amount (1% platform fee + 4% dispute bond).
+                  105% of escrow amount.
                 </p>
               </div>
             </div>
@@ -102,7 +73,7 @@ export default function HowItWorksPage() {
               <div>
                 <h3 className="font-semibold mb-2">Depositor Reviews & Completes</h3>
                 <p className="text-sm text-muted-foreground">
-                  If satisfied, the depositor completes the escrow. Funds are released to the recipient,
+                  If satisfied, the depositor completes the escrowed payment. Funds are released to the recipient,
                   and the dispute bond is returned to the depositor.
                 </p>
               </div>
@@ -116,7 +87,7 @@ export default function HowItWorksPage() {
                 <h3 className="font-semibold mb-2">Or Dispute if Needed</h3>
                 <p className="text-sm text-muted-foreground">
                   If there's a problem, either party can raise a dispute. An arbiter reviews the case
-                  and decides whether to complete or refund the escrow.
+                  and decides whether to complete or refund the payment.
                 </p>
               </div>
             </div>
@@ -127,14 +98,14 @@ export default function HowItWorksPage() {
         <Card className="p-8 mb-8">
           <h2 className="text-2xl font-bold mb-4">Fees & Costs</h2>
           <div className="space-y-4">
-            <div className="border-l-4 border-primary pl-4">
+            <div className="border-l-4  border-yellow-500 pl-4">
               <h3 className="font-semibold mb-1">Platform Fee: 1%</h3>
               <p className="text-sm text-muted-foreground">
-                Charged on every escrow. Goes to the platform arbiter to cover operational costs.
+                Charged on every escrow. Goes to the platform to cover operational costs.
               </p>
             </div>
 
-            <div className="border-l-4 border-yellow-500 pl-4">
+            <div className="border-l-4 border-primary pl-4">
               <h3 className="font-semibold mb-1">Dispute Bond: 4%</h3>
               <p className="text-sm text-muted-foreground">
                 Refundable deposit to discourage frivolous disputes. Returned if no dispute is raised.
@@ -142,16 +113,16 @@ export default function HowItWorksPage() {
               </p>
             </div>
 
-            <div className="border-l-4 border-green-500 pl-4">
+            <div className="border-l-4 border-gray-500 pl-4">
               <h3 className="font-semibold mb-1">Gas Fees: ~$0.01</h3>
               <p className="text-sm text-muted-foreground">
-                Near-zero transaction fees on Celo blockchain make micro-transactions viable.
+                Near-zero transaction fees make micro-transactions viable.
               </p>
             </div>
           </div>
 
           <div className="mt-6 bg-muted p-4 rounded-md">
-            <p className="text-sm font-medium mb-2">Example: 100 cUSD Escrow</p>
+            <p className="text-sm font-medium mb-2">Example: 100 cUSD Payment</p>
             <div className="space-y-1 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Escrow Amount:</span>
@@ -169,9 +140,9 @@ export default function HowItWorksPage() {
                 <span>Total Required:</span>
                 <span>105 cUSD</span>
               </div>
-              <div className="flex justify-between text-green-600 dark:text-green-400">
+              <div className="flex justify-between text-green-600 dark:text-green-400 font-medium">
                 <span>Returned on Completion:</span>
-                <span>4 cUSD (bond)</span>
+                <span className="font-semibold">4 cUSD</span>
               </div>
             </div>
           </div>
@@ -224,7 +195,8 @@ export default function HowItWorksPage() {
             <div>
               <h3 className="font-semibold mb-2">Do I need a bank account?</h3>
               <p className="text-sm text-muted-foreground">
-                No! You only need a Celo-compatible wallet (like MiniPay) and cUSD stablecoins.
+                No! You only need a Celo-compatible wallet (like MiniPay) and cUSD stablecoins. 
+                We plan to support other stablecoins in the future.
               </p>
             </div>
 
@@ -263,9 +235,12 @@ export default function HowItWorksPage() {
             <div>
               <h3 className="font-semibold mb-2">Is my data private?</h3>
               <p className="text-sm text-muted-foreground">
-                Deliverable details are public and stored off-chain. All transactions and resolutions
-                are public on the blockchain. Only your wallet address is visible - no personal
-                information is collected.
+                All transactions and dispute resolution outcomes are public on the blockchain, but the
+                deliverable and dispute resolution details are private and stored off-chain. 
+              </p>
+              <p className="text-sm text-muted-foreground mt-2">
+                Your profile attached to your wallet address is public but you get to choose what you want to 
+                share about yourself and you can delete your off-chain data at any time.
               </p>
             </div>
           </div>
@@ -275,7 +250,7 @@ export default function HowItWorksPage() {
         <div className="text-center">
           <h2 className="text-2xl font-bold mb-4">Ready to Get Started?</h2>
           <p className="text-muted-foreground mb-6">
-            Create your first secure escrow in minutes
+            Create your first escrowed payment in minutes
           </p>
           <Link href="/create">
             <Button size="lg" className="text-lg px-8">
