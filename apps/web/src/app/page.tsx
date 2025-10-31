@@ -21,17 +21,17 @@ export default function Home() {
                 Create Escrow
               </Button>
             </Link>
-            <Link href="/dashboard">
+            {/* <Link href="/dashboard">
               <Button size="lg" variant="outline" className="w-full sm:w-auto text-lg px-8">
                 View Dashboard
               </Button>
-            </Link>
+            </Link> */}
           </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section className="bg-muted py-16">
+      <section className="py-16">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">
             How It Works
@@ -71,14 +71,13 @@ export default function Home() {
       </section>
 
       {/* Fee Calculator Section */}
-      <section className="container mx-auto px-4 py-16">
+      <section className="bg-muted mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-3xl md:text-4xl font-bold text-center mb-8">
             Calculate Your Costs
           </h2>
           <p className="text-center text-muted-foreground mb-8 max-w-2xl mx-auto">
-            See exactly what you'll pay with our transparent fee calculator.
-            No hidden fees, just 1% platform fee and a 4% refundable dispute bond.
+            See exactly what you'll pay. No hidden fees.
           </p>
           <div className="flex justify-center">
             <FeeCalculatorWidget />
@@ -96,22 +95,14 @@ export default function Home() {
             <div>
               <h3 className="text-xl font-semibold mb-3">🔒 Trustless & Secure</h3>
               <p className="text-muted-foreground">
-                Smart contracts on Celo blockchain ensure funds are locked until conditions are met.
-                No intermediaries needed.
-              </p>
-            </div>
-
-            <div>
-              <h3 className="text-xl font-semibold mb-3">📱 Mobile-First</h3>
-              <p className="text-muted-foreground">
-                Optimized for MiniPay wallet. Create and manage escrows directly from your phone.
+                Smart contracts ensure funds are locked until conditions are met.
               </p>
             </div>
 
             <div>
               <h3 className="text-xl font-semibold mb-3">💰 Low Fees</h3>
               <p className="text-muted-foreground">
-                Only 1% platform fee. No hidden costs. Built on Celo for near-zero gas fees.
+                Only 1% platform fee. No hidden costs. Low gas fees.
               </p>
             </div>
 
@@ -123,16 +114,16 @@ export default function Home() {
             </div>
 
             <div>
-              <h3 className="text-xl font-semibold mb-3">🌍 For Emerging Markets</h3>
+              <h3 className="text-xl font-semibold mb-3">🔑 Wallet-Only Auth</h3>
               <p className="text-muted-foreground">
-                No bank account needed. Use cUSD stable coin for predictable transactions.
+                No sign-up, no passwords. Your wallet is your identity. Connect and start transacting.
               </p>
             </div>
 
             <div>
-              <h3 className="text-xl font-semibold mb-3">🔑 Wallet-Only Auth</h3>
+              <h3 className="text-xl font-semibold mb-3">🌍 Open For All</h3>
               <p className="text-muted-foreground">
-                No sign-up, no passwords. Your wallet is your identity. Connect and start transacting.
+                No bank account needed. Use stablecoins for predictable transactions.
               </p>
             </div>
           </div>
@@ -140,7 +131,7 @@ export default function Home() {
       </section>
 
       {/* CTA Section */}
-      <section className="bg-primary text-primary-foreground py-16">
+      <section className="bg-muted py-16">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-3xl md:text-4xl font-bold mb-6">
             Ready to Get Started?
@@ -149,7 +140,7 @@ export default function Home() {
             Connect your wallet and create your first escrow in minutes
           </p>
           <Link href="/create">
-            <Button size="lg" variant="secondary" className="text-lg px-8">
+            <Button size="lg" variant="default" className="text-lg px-8">
               Create Your First Escrow
             </Button>
           </Link>
@@ -160,9 +151,6 @@ export default function Home() {
       <section className="container mx-auto px-4 py-16">
         <div className="max-w-2xl mx-auto text-center">
           <h2 className="text-2xl font-semibold mb-4">Want to Learn More?</h2>
-          <p className="text-muted-foreground mb-6">
-            Check out our detailed guide on how escrows work, fees, and dispute resolution.
-          </p>
           <Link href="/how-it-works">
             <Button variant="outline" size="lg">
               Read the Guide
