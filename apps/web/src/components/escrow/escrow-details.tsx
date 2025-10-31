@@ -212,7 +212,7 @@ export function EscrowDetailsDisplay({
             <h2 className="text-xl font-semibold mb-4">Resolution</h2>
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                This escrow was resolved through dispute resolution.
+                This escrow was {resolution.favorDepositor ? "refunded" : "completed by the arbiter"}.
               </p>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
