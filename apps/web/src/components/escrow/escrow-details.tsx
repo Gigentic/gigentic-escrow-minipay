@@ -29,6 +29,7 @@ interface EscrowDetailsDisplayProps {
   resolution?: ResolutionDocument;
   isParty: boolean;
   isConnected: boolean;
+  userAddress?: Address;
 }
 
 /**
@@ -43,6 +44,7 @@ export function EscrowDetailsDisplay({
   resolution,
   isParty,
   isConnected,
+  userAddress,
 }: EscrowDetailsDisplayProps) {
   const [showFeeBreakdown, setShowFeeBreakdown] = useState(false);
 
@@ -74,11 +76,15 @@ export function EscrowDetailsDisplay({
           {/* From/To */}
           <div className="space-y-3">
             <div className="flex items-center justify-between gap-3">
-              <p className="text-sm text-muted-foreground mb-1">From:</p>
+              <p className="text-sm text-muted-foreground mb-1">
+                From{isConnected && userAddress?.toLowerCase() === details.depositor.toLowerCase() && <span className="text-primary font-medium"> You</span>}:
+              </p>
               <AddressDisplay address={details.depositor} />
             </div>
             <div className="flex items-center justify-between gap-3">
-              <p className="text-sm text-muted-foreground mb-1">To:</p>
+              <p className="text-sm text-muted-foreground mb-1">
+                To{isConnected && userAddress?.toLowerCase() === details.recipient.toLowerCase() && <span className="text-primary font-medium"> You</span>}:
+              </p>
               <AddressDisplay address={details.recipient} />
             </div>
           </div>

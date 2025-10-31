@@ -83,6 +83,7 @@ export default function EscrowDetailPage() {
           resolution={resolution || undefined}
           isParty={!!isParty}
           isConnected={isConnected}
+          userAddress={userAddress}
         />
 
         <EscrowActions
