@@ -51,7 +51,7 @@ export function EscrowCard({
 
   return (
     <Link href={`/escrow/${address}`}>
-      <Card className="p-6 hover:shadow-lg transition-all cursor-pointer border-2 border-transparent hover:border-primary hover:bg-orange-500/10">
+      <Card className="p-6 hover:shadow-lg transition-all cursor-pointer border-2 border-transparent hover:border-primary hover:bg-primary/10">
         <div className="space-y-4">
           {/* Header with state badge */}
           <div className="flex justify-between items-start">
