@@ -106,31 +106,33 @@ export default function DashboardPage() {
           <div>
             <h1 className="text-3xl font-bold mb-2">Payments</h1>
           </div>
-          <Link href="/create">
-            <Button size="lg">Create New Escrow</Button>
-          </Link>
+          <div className="flex items-center gap-2">
+            <div>
+              <Button
+                variant={showFilters ? "default" : "outline"}
+                size="sm"
+                onClick={() => setShowFilters(!showFilters)}
+                className="relative"
+                >
+                <SlidersHorizontal className="h-4 w-4" />
+                {/* Indicator dot when filters are active but hidden */}
+                {!showFilters && hasActiveFilters && (
+                  <span className="absolute -top-0.5 -right-0.5 h-2 w-2 bg-primary rounded-full border border-background" />
+                )}
+              </Button>
+            </div>
+            <Link href="/create">
+              <Button size="lg" className="text-lg px-8">Create New Escrow</Button>
+            </Link>
+          </div>
+
         </div>
 
         {/* Filters */}
         <div className="mb-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Button
-              variant={showFilters ? "default" : "outline"}
-              size="sm"
-              onClick={() => setShowFilters(!showFilters)}
-              className="relative"
-            >
-              <SlidersHorizontal className="h-4 w-4" />
-              {/* Indicator dot when filters are active but hidden */}
-              {!showFilters && hasActiveFilters && (
-                <span className="absolute -top-0.5 -right-0.5 h-2 w-2 bg-primary rounded-full border border-background" />
-              )}
-            </Button>
-          </div>
-
           {showFilters && (
             <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex gap-2">
+              <div className="flex gap-1">
                 <Button
                   variant={filter === "all" ? "default" : "outline"}
                   onClick={() => setFilter("all")}
@@ -154,13 +156,13 @@ export default function DashboardPage() {
                 </Button>
               </div>
 
-              <div className="flex gap-2 flex-wrap">
+              <div className="flex gap-1">
                 <Button
                   variant={stateFilter === "all" ? "default" : "outline"}
                   onClick={() => setStateFilter("all")}
                   size="sm"
                 >
-                  All States
+                  All
                 </Button>
                 <Button
                   variant={stateFilter === EscrowState.CREATED ? "default" : "outline"}
