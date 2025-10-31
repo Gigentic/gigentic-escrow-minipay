@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAccount } from "wagmi";
 import { useSession } from "next-auth/react";
@@ -31,6 +31,9 @@ export default function SignInPage() {
   const { isConnected } = useAccount();
   const { status: sessionStatus } = useSession();
   const { isAuthenticating, signIn } = useAuthState();
+
+  // State for info tooltip toggle
+  const [showInfo, setShowInfo] = useState(false);
 
   // Get the redirect URL from query params (where to go after successful sign-in)
   const redirectTo = searchParams.get("redirectTo") || "/dashboard";
@@ -147,18 +150,35 @@ export default function SignInPage() {
                 <h3 className={`font-semibold text-base ${!isConnected && 'text-muted-foreground'}`}>
                   Sign in with wallet
                 </h3>
-                <p className="text-sm text-muted-foreground">
-                  {isAuthenticating ? 'Waiting for signature...' : 'Verify wallet ownership'}
-                </p>
+                <div className="flex items-center gap-1">
+                  <p className="text-sm text-muted-foreground">
+                    {isAuthenticating ? 'Waiting for signature...' : 'Verify wallet ownership'}
+                  </p>
+                  {!isAuthenticating && (
+                    <button
+                      type="button"
+                      onClick={() => setShowInfo(!showInfo)}
+                      className="text-muted-foreground hover:text-foreground transition-colors"
+                      aria-label="Information about wallet verification"
+                    >
+                      <Info className="h-3 w-3" />
+                    </button>
+                  )}
+                </div>
+                {showInfo && (
+                  <button
+                    type="button"
+                    onClick={() => setShowInfo(false)}
+                    className="mt-2 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer text-left"
+                  >
+                    This is free and doesn't send a transaction
+                  </button>
+                )}
               </div>
             </div>
 
             {isConnected && (
               <>
-                <div className="mb-3 flex items-start gap-2 text-xs text-muted-foreground px-2">
-                  <Info className="h-3 w-3 mt-0.5 flex-shrink-0" />
-                  <p>This is free and doesn't send a transaction</p>
-                </div>
                 <Button
                   onClick={handleSignIn}
                   disabled={isAuthenticating}
