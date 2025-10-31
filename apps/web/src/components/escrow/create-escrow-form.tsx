@@ -43,8 +43,8 @@ export function CreateEscrowForm({ initialAmount }: { initialAmount?: string }) 
   const { createEscrowAsync, isCreating, error: createError } = useCreateEscrow({
     onSuccess: async (data) => {
       console.log("Escrow created successfully:", data.escrowAddress);
-      // Navigate to dashboard after successful creation and cache invalidation
-      router.push("/dashboard");
+      // Navigate to escrow details page with success modal
+      router.push(`/escrow/${data.escrowAddress}?success=true`);
     },
     onError: (err) => {
       console.error("Error in create escrow hook:", err);
