@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useAccount, useReadContract } from "wagmi";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { EscrowList } from "@/components/escrow/escrow-list";
 import {
   MASTER_FACTORY_ADDRESS,
@@ -23,6 +22,7 @@ export default function DashboardPage() {
 
   const [filter, setFilter] = useState<"all" | "depositor" | "recipient">("all");
   const [stateFilter, setStateFilter] = useState<EscrowState | "all">("all");
+  const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
   const [showFilters, setShowFilters] = useState(false);
 
   // Fetch user's escrow addresses from contract
@@ -66,36 +66,37 @@ export default function DashboardPage() {
     return null;
   }
 
-  // Filter escrows
-  const filteredEscrows = escrows.filter((escrow) => {
-    // Role filter
-    if (filter === "depositor" && escrow.depositor.toLowerCase() !== address?.toLowerCase()) {
-      return false;
-    }
-    if (filter === "recipient" && escrow.recipient.toLowerCase() !== address?.toLowerCase()) {
-      return false;
-    }
+  // Filter and sort escrows
+  const filteredEscrows = escrows
+    .filter((escrow) => {
+      // Role filter
+      if (filter === "depositor" && escrow.depositor.toLowerCase() !== address?.toLowerCase()) {
+        return false;
+      }
+      if (filter === "recipient" && escrow.recipient.toLowerCase() !== address?.toLowerCase()) {
+        return false;
+      }
 
-    // State filter
-    if (stateFilter !== "all" && escrow.state !== stateFilter) {
-      return false;
-    }
+      // State filter
+      if (stateFilter !== "all" && escrow.state !== stateFilter) {
+        return false;
+      }
 
-    return true;
-  });
+      return true;
+    })
+    .sort((a, b) => {
+      // Sort by createdAt timestamp
+      const aTime = Number(a.createdAt);
+      const bTime = Number(b.createdAt);
 
-  // Calculate statistics
-  const stats = {
-    total: escrows.length,
-    asDepositor: escrows.filter((e) => e.depositor.toLowerCase() === address?.toLowerCase()).length,
-    asRecipient: escrows.filter((e) => e.recipient.toLowerCase() === address?.toLowerCase()).length,
-    created: escrows.filter((e) => e.state === EscrowState.CREATED).length,
-    disputed: escrows.filter((e) => e.state === EscrowState.DISPUTED).length,
-    completed: escrows.filter((e) => e.state === EscrowState.COMPLETED).length,
-    refunded: escrows.filter((e) => e.state === EscrowState.REFUNDED).length,
-  };
+      if (sortOrder === "newest") {
+        return bTime - aTime; // Newest first (descending)
+      } else {
+        return aTime - bTime; // Oldest first (ascending)
+      }
+    });
 
-  // Check if filters are active (non-default values)
+  // Check if filters are active
   const hasActiveFilters = filter !== "all" || stateFilter !== "all";
 
   return (
@@ -129,9 +130,26 @@ export default function DashboardPage() {
         </div>
 
         {/* Filters */}
-        <div className="mb-6">
+        <div className="mb-6 space-y-4">
           {showFilters && (
             <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex gap-1">
+                <Button
+                  variant={sortOrder === "newest" ? "default" : "outline"}
+                  onClick={() => setSortOrder("newest")}
+                  size="sm"
+                >
+                  Newest First
+                </Button>
+                <Button
+                  variant={sortOrder === "oldest" ? "default" : "outline"}
+                  onClick={() => setSortOrder("oldest")}
+                  size="sm"
+                >
+                  Oldest First
+                </Button>
+              </div>
+
               <div className="flex gap-1">
                 <Button
                   variant={filter === "all" ? "default" : "outline"}
