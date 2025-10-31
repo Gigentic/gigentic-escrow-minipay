@@ -28,7 +28,7 @@ import Image from "next/image";
 export default function SignInPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { address, isConnected } = useAccount();
+  const { isConnected } = useAccount();
   const { status: sessionStatus } = useSession();
   const { isAuthenticating, signIn } = useAuthState();
 
@@ -86,36 +86,35 @@ export default function SignInPage() {
         </div>
 
         {/* Header */}
-        <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold mb-2">🔐 Sign In to Continue</h1>
+        <div className="text-center mb-8">
+          <h1 className="text-2xl font-bold">🔐 Sign In to Continue</h1>
+        </div>
 
-          {isConnected && address ? (
-            <div className="mt-4 p-3 bg-muted rounded-lg">
-              <p className="text-sm text-muted-foreground mb-1">You're connected with:</p>
-              <p className="font-mono text-sm break-all">{address}</p>
+        {/* Step-by-Step Flow */}
+        <div className="space-y-4 mb-6">
+          {/* Step 1: Connect Wallet */}
+          <div className={`p-4 rounded-lg border-2 transition-colors ${
+            isConnected
+              ? 'border-primary/20 bg-primary/5'
+              : 'border-muted bg-background'
+          }`}>
+            <div className="flex items-start gap-3 mb-3">
+              <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-semibold ${
+                isConnected
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground'
+              }`}>
+                {isConnected ? '✓' : '1'}
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-base">Connect your wallet</h3>
+                <p className="text-sm text-muted-foreground">
+                  {isConnected ? '✓ Connected' : 'Select your Web3 wallet'}
+                </p>
+              </div>
             </div>
-          ) : null}
-        </div>
 
-        {/* Explanation */}
-        <div className="mb-6 p-4 bg-muted/50 rounded-lg">
-          <p className="text-sm text-foreground mb-3">
-            To access CheckPay features, please sign a message to verify you own this wallet.
-          </p>
-          <div className="flex items-start gap-2 text-sm text-muted-foreground">
-            <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
-            <p>This is free and doesn't send a transaction</p>
-          </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="space-y-3">
-          {!isConnected ? (
-            // Step 1: Connect Wallet (Custom styled to match brand)
-            <div className="space-y-3">
-              <p className="text-sm text-center text-muted-foreground">
-                First, connect your wallet:
-              </p>
+            {!isConnected && (
               <RainbowKitConnectButton.Custom>
                 {({ openConnectModal }) => (
                   <Button
@@ -123,40 +122,72 @@ export default function SignInPage() {
                     size="lg"
                     className="w-full"
                   >
-                    Connect Wallet
+                    Select Wallet
                   </Button>
                 )}
               </RainbowKitConnectButton.Custom>
-            </div>
-          ) : (
-            // Step 2: Sign In with Wallet
-            <Button
-              onClick={handleSignIn}
-              disabled={isAuthenticating}
-              size="lg"
-              className="w-full"
-            >
-              {isAuthenticating ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Signing in...
-                </>
-              ) : (
-                "Sign In with Wallet"
-              )}
-            </Button>
-          )}
+            )}
+          </div>
 
-          {/* Back Button */}
-          <Button
-            variant="ghost"
-            onClick={() => router.push("/")}
-            className="w-full"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Homepage
-          </Button>
+          {/* Step 2: Sign In */}
+          <div className={`p-4 rounded-lg border-2 transition-colors ${
+            isConnected && !isAuthenticating
+              ? 'border-muted bg-background'
+              : 'border-muted/50 bg-muted/30'
+          }`}>
+            <div className="flex items-start gap-3 mb-3">
+              <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-semibold ${
+                isConnected
+                  ? 'bg-muted text-foreground'
+                  : 'bg-muted/50 text-muted-foreground'
+              }`}>
+                2
+              </div>
+              <div className="flex-1">
+                <h3 className={`font-semibold text-base ${!isConnected && 'text-muted-foreground'}`}>
+                  Sign in with wallet
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  {isAuthenticating ? 'Waiting for signature...' : 'Verify wallet ownership'}
+                </p>
+              </div>
+            </div>
+
+            {isConnected && (
+              <>
+                <div className="mb-3 flex items-start gap-2 text-xs text-muted-foreground px-2">
+                  <Info className="h-3 w-3 mt-0.5 flex-shrink-0" />
+                  <p>This is free and doesn't send a transaction</p>
+                </div>
+                <Button
+                  onClick={handleSignIn}
+                  disabled={isAuthenticating}
+                  size="lg"
+                  className="w-full"
+                >
+                  {isAuthenticating ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Signing In...
+                    </>
+                  ) : (
+                    'Sign In with Wallet'
+                  )}
+                </Button>
+              </>
+            )}
+          </div>
         </div>
+
+        {/* Back Button */}
+        <Button
+          variant="ghost"
+          onClick={() => router.push("/")}
+          className="w-full"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Homepage
+        </Button>
       </Card>
     </main>
   );

@@ -29,15 +29,18 @@ export function useLogout() {
       try {
         console.log('Logging out user...');
 
-        // Step 1: Disconnect wallet first
-        disconnect();
-        console.log('Wallet disconnected');
-
-        // Step 2: Sign out NextAuth session
+        // Step 1: Sign out NextAuth session first (to prevent auto-redirects)
         await signOut({ redirect: false });
         console.log('NextAuth session cleared');
 
-        // Step 3: Redirect to homepage (if requested)
+        // Step 2: Disconnect wallet
+        disconnect();
+        console.log('Wallet disconnected');
+
+        // Step 3: Small delay to ensure disconnect completes
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        // Step 4: Redirect to homepage (if requested)
         if (shouldRedirect) {
           router.push('/');
           console.log('Redirected to homepage');
