@@ -102,10 +102,7 @@ export function ConnectButton() {
                   return (
                     <div className="flex items-center gap-2">
                       <Button
-                        onClick={(e) => {
-                          logout()
-                          e.currentTarget.blur()
-                        }}
+                        onClick={() => logout()}
                         type="button"
                         variant="ghost"
                         size="icon"
@@ -116,12 +113,7 @@ export function ConnectButton() {
                       </Button>
 
                       <Button
-                        onClick={(e) => {
-                          if (address) {
-                            router.push(`/profile/${address}`)
-                            e.currentTarget.blur()
-                          }
-                        }}
+                        onClick={() => address && router.push(`/profile/${address}`)}
                         type="button"
                         variant="outline"
                         className="flex items-center gap-2"
@@ -143,14 +135,7 @@ export function ConnectButton() {
 
                 // Connected but not authenticated: show Sign In button
                 return (
-                  <Button
-                    onClick={(e) => {
-                      signIn()
-                      e.currentTarget.blur()
-                    }}
-                    type="button"
-                    variant="default"
-                  >
+                  <Button onClick={signIn} type="button" variant="default">
                     Sign In
                   </Button>
                 );
