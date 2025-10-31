@@ -5,9 +5,7 @@ import { useAccount } from "wagmi";
 import { type Address } from "viem";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { EscrowState } from "@/lib/escrow-config";
-import { useCompleteEscrow } from "@/hooks/use-complete-escrow";
-import { useDisputeEscrow } from "@/hooks/use-dispute-escrow";
+import { Textarea } from "@/components/ui/textarea";
 import {
   ResponsiveDialog,
   ResponsiveDialogContent,
@@ -16,6 +14,9 @@ import {
   ResponsiveDialogDescription,
   ResponsiveDialogFooter,
 } from "@/components/ui/responsive-dialog";
+import { EscrowState } from "@/lib/escrow-config";
+import { useCompleteEscrow } from "@/hooks/use-complete-escrow";
+import { useDisputeEscrow } from "@/hooks/use-dispute-escrow";
 
 interface EscrowActionsProps {
   escrowAddress: Address;
@@ -230,11 +231,18 @@ export function EscrowActions({
           <ResponsiveDialogHeader>
             <ResponsiveDialogTitle>Raise Dispute</ResponsiveDialogTitle>
             <ResponsiveDialogDescription>
-              Provide a clear reason for the dispute.
+              Provide a clear reason for the dispute. 
             </ResponsiveDialogDescription>
           </ResponsiveDialogHeader>
 
           <div className="space-y-4">
+            <Textarea
+              placeholder="Explain and provide evidence why you are disputing this escrow..."
+              className="w-full px-4 py-2 border rounded-md min-h-[120px]"
+              value={disputeReason}
+              onChange={(e) => setDisputeReason(e.target.value)}
+              maxLength={3000}
+            />
             <p className="text-sm text-muted-foreground">
               Link to evidence (e.g. screenshots, videos, documents on{" "}
               <a
@@ -263,19 +271,10 @@ export function EscrowActions({
               >
                 Internxt
               </a>
-              , etc.) to support your dispute.
+              , etc.) to support your argument.
             </p>
-
-            <textarea
-              className="w-full px-4 py-2 border rounded-md min-h-[120px]"
-              placeholder="Explain and provide evidence why you are disputing this escrow..."
-              value={disputeReason}
-              onChange={(e) => setDisputeReason(e.target.value)}
-              maxLength={256}
-            />
-
             <p className="text-sm text-muted-foreground">
-              An arbiter will review your case.
+              An arbiter will shortly review your case.
             </p>
           </div>
 
