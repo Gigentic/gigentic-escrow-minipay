@@ -74,7 +74,7 @@ export default function EscrowDetailPage() {
 
   return (
     <main className="flex-1 container mx-auto px-4 py-12">
-      <div className="max-w-5xl mx-auto space-y-8">
+      <div className="max-w-5xl mx-auto space-y-4">
         <EscrowDetailsDisplay
           escrowAddress={escrowAddress}
           details={details}

@@ -1,15 +1,17 @@
 "use client";
 
+import { useState } from "react";
 import { type Address } from "viem";
 import { formatEther } from "viem";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AddressDisplay } from "@/components/wallet/address-display";
-import { type EscrowDetails, EscrowState, formatEscrowState } from "@/lib/escrow-config";
+import { type EscrowDetails, EscrowState, formatEscrowState, getStateColor } from "@/lib/escrow-config";
 import type { ResolutionDocument } from "@/lib/types";
 import { shortenHash } from "@/lib/hash";
-import { Lock } from "lucide-react";
+import { formatRelativeTime } from "@/lib/utils";
+import { Lock, ChevronDown, ChevronRight } from "lucide-react";
 
 interface EscrowDetailsDisplayProps {
   escrowAddress: Address;
@@ -30,8 +32,8 @@ interface EscrowDetailsDisplayProps {
 }
 
 /**
- * Escrow Details Component
- * Displays full information about an escrow including deliverable details
+ * Payment Details Component
+ * Displays full information about an escrow payment including deliverable details
  */
 export function EscrowDetailsDisplay({
   escrowAddress,
@@ -42,122 +44,147 @@ export function EscrowDetailsDisplay({
   isParty,
   isConnected,
 }: EscrowDetailsDisplayProps) {
-  const stateText = formatEscrowState(details.state);
-  const stateColor = {
-    [EscrowState.CREATED]: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100",
-    [EscrowState.DISPUTED]: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100",
-    [EscrowState.COMPLETED]: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100",
-    [EscrowState.REFUNDED]: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-100",
-  }[details.state];
+  const [showFeeBreakdown, setShowFeeBreakdown] = useState(false);
 
-  const createdDate = new Date(Number(details.createdAt) * 1000).toLocaleString();
+  const stateText = formatEscrowState(details.state);
+  const stateColor = getStateColor(details.state);
+  const relativeTime = formatRelativeTime(details.createdAt);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold mb-2">{deliverable?.title || "Escrow Details"}</h1>
-          <AddressDisplay address={escrowAddress} className="text-muted-foreground" />
-        </div>
-        <span className={`px-4 py-2 rounded-full text-sm font-medium ${stateColor}`}>
-          {stateText}
-        </span>
+      <div className="flex items-center justify-between gap-4">
+        <h1 className="text-2xl font-bold">Payment Details</h1>
+        <AddressDisplay address={escrowAddress} showCopy={false} className="text-muted-foreground font-mono text-sm" />
       </div>
 
-      {/* Parties & Amounts */}
+      {/* Main Payment Card */}
       <Card className="p-6">
-        <h2 className="text-xl font-semibold mb-4">Transaction Details</h2>
         <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Amount & Status */}
+          <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-sm text-muted-foreground mb-2">Depositor</p>
+              <p className="text-3xl font-bold">{formatEther(details.escrowAmount)} cUSD</p>
+            </div>
+            <span className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${stateColor}`}>
+              {stateText}
+            </span>
+          </div>
+
+          {/* From/To */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-sm text-muted-foreground mb-1">From:</p>
               <AddressDisplay address={details.depositor} />
             </div>
-            <div>
-              <p className="text-sm text-muted-foreground mb-2">Recipient</p>
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-sm text-muted-foreground mb-1">To:</p>
               <AddressDisplay address={details.recipient} />
             </div>
           </div>
 
-          <div className="border-t pt-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <p className="text-sm text-muted-foreground mb-2">Escrow Amount</p>
-                <p className="text-lg font-semibold">{formatEther(details.escrowAmount)} cUSD</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground mb-2">Platform Fee (1%)</p>
-                <p className="text-lg font-semibold">{formatEther(details.platformFee)} cUSD</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground mb-2">Dispute Bond (4%)</p>
-                <p className="text-lg font-semibold">{formatEther(details.disputeBond)} cUSD</p>
-              </div>
-            </div>
+          {/* Created time */}
+          <div className="pt-2 border-t">
+            <p className="text-sm text-muted-foreground">Created {relativeTime}</p>
           </div>
 
-          <div className="border-t pt-4">
-            <p className="text-sm text-muted-foreground mb-2">Created</p>
-            <p className="text-sm">{createdDate}</p>
-          </div>
+          {/* Fee Breakdown - Collapsible */}
+          {isConnected &&
+            <div>
+              <button
+                onClick={() => setShowFeeBreakdown(!showFeeBreakdown)}
+                className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                <span>{showFeeBreakdown ? 'Hide' : 'Show'} Fee Breakdown</span>
+                {showFeeBreakdown ? (
+                  <ChevronDown className="h-4 w-4" />
+                ) : (
+                  <ChevronRight className="h-4 w-4" />
+                )}
+              </button>
+
+              {showFeeBreakdown && (
+                <Card className="p-6 mt-2">
+                  <div className="space-y-3">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Payment</span>
+                      <span className="font-medium">{formatEther(details.escrowAmount)} cUSD</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Platform Fee (1%)</span>
+                      <span className="font-medium">{formatEther(details.platformFee)} cUSD</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Dispute Bond (4%)</span>
+                      <span className="font-medium">{formatEther(details.disputeBond)} cUSD</span>
+                    </div>
+                    <div className="flex justify-between text-sm pt-3 border-t font-semibold">
+                      <span>Total Locked</span>
+                      <span>
+                        {formatEther(
+                          BigInt(details.escrowAmount) + BigInt(details.platformFee) + BigInt(details.disputeBond)
+                        )} cUSD
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground pt-2">
+                      • Bond refunded on completion
+                    </p>
+                  </div>
+                </Card>
+              )}
+            </div>
+          }
+
         </div>
       </Card>
 
       {/* Sign In CTA for non-authenticated users */}
       {!isConnected && (
-        <Card className="p-6 bg-muted border-2">
-          <div className="flex items-center gap-4">
-            <Lock className="h-8 w-8 text-muted-foreground" />
-            <div className="flex-1">
-              <h3 className="text-lg font-semibold mb-1">Sign In to View Full Details</h3>
-              <p className="text-sm text-muted-foreground mb-3">
-                Connect your wallet to see deliverable information, acceptance criteria, and more.
+        <Card className="p-6 bg-muted/50">
+          <div className="flex flex-col items-center text-center gap-4">
+            <Lock className="h-10 w-10 text-muted-foreground" />
+            <div>
+              <h3 className="font-semibold mb-1">Connect to View Details</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Sign in to see work details and take action
               </p>
               <Link href={`/auth/signin?redirectTo=/escrow/${escrowAddress}`}>
-                <Button>Sign In</Button>
+                <Button>Connect Wallet</Button>
               </Link>
             </div>
           </div>
         </Card>
       )}
 
-      {/* Deliverable - Full view for parties, hidden for public */}
+      {/* Work Details - Only for authenticated parties */}
       {deliverable && isParty && (
         <Card className="p-6">
-          <h2 className="text-xl font-semibold mb-4">Deliverable</h2>
-          <div className="space-y-4">
-            {deliverable.category && (
-              <span className="inline-block px-2 py-1 text-xs bg-gray-100 dark:bg-gray-800 rounded mb-3">
-                {deliverable.category}
-              </span>
-            )}
-            <p className="text-muted-foreground">{deliverable.description}</p>
+          <h2 className="text-lg font-semibold mb-3">Work Details</h2>
+          <div className="space-y-3">
+            <div>
+              <h3 className="font-medium mb-2">{deliverable.title}</h3>
+              <p className="text-sm text-muted-foreground">{deliverable.description}</p>
+            </div>
 
             {deliverable.acceptanceCriteria && deliverable.acceptanceCriteria.length > 0 && (
-              <div className="border-t pt-4">
-                <h4 className="font-semibold mb-2">Acceptance Criteria</h4>
-                <ul className="list-disc list-inside space-y-1">
+              <div className="pt-3 border-t">
+                <p className="text-sm font-medium mb-2">Acceptance Criteria:</p>
+                <ul className="space-y-1">
                   {deliverable.acceptanceCriteria.map((criteria, index) => (
-                    <li key={index} className="text-sm text-muted-foreground">
-                      {criteria}
+                    <li key={index} className="text-sm text-muted-foreground flex gap-2">
+                      <span>•</span>
+                      <span>{criteria}</span>
                     </li>
                   ))}
                 </ul>
               </div>
             )}
-
-            <div className="border-t pt-4">
-              <p className="text-xs text-muted-foreground">
-                Deliverable Hash: {shortenHash(details.deliverableHash)}
-              </p>
-            </div>
           </div>
         </Card>
       )}
 
       {/* Dispute Info - Only visible to parties */}
-      {details.state === EscrowState.DISPUTED && disputeInfo && isParty && (
+      {isConnected && details.state === EscrowState.DISPUTED && disputeInfo && isParty && (
         <Card className="p-6 border-yellow-300 dark:border-yellow-700">
           <h2 className="text-xl font-semibold mb-4 text-yellow-800 dark:text-yellow-200">
             Dispute Information
@@ -175,7 +202,8 @@ export function EscrowDetailsDisplay({
       )}
 
       {/* Resolution Info - Only visible to parties */}
-      {(details.state === EscrowState.COMPLETED || details.state === EscrowState.REFUNDED) &&
+      {isConnected && 
+        (details.state === EscrowState.COMPLETED || details.state === EscrowState.REFUNDED) &&
         resolution &&
         isParty && (
           <Card className="p-6">

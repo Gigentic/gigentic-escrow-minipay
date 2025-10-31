@@ -118,13 +118,7 @@ export function EscrowActions({
   };
 
   if (!isConnected) {
-    return (
-      <Card className="p-6">
-        <p className="text-muted-foreground text-center">
-          Please connect your wallet to interact with this escrow
-        </p>
-      </Card>
-    );
+    return null;
   }
 
   if (!isParty) {
@@ -201,7 +195,7 @@ export function EscrowActions({
         {state === EscrowState.DISPUTED && (
           <div className="text-center py-4">
             <p className="text-muted-foreground">
-              This escrow is currently under dispute. An arbiter will review and resolve the case.
+              This escrow is currently under dispute. An arbiter will review and resolve it.
             </p>
           </div>
         )}
