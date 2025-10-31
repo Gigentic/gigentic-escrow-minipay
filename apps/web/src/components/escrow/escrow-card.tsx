@@ -35,7 +35,6 @@ export function EscrowCard({
   // Determine user's role in this escrow
   const isDepositor = currentUserAddress?.toLowerCase() === depositor.toLowerCase();
   const isRecipient = currentUserAddress?.toLowerCase() === recipient.toLowerCase();
-  const userRole = isDepositor ? "Depositor" : isRecipient ? "Recipient" : "Observer";
 
   // Format state for display with appropriate styling
   const stateText = formatEscrowState(state);
@@ -78,10 +77,10 @@ export function EscrowCard({
           </div>
 
           {/* User role indicator */}
-          {userRole !== "Observer" && (
+          {(isDepositor || isRecipient) && (
             <div className="border-t pt-4">
               <span className="text-sm font-medium text-primary">
-                Your role: {userRole}
+                Your role: {isDepositor ? "Depositor" : "Recipient"}
               </span>
             </div>
           )}
