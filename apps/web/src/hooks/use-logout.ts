@@ -29,13 +29,13 @@ export function useLogout() {
       try {
         console.log('Logging out user...');
 
-        // Step 1: Sign out NextAuth session
-        await signOut({ redirect: false });
-        console.log('NextAuth session cleared');
-
-        // Step 2: Disconnect wallet
+        // Step 1: Disconnect wallet first
         disconnect();
         console.log('Wallet disconnected');
+
+        // Step 2: Sign out NextAuth session
+        await signOut({ redirect: false });
+        console.log('NextAuth session cleared');
 
         // Step 3: Redirect to homepage (if requested)
         if (shouldRedirect) {

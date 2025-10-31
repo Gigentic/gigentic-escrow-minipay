@@ -77,8 +77,8 @@ export function ProfileModal({ open, onOpenChange, address }: ProfileModalProps)
   };
 
   const handleLogout = async () => {
-    await logout(); // Uses centralized logout hook
-    onOpenChange(false);
+    onOpenChange(false); // Close modal first
+    await logout(); // Uses centralized logout hook (disconnects wallet and redirects)
   };
 
   const handleVerificationSuccess = () => {
