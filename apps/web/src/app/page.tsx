@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { FeeCalculatorWidget } from "@/components/fee-calculator-widget";
+import { Calculator } from "lucide-react";
 
 export default function Home() {
   return (
@@ -73,9 +74,12 @@ export default function Home() {
       {/* Fee Calculator Section */}
       <section className="bg-muted mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-8">
-            Calculate Your Costs
-          </h2>
+          <div className="flex items-center justify-center gap-3 mb-8">
+            <Calculator className="text-primary w-8 h-8 md:w-10 md:h-10" />
+            <h2 className="text-3xl md:text-4xl font-bold">
+              Calculate Your Costs
+            </h2>
+          </div>
           <p className="text-center text-muted-foreground mb-8 max-w-2xl mx-auto">
             See exactly what you'll pay. No hidden fees.
           </p>
