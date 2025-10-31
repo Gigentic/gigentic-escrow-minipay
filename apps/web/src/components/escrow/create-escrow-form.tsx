@@ -9,12 +9,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
+  ResponsiveDialog,
+  ResponsiveDialogContent,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+  ResponsiveDialogDescription,
+  ResponsiveDialogFooter,
+} from "@/components/ui/responsive-dialog";
 import {
   Tooltip,
   TooltipContent,
@@ -351,11 +352,14 @@ export function CreateEscrowForm({ initialAmount }: { initialAmount?: string }) 
         </Card>
 
         {/* Review Modal */}
-        <Dialog open={showReviewModal} onOpenChange={setShowReviewModal}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Review Escrow Details</DialogTitle>
-            </DialogHeader>
+        <ResponsiveDialog open={showReviewModal} onOpenChange={setShowReviewModal}>
+          <ResponsiveDialogContent className="sm:max-w-md">
+            <ResponsiveDialogHeader>
+              <ResponsiveDialogTitle>Review Escrow Details</ResponsiveDialogTitle>
+              <ResponsiveDialogDescription>
+                Review the escrow information below and authorize the contract to create your escrow.
+              </ResponsiveDialogDescription>
+            </ResponsiveDialogHeader>
 
             <div className="space-y-4 py-4">
               {/* Escrow Summary */}
@@ -370,7 +374,7 @@ export function CreateEscrowForm({ initialAmount }: { initialAmount?: string }) 
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Work:</span>
-                  <span className="font-medium">"{title}"</span>
+                  <span className="font-medium">{title}</span>
                 </div>
                 {description && (
                   <div>
@@ -425,7 +429,7 @@ export function CreateEscrowForm({ initialAmount }: { initialAmount?: string }) 
               </div>
             </div>
 
-            <DialogFooter>
+            <ResponsiveDialogFooter>
               <Button
                 variant="outline"
                 onClick={() => setShowReviewModal(false)}
@@ -433,9 +437,9 @@ export function CreateEscrowForm({ initialAmount }: { initialAmount?: string }) 
               >
                 Cancel
               </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            </ResponsiveDialogFooter>
+          </ResponsiveDialogContent>
+        </ResponsiveDialog>
       </div>
     </TooltipProvider>
   );
