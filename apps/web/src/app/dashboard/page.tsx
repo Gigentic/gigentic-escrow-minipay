@@ -132,7 +132,7 @@ export default function DashboardPage() {
         {/* Filters */}
         <div className="mb-6 space-y-4">
           {showFilters && (
-            <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex flex-col sm:flex-row gap-2">
               <div className="flex gap-1">
                 <Button
                   variant={sortOrder === "newest" ? "default" : "outline"}

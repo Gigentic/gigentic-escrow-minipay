@@ -31,7 +31,7 @@ export function EscrowCard({
   amount,
   state,
   createdAt,
-  currentUserAddress: _currentUserAddress,
+  currentUserAddress,
   title,
 }: EscrowCardProps) {
   // Format state for display with appropriate styling
@@ -40,6 +40,10 @@ export function EscrowCard({
 
   // Format relative time
   const relativeTime = formatRelativeTime(createdAt);
+
+  // Check if user is depositor or recipient
+  const isDepositor = currentUserAddress?.toLowerCase() === depositor.toLowerCase();
+  const isRecipient = currentUserAddress?.toLowerCase() === recipient.toLowerCase();
 
   return (
     <Link href={`/escrow/${address}`}>
@@ -53,18 +57,27 @@ export function EscrowCard({
             </span>
           </div>
 
-          {/* Date + Amount (inline) */}
-          <div className="flex items-center gap-2 text-sm">
+          {/* Date + Amount (inline with amount right-aligned) */}
+          <div className="flex items-center justify-between gap-2 text-sm">
             <span className="text-muted-foreground">{relativeTime}</span>
-            <span className="text-muted-foreground">•</span>
             <span className="font-semibold">{formatEther(amount)} cUSD</span>
           </div>
 
-          {/* Addresses with arrow (single line) */}
-          <div className="flex items-center gap-2 pt-2 border-t">
-            <AddressDisplay address={depositor} showCopy={false} showExplorer={false} className="text-xs" />
-            <ArrowRight className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-            <AddressDisplay address={recipient} showCopy={false} showExplorer={false} className="text-xs" />
+          {/* Addresses with arrow (single line, right-aligned) */}
+          <div className="flex items-center justify-between gap-2 pt-2 border-t">
+            {isDepositor ? (
+              <span className="text-xs text-primary font-medium">You</span>
+            ) : (
+              <AddressDisplay address={depositor} showCopy={false} showExplorer={false} className="text-xs" />
+            )}
+            <div className="flex items-center gap-2">
+              <ArrowRight className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+              {isRecipient ? (
+                <span className="text-xs text-primary font-medium">You</span>
+              ) : (
+                <AddressDisplay address={recipient} showCopy={false} showExplorer={false} className="text-xs" />
+              )}
+            </div>
           </div>
         </div>
       </Card>

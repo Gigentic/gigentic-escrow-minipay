@@ -10,7 +10,6 @@ import { AddressDisplay } from "@/components/wallet/address-display";
 import { type EscrowDetails, EscrowState, formatEscrowState, getStateColor } from "@/lib/escrow-config";
 import type { ResolutionDocument } from "@/lib/types";
 import { shortenHash } from "@/lib/hash";
-import { formatRelativeTime } from "@/lib/utils";
 import { Lock, ChevronDown, ChevronRight } from "lucide-react";
 
 interface EscrowDetailsDisplayProps {
@@ -50,7 +49,7 @@ export function EscrowDetailsDisplay({
 
   const stateText = formatEscrowState(details.state);
   const stateColor = getStateColor(details.state);
-  const relativeTime = formatRelativeTime(details.createdAt);
+  const createdDate = new Date(Number(details.createdAt) * 1000).toLocaleString();
 
   return (
     <div className="space-y-4">
@@ -90,13 +89,13 @@ export function EscrowDetailsDisplay({
           </div>
 
           {/* Created time */}
-          <div className="pt-2 border-t">
-            <p className="text-sm text-muted-foreground">Created {relativeTime}</p>
+          <div className="pt-1">
+            <p className="text-sm text-muted-foreground">Created {createdDate}</p>
           </div>
 
           {/* Fee Breakdown - Collapsible */}
           {isConnected &&
-            <div>
+            <div className="pt-2 border-t">
               <button
                 onClick={() => setShowFeeBreakdown(!showFeeBreakdown)}
                 className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
@@ -117,11 +116,11 @@ export function EscrowDetailsDisplay({
                       <span className="font-medium">{formatEther(details.escrowAmount)} cUSD</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Platform Fee (1%)</span>
+                      <span className="text-muted-foreground">Platform Fee</span>
                       <span className="font-medium">{formatEther(details.platformFee)} cUSD</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Dispute Bond (4%)</span>
+                      <span className="text-muted-foreground">Dispute Bond</span>
                       <span className="font-medium">{formatEther(details.disputeBond)} cUSD</span>
                     </div>
                     <div className="flex justify-between text-sm pt-3 border-t font-semibold">
@@ -132,9 +131,6 @@ export function EscrowDetailsDisplay({
                         )} cUSD
                       </span>
                     </div>
-                    <p className="text-xs text-muted-foreground pt-2">
-                      • Bond refunded on completion
-                    </p>
                   </div>
                 </Card>
               )}
