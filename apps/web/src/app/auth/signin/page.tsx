@@ -7,7 +7,7 @@ import { useSession } from "next-auth/react";
 import { ConnectButton as RainbowKitConnectButton } from "@rainbow-me/rainbowkit";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { useAuthState } from "@/components/wallet-provider";
+import { useAuthState } from "@/components/wallet/wallet-provider";
 import { Loader2, ArrowLeft, Info } from "lucide-react";
 import Image from "next/image";
 

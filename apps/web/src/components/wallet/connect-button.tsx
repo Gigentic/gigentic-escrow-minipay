@@ -6,7 +6,7 @@ import { ConnectButton as RainbowKitConnectButton } from "@rainbow-me/rainbowkit
 import { useAccount } from "wagmi";
 import { useSession } from "next-auth/react";
 import { useProfile } from "@/hooks/use-profile";
-import { useAuthState } from "@/components/wallet-provider";
+import { useAuthState } from "@/components/wallet/wallet-provider";
 import { useLogout } from "@/hooks/use-logout";
 import { Button } from "@/components/ui/button";
 import { Loader2, LogOut } from "lucide-react";

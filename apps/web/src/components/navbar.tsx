@@ -5,7 +5,7 @@ import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { ExternalLink } from "lucide-react"
 
-import { ConnectButton } from "@/components/connect-button"
+import { ConnectButton } from "@/components/wallet/connect-button"
 import { ThemeToggle } from "@/components/theme-toggle"
 
 const navLinks = [

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { FeeCalculatorWidget } from "@/components/fee-calculator-widget";
+import { FeeCalculatorWidget } from "@/components/escrow/fee-calculator-widget";
 import { Calculator } from "lucide-react";
 
 export default function Home() {

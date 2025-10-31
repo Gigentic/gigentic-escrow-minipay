@@ -10,7 +10,7 @@ import { Toaster } from '@/components/ui/sonner';
 
 // Load WalletProvider only on client-side to avoid IndexedDB errors during SSR/build
 const WalletProvider = dynamic(
-  () => import('@/components/wallet-provider').then(mod => ({ default: mod.WalletProvider })),
+  () => import('@/components/wallet/wallet-provider').then(mod => ({ default: mod.WalletProvider })),
   { ssr: false }
 );
 

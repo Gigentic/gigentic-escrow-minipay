@@ -16,8 +16,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { VerificationBadge } from '@/components/verification-badge';
-import { SelfVerificationQR } from '@/components/self-verification-qr';
+import { VerificationBadge } from '@/components/profile/verification-badge';
+import { SelfVerificationQR } from '@/components/profile/self-verification-qr';
 import { Shield } from 'lucide-react';
 
 interface ProfileModalProps {

@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { type Address } from "viem";
 import { Button } from "@/components/ui/button";
-import { Check, Copy, ExternalLink } from "lucide-react";
-import { getAddressExplorerUrl } from "@/lib/utils";
+import { Check, Copy } from "lucide-react";
+import { getAddressExplorerUrl } from "@/lib/blockchain-utils";
 import { CHAIN_ID } from "@/lib/escrow-config";
 
 interface AddressDisplayProps {

@@ -15,7 +15,7 @@ import { QueryClientProvider, QueryClient } from '@tanstack/react-query'
 import { useManualSign } from '@/hooks/use-manual-sign'
 import { useAddressChangeLogout } from '@/hooks/use-address-change-logout'
 import { useSyncWalletWithSession } from '@/hooks/use-sync-wallet-with-session'
-import { AuthLoadingOverlay } from './auth-loading-overlay'
+import { AuthLoadingOverlay } from '../auth/auth-loading-overlay'
 
 // Create context for authentication state
 interface AuthContextValue {
