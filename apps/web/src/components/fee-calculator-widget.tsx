@@ -93,7 +93,6 @@ export function FeeCalculatorWidget() {
 
         {fees && (
           <div className="space-y-2 pt-4 border-t">
-            <div className="text-sm font-medium mb-2">Breakdown</div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Recipient receives:</span>
               <span className="font-medium">{parseFloat(fees.amount).toFixed(2)} cUSD</span>
@@ -111,7 +110,7 @@ export function FeeCalculatorWidget() {
               <span className="text-primary">{parseFloat(fees.total).toFixed(2)} cUSD</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">You get back (when no dispute):</span>
+              <span className="text-muted-foreground">You get back (when no disputes):</span>
               <span className="font-medium">{parseFloat(fees.disputeBond).toFixed(2)} cUSD</span>
             </div>
           </div>

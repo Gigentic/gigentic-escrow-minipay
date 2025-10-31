@@ -5,6 +5,22 @@ import { useAccount, useReadContract } from "wagmi";
 import { parseEther, type Address } from "viem";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   ERC20_ABI,
   CUSD_ADDRESS,
@@ -14,7 +30,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useCreateEscrow } from "@/hooks/use-create-escrow";
 import { useApproveSpendingCap } from "@/hooks/use-approve-spending-cap";
-import { Info } from "lucide-react";
+import { Info, Check } from "lucide-react";
 
 /**
  * Create Escrow Form Component
@@ -42,7 +58,8 @@ export function CreateEscrowForm({ initialAmount }: { initialAmount?: string }) 
   const [description, setDescription] = useState("");
   const [error, setError] = useState("");
   const [allowanceRefetchKey, setAllowanceRefetchKey] = useState(0);
-  const [showSpendingCapInfo, setShowSpendingCapInfo] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [approvalCompleted, setApprovalCompleted] = useState(false);
 
   // Check cUSD balance
   const { data: balance } = useReadContract({
@@ -93,6 +110,7 @@ export function CreateEscrowForm({ initialAmount }: { initialAmount?: string }) 
       setAllowanceRefetchKey((prev) => prev + 1);
       // Also manually refetch immediately
       await refetchAllowance();
+      setApprovalCompleted(true);
       setError("");
     },
     onError: (err) => {
@@ -143,6 +161,14 @@ export function CreateEscrowForm({ initialAmount }: { initialAmount?: string }) 
     return true;
   };
 
+  const handleReviewClick = () => {
+    if (!validateForm()) return;
+    setError("");
+    setShowReviewModal(true);
+    // Reset approval state when opening modal
+    setApprovalCompleted(false);
+  };
+
   const handleApproveSpendingCap = async () => {
     if (!hasValidAmount) {
       setError("Please enter a valid amount");
@@ -186,6 +212,9 @@ export function CreateEscrowForm({ initialAmount }: { initialAmount?: string }) 
           acceptanceCriteria: [],
         },
       });
+
+      // Close modal on success
+      setShowReviewModal(false);
     } catch (err: any) {
       // Error handling is done in the onError callback, but we still catch
       // in case there's an error with parameter validation
@@ -205,145 +234,210 @@ export function CreateEscrowForm({ initialAmount }: { initialAmount?: string }) 
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <Card className="p-6">
-        <div className="space-y-6">
-          <div>
-            <label className="block text-sm font-medium mb-2">Recipient Address</label>
-            <input
-              type="text"
-              className="w-full px-4 py-2 border rounded-md"
-              placeholder="0x..."
-              value={recipient}
-              onChange={(e) => setRecipient(e.target.value)}
-            />
-          </div>
+    <TooltipProvider>
+      <div className="max-w-2xl mx-auto">
+        <Card className="p-6">
+          <div className="space-y-6">
+            {/* Recipient Address */}
+            <div className="space-y-2">
+              <Label htmlFor="recipient">Recipient Address *</Label>
+              <Input
+                id="recipient"
+                type="text"
+                placeholder="0x..."
+                value={recipient}
+                onChange={(e) => setRecipient(e.target.value)}
+              />
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-2">Amount (cUSD)</label>
-            <input
-              type="text"
-              inputMode="decimal"
-              className="w-full px-4 py-2 border rounded-md"
-              placeholder="100.00"
-              value={amount}
-              onChange={(e) => {
-                const value = e.target.value;
-                // Allow only numbers and decimal point
-                if (value === '' || /^\d*\.?\d*$/.test(value)) {
-                  setAmount(value);
-                }
-              }}
-            />
+            {/* Work Title */}
+            <div className="space-y-2">
+              <Label htmlFor="title">Work Title *</Label>
+              <Input
+                id="title"
+                type="text"
+                placeholder="e.g. Logo design"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+              />
+            </div>
 
-            {/* Spending Cap Approval Section */}
-            {needsApproval && (
-              <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-md space-y-3">
-                <p className="text-sm text-amber-800 dark:text-amber-200 font-medium">
-                  ⚠️ Insufficient spending cap
-                </p>
-                <div className="space-y-2">
-                  <Button
-                    onClick={handleApproveSpendingCap}
-                    disabled={isApproving}
-                    variant="outline"
-                    size="sm"
-                    className="w-full sm:w-auto border-amber-300 dark:border-amber-700"
-                  >
-                    {isApproving ? "Approving..." : "Increase Spending Cap"}
-                  </Button>
+            {/* Work Description */}
+            <div className="space-y-2">
+              <Label htmlFor="description">Work Description *</Label>
+              <Textarea
+                id="description"
+                placeholder="e.g. Create 3 logo concepts with source files"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                maxLength={10000}
+                className="min-h-[100px]"
+              />
+              <div className="flex justify-between items-center text-xs text-muted-foreground">
+                <span>Be specific to avoid disputes</span>
+                <span>{description.length}/10000</span>
+              </div>
+            </div>
 
-                  {/* Expandable info section */}
-                  <div className="text-xs text-amber-700 dark:text-amber-300">
-                    <button
-                      type="button"
-                      onClick={() => setShowSpendingCapInfo(!showSpendingCapInfo)}
-                      className="flex items-center gap-2 font-medium hover:text-amber-800 dark:hover:text-amber-200"
-                    >
-                      <Info className="h-4 w-4 flex-shrink-0" />
-                      <span>What is the spending cap?</span>
-                    </button>
-                    {showSpendingCapInfo && (
-                      <p className="mt-2 ml-6 leading-relaxed">
-                        This authorizes the Gigentic Escrow contract to transfer{" "}
-                        <strong>{(parseFloat(amount) * 1.05).toFixed(2)} cUSD</strong> from your
-                        wallet to create the escrow. This is how ERC-20 tokens work - you must approve
-                        the contract before it can move your tokens.
-                      </p>
-                    )}
+            {/* Amount */}
+            <div className="space-y-2">
+              <Label htmlFor="amount">Amount (cUSD) *</Label>
+              <Input
+                id="amount"
+                type="text"
+                inputMode="decimal"
+                placeholder="1.00"
+                value={amount}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  // Allow only numbers and decimal point
+                  if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                    setAmount(value);
+                  }
+                }}
+              />
+            </div>
+
+            {/* Real-time Breakdown */}
+            {amount && (
+              <div className="border rounded-md p-4 space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span>Recipient receives:</span>
+                  <span className="font-medium">${amount} cUSD</span>
+                </div>
+                <div className="flex justify-between text-muted-foreground">
+                  <span>Platform fee:</span>
+                  <span>${(parseFloat(amount) * 0.01).toFixed(2)} cUSD</span>
+                </div>
+                <div className="flex justify-between items-center text-muted-foreground">
+                  <div className="flex items-center gap-1">
+                    <span>Refundable bond:</span>
                   </div>
+                  <span>${(parseFloat(amount) * 0.04).toFixed(2)} cUSD</span>
+                </div>
+                <div className="flex justify-between font-semibold border-t pt-2 mt-2">
+                  <span>Total you pay:</span>
+                  <span>${(parseFloat(amount) * 1.05).toFixed(2)} cUSD</span>
                 </div>
               </div>
             )}
-          </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-2">Title</label>
-            <input
-              type="text"
-              className="w-full px-4 py-2 border rounded-md"
-              placeholder="Website Development"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-            />
-          </div>
+            {/* Balance Display */}
+            {balance !== undefined && (
+              <div className="flex items-center gap-2 text-sm">
+                <span>Your balance: ${(Number(balance) / 1e18).toFixed(2)} cUSD</span>
+                {balance >= totalRequired && <Check className="h-4 w-4 text-green-600" />}
+              </div>
+            )}
 
-          <div>
-            <label className="block text-sm font-medium mb-2">Description</label>
-            <textarea
-              className="w-full px-4 py-2 border rounded-md min-h-[100px]"
-              placeholder="Detailed description of the work to be completed..."
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
-          </div>
+            {/* Error Display */}
+            {(error || createError) && (
+              <div className="bg-red-100 dark:bg-red-900 p-3 rounded-md">
+                <p className="text-sm text-red-800 dark:text-red-100">
+                  {error || createError?.message}
+                </p>
+              </div>
+            )}
 
-          {amount && (
-            <div className="bg-muted p-4 rounded-md space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span>Escrow Amount:</span>
-                <span className="font-medium">{amount} cUSD</span>
+            {/* Review & Create Button */}
+            <Button
+              onClick={handleReviewClick}
+              className="w-full"
+              size="lg"
+            >
+              Review & Create Escrow
+            </Button>
+          </div>
+        </Card>
+
+        {/* Review Modal */}
+        <Dialog open={showReviewModal} onOpenChange={setShowReviewModal}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Review Escrow Details</DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-4 py-4">
+              {/* Escrow Summary */}
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Recipient:</span>
+                  <span className="font-medium">{recipient.slice(0, 6)}...{recipient.slice(-4)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Amount:</span>
+                  <span className="font-medium">${amount} cUSD</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Work:</span>
+                  <span className="font-medium">"{title}"</span>
+                </div>
+                {description && (
+                  <div>
+                    <span className="text-muted-foreground">Description:</span>
+                    <p className="mt-1 text-xs line-clamp-2">"{description}"</p>
+                  </div>
+                )}
               </div>
-              <div className="flex justify-between text-muted-foreground">
-                <span>Platform Fee (1%):</span>
-                <span>{(parseFloat(amount) * 0.01).toFixed(2)} cUSD</span>
+
+              <div className="border-t pt-3">
+                <div className="flex justify-between font-semibold">
+                  <span>Total payment:</span>
+                  <span>${(parseFloat(amount || "0") * 1.05).toFixed(2)} cUSD</span>
+                </div>
               </div>
-              <div className="flex justify-between text-muted-foreground">
-                <span>Dispute Bond (4%):</span>
-                <span>{(parseFloat(amount) * 0.04).toFixed(2)} cUSD</span>
+
+              {/* Step 1: Authorize Contract */}
+              <div className="space-y-3">
+                <div className="text-sm">
+                  <span className="font-medium">1.</span> Authorize contract to transfer your cUSD into escrow
+                </div>
+
+                {approvalCompleted || !needsApproval ? (
+                  <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
+                    <Check className="h-4 w-4" />
+                    <span>1. CheckPay contract approved</span>
+                  </div>
+                ) : (
+                  <Button
+                    onClick={handleApproveSpendingCap}
+                    disabled={isApproving}
+                    className="w-full"
+                  >
+                    {isApproving ? "Approving..." : "1. Authorize Contract"}
+                  </Button>
+                )}
               </div>
-              <div className="flex justify-between font-semibold border-t pt-2">
-                <span>Total Required:</span>
-                <span>{(parseFloat(amount) * 1.05).toFixed(2)} cUSD</span>
+
+              {/* Step 2: Create Escrow */}
+              <div className="space-y-3">
+                <div className="text-sm">
+                  <span className="font-medium">2.</span> Create escrow
+                </div>
+
+                <Button
+                  onClick={handleSubmit}
+                  disabled={isCreating || (!!needsApproval && !approvalCompleted)}
+                  className="w-full"
+                >
+                  {isCreating ? "Creating..." : "2. Create Escrow"}
+                </Button>
               </div>
             </div>
-          )}
 
-          {(error || createError) && (
-            <div className="bg-red-100 dark:bg-red-900 p-3 rounded-md">
-              <p className="text-sm text-red-800 dark:text-red-100">
-                {error || createError?.message}
-              </p>
-            </div>
-          )}
-
-          <Button
-            onClick={handleSubmit}
-            disabled={isCreating || !!needsApproval}
-            className="w-full"
-            size="lg"
-          >
-            {isCreating ? "Creating..." : "Create Escrow"}
-          </Button>
-
-          {needsApproval && (
-            <p className="text-sm text-amber-600 dark:text-amber-400 text-center -mt-2">
-              Please increase spending cap first
-            </p>
-          )}
-        </div>
-      </Card>
-    </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setShowReviewModal(false)}
+                disabled={isApproving || isCreating}
+              >
+                Cancel
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </TooltipProvider>
   );
 }
 
