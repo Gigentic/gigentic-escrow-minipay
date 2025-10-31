@@ -495,3 +495,19 @@ export function formatEscrowState(state: EscrowState): string {
       return "Unknown";
   }
 }
+
+
+export function getStateColor(state: EscrowState): string {
+  switch (state) {
+    case EscrowState.CREATED:
+      return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100";
+    case EscrowState.DISPUTED:
+      return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100";
+    case EscrowState.COMPLETED:
+      return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100";
+    case EscrowState.REFUNDED:
+      return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-100";
+    default:
+      return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-100";
+  }
+}

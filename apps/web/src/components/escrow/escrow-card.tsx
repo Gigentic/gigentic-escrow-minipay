@@ -5,7 +5,7 @@ import { type Address } from "viem";
 import { formatEther } from "viem";
 import { Card } from "@/components/ui/card";
 import { AddressDisplay } from "@/components/wallet/address-display";
-import { EscrowState, formatEscrowState } from "@/lib/escrow-config";
+import { EscrowState, formatEscrowState, getStateColor } from "@/lib/escrow-config";
 
 interface EscrowCardProps {
   address: Address;
@@ -39,12 +39,7 @@ export function EscrowCard({
 
   // Format state for display with appropriate styling
   const stateText = formatEscrowState(state);
-  const stateColor = {
-    [EscrowState.CREATED]: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100",
-    [EscrowState.DISPUTED]: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100",
-    [EscrowState.COMPLETED]: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100",
-    [EscrowState.REFUNDED]: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-100",
-  }[state];
+  const stateColor = getStateColor(state);
 
   // Format date
   const createdDate = new Date(Number(createdAt) * 1000).toLocaleDateString();

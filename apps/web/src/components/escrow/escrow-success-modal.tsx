@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Address } from "viem";
 import { Button } from "@/components/ui/button";
+import { AddressDisplay } from "@/components/wallet/address-display";
 import {
   ResponsiveDialog,
   ResponsiveDialogContent,
@@ -12,6 +13,7 @@ import {
   ResponsiveDialogDescription,
 } from "@/components/ui/responsive-dialog";
 import { Copy, Check } from "lucide-react";
+import { EscrowState, formatEscrowState, getStateColor } from "@/lib/escrow-config";
 
 interface EscrowSuccessModalProps {
   open: boolean;
@@ -30,7 +32,6 @@ export function EscrowSuccessModal({
   const [copied, setCopied] = useState(false);
 
   const escrowUrl = `${window.location.origin}/escrow/${escrowAddress}`;
-  const truncatedAddress = `${escrowAddress.slice(0, 6)}...${escrowAddress.slice(-4)}`;
 
   const handleCopyLink = async () => {
     try {
@@ -58,23 +59,25 @@ export function EscrowSuccessModal({
       <ResponsiveDialogContent className="sm:max-w-lg">
         <ResponsiveDialogHeader>
           <ResponsiveDialogTitle className="text-2xl">
-            🎉 Escrow Created Successfully!
+            🎉 &nbsp;Escrow Created Successfully!
           </ResponsiveDialogTitle>
           <ResponsiveDialogDescription>
-            Your ${amount} cUSD escrow is now live on Celo Sepolia
+            Your ${amount} cUSD escrow is now live on the blockchain
           </ResponsiveDialogDescription>
         </ResponsiveDialogHeader>
 
         <div className="space-y-6 py-4">
           {/* Escrow Info */}
-          <div className="rounded-lg border p-4 space-y-2 text-sm">
+          <div className="rounded-lg border p-4 space-y-2 text-base">
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Escrow ID:</span>
-              <span className="font-mono">{truncatedAddress}</span>
+              <span className="text-muted-foreground">Escrow address:</span>
+              <AddressDisplay showCopy={false} address={escrowAddress} />
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Status:</span>
-              <span>⏳ Awaiting Delivery</span>
+              <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStateColor(EscrowState.CREATED as EscrowState)}`}>
+                {formatEscrowState(EscrowState.CREATED as EscrowState)}
+              </span>
             </div>
           </div>
 
@@ -87,7 +90,7 @@ export function EscrowSuccessModal({
               <div className="space-y-2">
                 <div className="flex items-start gap-2">
                   <span className="font-medium">1️⃣</span>
-                  <span className="font-medium">Share with freelancer</span>
+                  <span className="font-medium">Share with recipient</span>
                 </div>
                 <div className="ml-6 space-y-2">
                   <div className="rounded-md border bg-muted/50 p-3">
@@ -125,16 +128,9 @@ export function EscrowSuccessModal({
               {/* Step 3: Release */}
               <div className="flex items-start gap-2">
                 <span className="font-medium">3️⃣</span>
-                <span>Come back to release payment</span>
+                <span>Release payment on the escrow details page</span>
               </div>
             </div>
-          </div>
-
-          {/* Tip */}
-          <div className="rounded-md bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 p-3">
-            <p className="text-sm text-blue-800 dark:text-blue-200">
-              💡 <strong>Tip:</strong> Bookmark this page or save the link
-            </p>
           </div>
 
           {/* Action Buttons */}
@@ -143,7 +139,7 @@ export function EscrowSuccessModal({
               View Dashboard
             </Button>
             <Button onClick={handleCloseModal} className="flex-1">
-              Back to Escrow Details
+              Show Escrow Details
             </Button>
           </div>
         </div>
