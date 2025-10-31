@@ -10,10 +10,10 @@ export default function Home() {
       <section className="container mx-auto px-4 py-16 md:py-24">
         <div className="max-w-4xl mx-auto text-center">
           <h1 className="text-4xl md:text-6xl font-bold mb-6">
-            Secure Escrow for <span className="text-primary">Emerging Markets</span>
+            Keep your <span className="text-primary">Payments in Check</span>
           </h1>
           <p className="text-xl md:text-2xl text-muted-foreground mb-8">
-            Trustless peer-to-peer transactions on Celo blockchain.
+            Escrowed transactions with seamless dispute resolution.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/create">
