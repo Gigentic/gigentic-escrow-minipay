@@ -8,6 +8,14 @@ import { Card } from "@/components/ui/card";
 import { EscrowState } from "@/lib/escrow-config";
 import { useCompleteEscrow } from "@/hooks/use-complete-escrow";
 import { useDisputeEscrow } from "@/hooks/use-dispute-escrow";
+import {
+  ResponsiveDialog,
+  ResponsiveDialogContent,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+  ResponsiveDialogDescription,
+  ResponsiveDialogFooter,
+} from "@/components/ui/responsive-dialog";
 
 interface EscrowActionsProps {
   escrowAddress: Address;
@@ -217,52 +225,81 @@ export function EscrowActions({
       </Card>
 
       {/* Dispute Modal */}
-      {showDisputeModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <Card className="w-full max-w-md p-6">
-            <h3 className="text-xl font-semibold mb-4">Raise Dispute</h3>
-            <p className="text-sm text-muted-foreground mb-4">
+      <ResponsiveDialog open={showDisputeModal} onOpenChange={setShowDisputeModal}>
+        <ResponsiveDialogContent>
+          <ResponsiveDialogHeader>
+            <ResponsiveDialogTitle>Raise Dispute</ResponsiveDialogTitle>
+            <ResponsiveDialogDescription>
               Provide a clear reason for the dispute.
-            </p>
-            <p className="text-sm text-muted-foreground mb-4">
-            Link to evidence (e.g. screenshots, videos, documents on <a href="https://drive.google.com" target="_blank" rel="noopener noreferrer">GDrive</a>, <a href="https://www.dropbox.com" target="_blank" rel="noopener noreferrer">Dropbox</a>, <a href="https://send.internxt.com" target="_blank" rel="noopener noreferrer">Internxt</a>, etc.) to support your dispute.
+            </ResponsiveDialogDescription>
+          </ResponsiveDialogHeader>
+
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Link to evidence (e.g. screenshots, videos, documents on{" "}
+              <a
+                href="https://drive.google.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline"
+              >
+                GDrive
+              </a>
+              ,{" "}
+              <a
+                href="https://www.dropbox.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline"
+              >
+                Dropbox
+              </a>
+              ,{" "}
+              <a
+                href="https://send.internxt.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline"
+              >
+                Internxt
+              </a>
+              , etc.) to support your dispute.
             </p>
 
             <textarea
-              className="w-full px-4 py-2 border rounded-md min-h-[120px] mb-4"
+              className="w-full px-4 py-2 border rounded-md min-h-[120px]"
               placeholder="Explain and provide evidence why you are disputing this escrow..."
               value={disputeReason}
               onChange={(e) => setDisputeReason(e.target.value)}
               maxLength={256}
             />
 
-            <p className="text-sm text-muted-foreground mb-4">
+            <p className="text-sm text-muted-foreground">
               An arbiter will review your case.
             </p>
-            <div className="flex gap-3">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowDisputeModal(false);
-                  setDisputeReason("");
-                  setError("");
-                }}
-                disabled={isCompleting || isRaisingDispute}
-                className="flex-1"
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleDisputeSubmit}
-                disabled={isCompleting || isRaisingDispute || !disputeReason.trim()}
-                className="flex-1"
-              >
-                {isRaisingDispute ? "Submitting..." : "Submit Dispute"}
-              </Button>
-            </div>
-          </Card>
-        </div>
-      )}
+          </div>
+
+          <ResponsiveDialogFooter className="gap-3">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowDisputeModal(false);
+                setDisputeReason("");
+                setError("");
+              }}
+              disabled={isCompleting || isRaisingDispute}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleDisputeSubmit}
+              disabled={isCompleting || isRaisingDispute || !disputeReason.trim()}
+            >
+              {isRaisingDispute ? "Submitting..." : "Submit Dispute"}
+            </Button>
+          </ResponsiveDialogFooter>
+        </ResponsiveDialogContent>
+      </ResponsiveDialog>
     </div>
   );
 }

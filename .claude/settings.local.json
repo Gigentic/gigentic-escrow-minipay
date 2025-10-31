@@ -71,7 +71,9 @@
       "mcp__playwright__browser_evaluate",
       "mcp__playwright__browser_wait_for",
       "Bash(pnpm dlx shadcn@latest add:*)",
-      "Bash(git log:*)"
+      "Bash(git log:*)",
+      "mcp__playwright__browser_click",
+      "mcp__playwright__browser_press_key"
     ],
     "deny": [],
     "ask": []

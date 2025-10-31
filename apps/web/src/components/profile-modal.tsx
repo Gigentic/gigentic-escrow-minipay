@@ -4,13 +4,13 @@ import { useState, useEffect } from 'react';
 import { useProfile } from '@/hooks/use-profile';
 import { useLogout } from '@/hooks/use-logout';
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet';
+  ResponsiveDialog,
+  ResponsiveDialogContent,
+  ResponsiveDialogDescription,
+  ResponsiveDialogFooter,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+} from '@/components/ui/responsive-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -85,14 +85,14 @@ export function ProfileModal({ open, onOpenChange, address }: ProfileModalProps)
   };
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle>Profile Settings</SheetTitle>
-          <SheetDescription>
+    <ResponsiveDialog open={open} onOpenChange={onOpenChange}>
+      <ResponsiveDialogContent className="overflow-y-auto max-h-[90vh]">
+        <ResponsiveDialogHeader>
+          <ResponsiveDialogTitle>Profile Settings</ResponsiveDialogTitle>
+          <ResponsiveDialogDescription>
             {/* Update your profile information. This will be visible to others when you create or participate in escrows. */}
-          </SheetDescription>
-        </SheetHeader>
+          </ResponsiveDialogDescription>
+        </ResponsiveDialogHeader>
 
         <div className="grid gap-4 py-4">
           {/* Wallet Address Display */}
@@ -204,7 +204,7 @@ export function ProfileModal({ open, onOpenChange, address }: ProfileModalProps)
           )}
         </div>
 
-        <SheetFooter className="gap-2">
+        <ResponsiveDialogFooter className="gap-2">
           <Button
             variant="outline"
             onClick={handleLogout}
@@ -215,8 +215,8 @@ export function ProfileModal({ open, onOpenChange, address }: ProfileModalProps)
           <Button onClick={handleSave} disabled={isUpdating || isLoading}>
             {isUpdating ? 'Saving...' : 'Save Changes'}
           </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
+        </ResponsiveDialogFooter>
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
   );
 }
