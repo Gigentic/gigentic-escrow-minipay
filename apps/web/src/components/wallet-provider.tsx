@@ -15,7 +15,6 @@ import { QueryClientProvider, QueryClient } from '@tanstack/react-query'
 import { useManualSign } from '@/hooks/use-manual-sign'
 import { useAddressChangeLogout } from '@/hooks/use-address-change-logout'
 import { useSyncWalletWithSession } from '@/hooks/use-sync-wallet-with-session'
-import { AuthSuccessNotification } from './auth-success-notification'
 import { AuthLoadingOverlay } from './auth-loading-overlay'
 
 // Create context for authentication state
@@ -115,7 +114,7 @@ const queryClient = new QueryClient({
 
 function RainbowKitWithAutoAuth({ children }: { children: React.ReactNode }) {
   // Manual sign-in with SIWE (no auto-trigger)
-  const { showSuccess, isAuthenticating, signIn } = useManualSign();
+  const { isAuthenticating, signIn } = useManualSign();
 
   // Handle wallet address changes by logging out
   useAddressChangeLogout();
@@ -151,7 +150,6 @@ function RainbowKitWithAutoAuth({ children }: { children: React.ReactNode }) {
       <RainbowKitProvider modalSize="compact">
         {children}
         <AuthLoadingOverlay isAuthenticating={isAuthenticating} />
-        <AuthSuccessNotification show={showSuccess} />
       </RainbowKitProvider>
     </AuthContext.Provider>
   );

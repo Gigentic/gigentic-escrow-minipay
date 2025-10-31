@@ -4,6 +4,7 @@ import { useSession } from 'next-auth/react';
 import { SiweMessage } from 'siwe';
 import { getCsrfToken, signIn as nextAuthSignIn } from 'next-auth/react';
 import { useLogout } from './use-logout';
+import { toast } from 'sonner';
 
 export function useManualSign() {
   const { address, isConnected, chainId } = useAccount();
@@ -11,7 +12,6 @@ export function useManualSign() {
   const { signMessageAsync } = useSignMessage();
   const logout = useLogout();
   const [isAuthenticating, setIsAuthenticating] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
   const [authSuccess, setAuthSuccess] = useState(false);
   const isAuthenticatingRef = useRef(false);
 
@@ -60,13 +60,8 @@ export function useManualSign() {
 
       if (result?.ok) {
         console.log('Authentication successful');
-        // Show success state briefly
-        setShowSuccess(true);
         setAuthSuccess(true);
-        // Hide success notification after delay
-        setTimeout(() => {
-          setShowSuccess(false);
-        }, 500);
+        toast.success('Authentication successful!');
       } else {
         console.error('Authentication failed:', result?.error);
         // Disconnect wallet on authentication failure
@@ -85,7 +80,6 @@ export function useManualSign() {
   // Reset state when wallet disconnects
   useEffect(() => {
     if (!isConnected) {
-      setShowSuccess(false);
       setAuthSuccess(false);
       isAuthenticatingRef.current = false;
     }
@@ -94,7 +88,6 @@ export function useManualSign() {
   return {
     signIn,
     isAuthenticating,
-    showSuccess,
     authSuccess,
     canSignIn: isConnected && !!address && !!chainId && sessionStatus === 'unauthenticated'
   };

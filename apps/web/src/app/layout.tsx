@@ -6,6 +6,7 @@ import { Analytics } from "@vercel/analytics/next"
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import { Navbar } from '@/components/navbar';
 import { ThemeProvider } from '@/components/theme-provider';
+import { Toaster } from '@/components/ui/sonner';
 
 // Load WalletProvider only on client-side to avoid IndexedDB errors during SSR/build
 const WalletProvider = dynamic(
@@ -43,6 +44,7 @@ export default function RootLayout({
               </main>
             </WalletProvider>
           </div>
+          <Toaster />
           <Analytics />
           <SpeedInsights />
         </ThemeProvider>
