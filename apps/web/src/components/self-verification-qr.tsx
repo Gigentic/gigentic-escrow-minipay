@@ -6,6 +6,7 @@ import { getUniversalLink } from '@selfxyz/core';
 import { useAccount } from 'wagmi';
 import { Button } from '@/components/ui/button';
 import { X, Loader2 } from 'lucide-react';
+import { useMediaQuery } from '@/hooks/use-media-query';
 
 interface SelfVerificationQRProps {
   onSuccess: () => void;
@@ -19,6 +20,7 @@ interface SelfVerificationQRProps {
  */
 export function SelfVerificationQR({ onSuccess, onClose }: SelfVerificationQRProps) {
   const { address } = useAccount();
+  const isMobile = useMediaQuery("(max-width: 768px)");
   const [selfApp, setSelfApp] = useState<SelfApp | null>(null);
   const [universalLink, setUniversalLink] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
@@ -138,29 +140,48 @@ export function SelfVerificationQR({ onSuccess, onClose }: SelfVerificationQRPro
       <div className="text-center space-y-1 pt-4">
         <h3 className="text-lg font-semibold">Verify Your Humanity</h3>
         <p className="text-sm text-muted-foreground">
-          Scan this QR code with the Self app to prove you&apos;re human
+          {isMobile ? "Open Self app to verify" : "Scan QR with Self app to verify"}
         </p>
       </div>
 
-      {/* QR Code */}
-      <div className="flex justify-center w-full">
-        <SelfQRcodeWrapper
-          selfApp={selfApp}
-          onSuccess={handleSuccess}
-          onError={handleError}
-        />
-      </div>
+      {/* QR Code - Desktop Only */}
+      {!isMobile && (
+        <div className="flex justify-center w-full">
+          <SelfQRcodeWrapper
+            selfApp={selfApp}
+            onSuccess={handleSuccess}
+            onError={handleError}
+          />
+        </div>
+      )}
 
-      {/* Mobile button for direct app opening */}
-      <div className="w-full space-y-2">
-        <Button
-          onClick={openSelfApp}
-          variant="outline"
-          className="w-full"
-          size="sm"
-        >
-          Open Self App
-        </Button>
+      {/* Mobile button for direct app opening - Mobile Only */}
+      {isMobile && (
+        <div className="w-full space-y-2">
+          <Button
+            onClick={openSelfApp}
+            variant="outline"
+            className="w-full"
+            size="sm"
+          >
+            Open Self App
+          </Button>
+          <p className="text-xs text-center text-muted-foreground">
+            Don&apos;t have the Self app?{' '}
+            <a
+              href="https://self.xyz"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:underline"
+            >
+              Download here
+            </a>
+          </p>
+        </div>
+      )}
+
+      {/* Desktop download link - Desktop Only */}
+      {!isMobile && (
         <p className="text-xs text-center text-muted-foreground">
           Don&apos;t have the Self app?{' '}
           <a
@@ -172,7 +193,7 @@ export function SelfVerificationQR({ onSuccess, onClose }: SelfVerificationQRPro
             Download here
           </a>
         </p>
-      </div>
+      )}
     </div>
   );
 }

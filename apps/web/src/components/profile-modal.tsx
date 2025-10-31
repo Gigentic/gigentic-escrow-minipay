@@ -103,52 +103,6 @@ export function ProfileModal({ open, onOpenChange, address }: ProfileModalProps)
             </div>
           </div> */}
 
-          {/* Verification Section */}
-          <div className="grid gap-2">
-            <Label className="flex items-center gap-2">
-              <Shield className="h-4 w-4" />
-              Human Verification
-            </Label>
-
-            {profile?.isVerified ? (
-              // Show verification badge if verified
-              <div className="flex items-center justify-between p-3 border rounded-lg bg-green-50 dark:bg-green-950/20">
-                <VerificationBadge
-                  isVerified={profile.isVerified}
-                  verifiedAt={profile.verifiedAt}
-                  size="sm"
-                />
-              </div>
-            ) : showVerificationQR ? (
-              // Show QR code inline when button is clicked
-              <SelfVerificationQR
-                onSuccess={handleVerificationSuccess}
-                onClose={() => setShowVerificationQR(false)}
-              />
-            ) : (
-              // Show verification button if not verified
-              <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">
-                  Verify your humanity to build trust with other users
-                </p>
-                <Button
-                  onClick={() => setShowVerificationQR(true)}
-                  variant="outline"
-                  className="w-full"
-                  disabled={!profile}
-                >
-                  <Shield className="h-4 w-4 mr-2" />
-                  Verify Humanity
-                </Button>
-                {!profile && (
-                  <p className="text-xs text-muted-foreground">
-                    Please save your profile first before verifying
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
-
           {/* Name Input */}
           <div className="grid gap-2">
             <Label htmlFor="name">
@@ -194,6 +148,51 @@ export function ProfileModal({ open, onOpenChange, address }: ProfileModalProps)
             <p className="text-xs text-muted-foreground">
               {bio.length}/500 characters
             </p>
+          </div>
+
+          {/* Verification Section */}
+          <div className="grid gap-2">
+            <Label className="flex items-center gap-2">
+              Human Verification
+            </Label>
+
+            {profile?.isVerified ? (
+              // Show verification badge if verified
+              <div className="flex items-center justify-between p-3 border rounded-lg bg-green-50 dark:bg-green-950/20">
+                <VerificationBadge
+                  isVerified={profile.isVerified}
+                  verifiedAt={profile.verifiedAt}
+                  size="sm"
+                />
+              </div>
+            ) : showVerificationQR ? (
+              // Show QR code inline when button is clicked
+              <SelfVerificationQR
+                onSuccess={handleVerificationSuccess}
+                onClose={() => setShowVerificationQR(false)}
+              />
+            ) : (
+              // Show verification button if not verified
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  Verify your humanity to build trust with other users
+                </p>
+                <Button
+                  onClick={() => setShowVerificationQR(true)}
+                  variant="outline"
+                  className="w-full"
+                  disabled={!profile}
+                >
+                  <Shield className="h-4 w-4 mr-2" />
+                  Verify Humanity
+                </Button>
+                {!profile && (
+                  <p className="text-xs text-muted-foreground">
+                    Please save your profile first before verifying
+                  </p>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Update Error Display */}
