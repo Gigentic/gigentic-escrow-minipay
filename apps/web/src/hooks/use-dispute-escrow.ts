@@ -11,21 +11,9 @@ import type { DisputeParams, DisputeDocument } from "@/lib/types";
 /**
  * Hook to raise a dispute on an escrow
  *
- * This hook replaces the inline dispute logic in escrow-actions.tsx (lines 93-165)
- * with a reusable hook that provides:
  * - Type-safe dispute submission
  * - Automatic document storage
  * - Cache invalidation
- *
- * BEFORE (Inline):
- * - Dispute logic embedded in component
- * - Manual state management
- * - Manual cache invalidation
- *
- * AFTER (Hook):
- * - Reusable mutation hook
- * - Automatic error handling
- * - Consistent cache updates
  *
  * @param options - Optional callbacks for success and error handling
  * @returns Mutation hook with raiseDispute function and state

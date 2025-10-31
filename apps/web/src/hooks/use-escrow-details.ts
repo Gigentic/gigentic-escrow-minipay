@@ -65,24 +65,8 @@ async function parseDisputeInfo(
 /**
  * Hook to fetch all escrow details with parallel queries
  *
- * This hook replaces the sequential fetching in escrow/[address]/page.tsx (lines 28-120)
- * which had multiple sequential awaits causing poor performance.
- *
- * BEFORE (Sequential):
- * - Fetch escrow details (await)
- * - Set details state (re-render 1)
- * - Fetch deliverable (await)
- * - Set deliverable state (re-render 2)
- * - Fetch dispute info (await)
- * - Set dispute state (re-render 3)
- * - Fetch resolution (await)
- * - Set resolution state (re-render 4)
- * Result: 4 waterfalls, 4 re-renders
- *
- * AFTER (Parallel):
  * - Fetch all 3 queries in parallel
  * - Single state update when all complete
- * Result: 1 parallel request, 1 re-render = 60% faster
  *
  * @param escrowAddress - The escrow contract address
  * @returns Combined escrow data with loading and error states

@@ -11,12 +11,6 @@ import { useRouter } from 'next/navigation';
  * 2. Disconnect wallet (clears wagmi connection)
  * 3. Redirect to homepage (optional)
  *
- * Usage:
- * ```tsx
- * const logout = useLogout();
- * await logout(); // With redirect
- * await logout({ redirect: false }); // Without redirect
- * ```
  */
 export function useLogout() {
   const { disconnect } = useDisconnect();

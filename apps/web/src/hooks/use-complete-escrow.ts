@@ -9,22 +9,6 @@ import { ESCROW_CONTRACT_ABI } from "@/lib/escrow-config";
 /**
  * Hook to complete an escrow (release funds to recipient)
  *
- * This hook replaces the inline complete logic in escrow-actions.tsx (lines 53-90)
- * with a reusable hook that provides:
- * - Type-safe escrow completion
- * - Automatic cache invalidation
- * - Better error handling
- *
- * BEFORE (Inline):
- * - Complete logic embedded in component
- * - Manual state management
- * - Manual cache invalidation
- *
- * AFTER (Hook):
- * - Reusable mutation hook
- * - Automatic error handling
- * - Consistent cache updates
- *
  * @param options - Optional callbacks for success and error handling
  * @returns Mutation hook with completeEscrow function and state
  */
