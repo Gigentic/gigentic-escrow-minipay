@@ -106,7 +106,7 @@ export default function DashboardPage() {
           <div>
             <h1 className="text-3xl font-bold mb-2">Payments</h1>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
             <div>
               <Button
                 variant={showFilters ? "default" : "outline"}
@@ -121,8 +121,8 @@ export default function DashboardPage() {
                 )}
               </Button>
             </div>
-            <Link href="/create">
-              <Button size="lg" className="text-lg px-8">Create New Escrow</Button>
+            <Link href="/create" className="flex-1 sm:flex-none">
+              <Button size="lg" className="text-lg px-8 w-full">Create New Escrow</Button>
             </Link>
           </div>
 
