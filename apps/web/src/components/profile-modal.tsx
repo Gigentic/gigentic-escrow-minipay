@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useProfile } from '@/hooks/use-profile';
 import { useLogout } from '@/hooks/use-logout';
 import {
@@ -26,13 +27,16 @@ interface ProfileModalProps {
 }
 
 export function ProfileModal({ open, onOpenChange, address }: ProfileModalProps) {
+  const router = useRouter();
   const logout = useLogout();
-  const { profile, isLoading, updateProfile, isUpdating, updateError, refetch } = useProfile(address);
+  const { profile, isLoading, updateProfile, isUpdating, updateError, refetch, deleteProfile, isDeleting, deleteError } = useProfile(address);
 
   const [name, setName] = useState('');
   const [bio, setBio] = useState('');
   const [errors, setErrors] = useState<{ name?: string; bio?: string }>({});
   const [showVerificationQR, setShowVerificationQR] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // Initialize form with existing profile data
   useEffect(() => {
@@ -82,6 +86,41 @@ export function ProfileModal({ open, onOpenChange, address }: ProfileModalProps)
     setShowVerificationQR(false);
     // Refetch profile to get updated verification status
     refetch();
+  };
+
+  const handleVerifyClick = () => {
+    // If profile doesn't exist yet, save it first
+    if (!profile) {
+      if (!validateForm()) return;
+
+      updateProfile(
+        { name: name.trim(), bio: bio.trim() },
+        {
+          onSuccess: () => {
+            setSaveSuccess(true);
+            setShowVerificationQR(true);
+            // Hide success message after 3 seconds
+            setTimeout(() => setSaveSuccess(false), 3000);
+          },
+        }
+      );
+    } else {
+      // Profile exists, just show verification
+      setShowVerificationQR(true);
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
+    deleteProfile(undefined, {
+      onSuccess: async () => {
+        // Close modal
+        onOpenChange(false);
+        // Logout user
+        await logout();
+        // Redirect to homepage
+        router.push('/');
+      },
+    });
   };
 
   return (
@@ -148,6 +187,11 @@ export function ProfileModal({ open, onOpenChange, address }: ProfileModalProps)
             <p className="text-xs text-muted-foreground">
               {bio.length}/500 characters
             </p>
+            {saveSuccess && (
+              <p className="text-sm text-green-600 dark:text-green-400">
+                Profile saved
+              </p>
+            )}
           </div>
 
           {/* Verification Section */}
@@ -178,19 +222,14 @@ export function ProfileModal({ open, onOpenChange, address }: ProfileModalProps)
                   Verify your humanity to build trust with other users
                 </p>
                 <Button
-                  onClick={() => setShowVerificationQR(true)}
+                  onClick={handleVerifyClick}
                   variant="outline"
                   className="w-full"
-                  disabled={!profile}
+                  disabled={!name.trim() || isUpdating}
                 >
                   <Shield className="h-4 w-4 mr-2" />
-                  Verify Humanity
+                  {isUpdating ? 'Saving...' : 'Verify Humanity'}
                 </Button>
-                {!profile && (
-                  <p className="text-xs text-muted-foreground">
-                    Please save your profile first before verifying
-                  </p>
-                )}
               </div>
             )}
           </div>
@@ -201,19 +240,71 @@ export function ProfileModal({ open, onOpenChange, address }: ProfileModalProps)
               {updateError.message || 'Failed to update profile'}
             </div>
           )}
+
+          {/* Delete Error Display */}
+          {deleteError && (
+            <div className="text-sm text-destructive">
+              {deleteError.message || 'Failed to delete profile'}
+            </div>
+          )}
         </div>
 
-        <ResponsiveDialogFooter className="gap-2">
-          <Button
-            variant="outline"
-            onClick={handleLogout}
-            disabled={isUpdating}
-          >
-            Sign Out
-          </Button>
-          <Button onClick={handleSave} disabled={isUpdating || isLoading}>
-            {isUpdating ? 'Saving...' : 'Save Changes'}
-          </Button>
+        <ResponsiveDialogFooter className="gap-2 sm:justify-between">
+          {!showDeleteConfirm ? (
+            <>
+              {/* Left side buttons - Delete Profile (desktop) / bottom (mobile) */}
+              <div className="flex gap-2 sm:order-1 order-3 w-1/2 sm:w-auto">
+                {profile && (
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowDeleteConfirm(true)}
+                    disabled={isUpdating || isDeleting}
+                    className="w-full sm:w-auto"
+                  >
+                    Delete Profile
+                  </Button>
+                )}
+              </div>
+
+              {/* Right side buttons - Sign Out and Save Changes */}
+              <div className="flex gap-2 sm:order-2 order-1 w-full sm:w-auto">
+                <Button
+                  variant="outline"
+                  onClick={handleLogout}
+                  disabled={isUpdating || isDeleting}
+                  className="flex-1 sm:flex-initial"
+                >
+                  Sign Out
+                </Button>
+                <Button
+                  onClick={handleSave}
+                  disabled={isUpdating || isLoading || isDeleting}
+                  className="flex-1 sm:flex-initial"
+                >
+                  {isUpdating ? 'Saving...' : 'Save Changes'}
+                </Button>
+              </div>
+            </>
+          ) : (
+            <>
+              <Button
+                variant="outline"
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={isDeleting}
+                className="flex-1 sm:flex-initial"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleDeleteConfirm}
+                disabled={isDeleting}
+                className="flex-1 sm:flex-initial"
+              >
+                {isDeleting ? 'Deleting...' : 'Confirm Delete'}
+              </Button>
+            </>
+          )}
         </ResponsiveDialogFooter>
       </ResponsiveDialogContent>
     </ResponsiveDialog>

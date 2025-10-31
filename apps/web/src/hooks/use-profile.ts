@@ -47,6 +47,20 @@ async function updateProfile(data: UpdateProfileData): Promise<UserProfile> {
 }
 
 /**
+ * Delete user profile
+ */
+async function deleteProfile(): Promise<void> {
+  const response = await fetch('/api/profile', {
+    method: 'DELETE',
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to delete profile');
+  }
+}
+
+/**
  * Hook to fetch and manage user profile
  */
 export function useProfile(address: string | undefined) {
@@ -61,12 +75,23 @@ export function useProfile(address: string | undefined) {
   });
 
   // Update profile mutation
-  const mutation = useMutation({
+  const updateMutation = useMutation({
     mutationFn: updateProfile,
     onSuccess: (data) => {
       // Update the cache with the new profile data
       if (address) {
         queryClient.setQueryData(['profile', address], data);
+      }
+    },
+  });
+
+  // Delete profile mutation
+  const deleteMutation = useMutation({
+    mutationFn: deleteProfile,
+    onSuccess: () => {
+      // Clear the cache after deletion
+      if (address) {
+        queryClient.setQueryData(['profile', address], null);
       }
     },
   });
@@ -77,8 +102,11 @@ export function useProfile(address: string | undefined) {
     isError: query.isError,
     error: query.error,
     refetch: query.refetch,
-    updateProfile: mutation.mutate,
-    isUpdating: mutation.isPending,
-    updateError: mutation.error,
+    updateProfile: updateMutation.mutate,
+    isUpdating: updateMutation.isPending,
+    updateError: updateMutation.error,
+    deleteProfile: deleteMutation.mutate,
+    isDeleting: deleteMutation.isPending,
+    deleteError: deleteMutation.error,
   };
 }

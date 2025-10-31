@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { setProfile, getProfile } from '@/lib/kv';
+import { setProfile, getProfile, deleteProfile } from '@/lib/kv';
 
 /**
  * POST /api/profile
@@ -83,6 +83,49 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error updating profile:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * DELETE /api/profile
+ * Delete user profile
+ * Requires authentication - user can only delete their own profile
+ */
+export async function DELETE(request: NextRequest) {
+  try {
+    // Check authentication
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user) {
+      return NextResponse.json(
+        { error: 'Unauthorized - Please sign in' },
+        { status: 401 }
+      );
+    }
+
+    // @ts-ignore - address is added in the session callback
+    const userAddress = session.user.address as string | undefined;
+
+    if (!userAddress) {
+      return NextResponse.json(
+        { error: 'No wallet address found in session' },
+        { status: 400 }
+      );
+    }
+
+    // Delete profile from KV
+    await deleteProfile(userAddress);
+
+    return NextResponse.json({
+      success: true,
+      message: 'Profile deleted successfully',
+    });
+  } catch (error) {
+    console.error('Error deleting profile:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
