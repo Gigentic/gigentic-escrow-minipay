@@ -89,7 +89,7 @@ export default function Home() {
       <section className="container mx-auto px-4 py-16">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">
-            Why Gigentic Escrow?
+            Why Gigentic CheckPay?
           </h2>
           <div className="grid md:grid-cols-2 gap-8">
             <div>
@@ -107,6 +107,13 @@ export default function Home() {
             </div>
 
             <div>
+              <h3 className="text-xl font-semibold mb-3">🔑 Wallet-Only Auth</h3>
+              <p className="text-muted-foreground">
+                No sign-up, no passwords. Your wallet is your identity. Connect and start transacting.
+              </p>
+            </div>
+
+            <div>
               <h3 className="text-xl font-semibold mb-3">⚖️ Fair Dispute Resolution</h3>
               <p className="text-muted-foreground">
                 If issues arise, disputes are resolved by trained arbiters. 4% dispute bond ensures good faith.
@@ -114,9 +121,9 @@ export default function Home() {
             </div>
 
             <div>
-              <h3 className="text-xl font-semibold mb-3">🔑 Wallet-Only Auth</h3>
+              <h3 className="text-xl font-semibold mb-3">🗃️ Off-Chain Personal Data</h3>
               <p className="text-muted-foreground">
-                No sign-up, no passwords. Your wallet is your identity. Connect and start transacting.
+                Your personal data is stored off-chain in a GDPR and SOC2-aligned way.
               </p>
             </div>
 
