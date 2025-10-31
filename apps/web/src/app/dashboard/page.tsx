@@ -107,11 +107,11 @@ export default function DashboardPage() {
           <div>
             <h1 className="text-3xl font-bold mb-2">Payments</h1>
           </div>
-          <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="flex items-center gap-3 w-full sm:w-auto">
             <div>
               <Button
-                variant={showFilters ? "default" : "outline"}
-                size="sm"
+                variant={showFilters ? "default" : "ghost"}
+                size="icon"
                 onClick={() => setShowFilters(!showFilters)}
                 className="relative"
                 >
@@ -123,7 +123,7 @@ export default function DashboardPage() {
               </Button>
             </div>
             <Link href="/create" className="flex-1 sm:flex-none">
-              <Button size="lg" className="text-lg px-8 w-full">Create New Escrow</Button>
+              <Button size="default" className="text-base px-8 w-full">Setup New Payment</Button>
             </Link>
           </div>
 

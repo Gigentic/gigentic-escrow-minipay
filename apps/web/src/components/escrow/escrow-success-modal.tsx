@@ -59,10 +59,10 @@ export function EscrowSuccessModal({
       <ResponsiveDialogContent className="sm:max-w-lg">
         <ResponsiveDialogHeader>
           <ResponsiveDialogTitle className="text-2xl">
-            🎉 &nbsp;Escrow Created Successfully!
+            🎉 &nbsp;Escrow Created!
           </ResponsiveDialogTitle>
           <ResponsiveDialogDescription>
-            Your ${amount} cUSD escrow is now live on the blockchain
+            Your ${amount} cUSD escrow is now live
           </ResponsiveDialogDescription>
         </ResponsiveDialogHeader>
 
@@ -89,7 +89,9 @@ export function EscrowSuccessModal({
               {/* Step 1: Share */}
               <div className="space-y-2">
                 <div className="flex items-start gap-2">
-                  <span className="font-medium">1️⃣</span>
+                  <span className="w-6 h-6 bg-primary rounded-full flex items-center justify-center text-primary-foreground font-bold text-sm">
+                    1
+                  </span>
                   <span className="font-medium">Share with recipient</span>
                 </div>
                 <div className="ml-6 space-y-2">
@@ -121,25 +123,26 @@ export function EscrowSuccessModal({
 
               {/* Step 2: Delivery */}
               <div className="flex items-start gap-2">
-                <span className="font-medium">2️⃣</span>
+                <span className="w-6 h-6 bg-primary rounded-full flex items-center justify-center text-primary-foreground font-bold text-sm">
+                  2
+                </span>
                 <span>They deliver the work</span>
               </div>
 
               {/* Step 3: Release */}
               <div className="flex items-start gap-2">
-                <span className="font-medium">3️⃣</span>
-                <span>Release payment on the escrow details page</span>
+                <span className="w-6 h-6 bg-primary rounded-full flex items-center justify-center text-primary-foreground font-bold text-sm">
+                  3
+                </span>
+                <span>Release payment</span>
               </div>
             </div>
           </div>
 
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-3">
-            <Button onClick={handleViewDashboard} variant="outline" className="flex-1">
-              View Dashboard
-            </Button>
             <Button onClick={handleCloseModal} className="flex-1">
-              Show Escrow Details
+              Show Payment Details
             </Button>
           </div>
         </div>
