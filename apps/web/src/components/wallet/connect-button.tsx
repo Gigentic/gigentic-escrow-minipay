@@ -32,12 +32,6 @@ export function ConnectButton() {
 
   return (
     <div className="flex items-center gap-3">
-      {isDev && chain && (
-        <div className="hidden sm:flex items-center px-2 py-1 rounded-md bg-muted text-xs text-muted-foreground">
-          {chain.name}
-        </div>
-      )}
-
       <RainbowKitConnectButton.Custom>
         {({
           account,

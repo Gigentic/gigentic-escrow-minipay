@@ -99,7 +99,7 @@ export function EscrowDetailsDisplay({
               <button
                 onClick={() => setShowFeeBreakdown(!showFeeBreakdown)}
                 className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
-                >
+              >
                 <span>{showFeeBreakdown ? 'Hide' : 'Show'} Fee Breakdown</span>
                 {showFeeBreakdown ? (
                   <ChevronDown className="h-4 w-4" />
@@ -204,7 +204,7 @@ export function EscrowDetailsDisplay({
       )}
 
       {/* Resolution Info - Only visible to parties */}
-      {isConnected && 
+      {isConnected &&
         (details.state === EscrowState.COMPLETED || details.state === EscrowState.REFUNDED) &&
         resolution &&
         isParty && (

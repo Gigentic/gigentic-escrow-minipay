@@ -114,7 +114,7 @@ export default function DashboardPage() {
                 size="icon"
                 onClick={() => setShowFilters(!showFilters)}
                 className="relative"
-                >
+              >
                 <SlidersHorizontal className="h-4 w-4" />
                 {/* Indicator dot when filters are active but hidden */}
                 {!showFilters && hasActiveFilters && (
