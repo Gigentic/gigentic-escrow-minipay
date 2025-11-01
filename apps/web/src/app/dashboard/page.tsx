@@ -101,7 +101,7 @@ export default function DashboardPage() {
 
   return (
     <main className="flex-1 container mx-auto px-4 py-12">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-5xl mx-auto">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
           <div>

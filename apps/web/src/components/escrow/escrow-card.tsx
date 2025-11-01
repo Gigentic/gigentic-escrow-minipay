@@ -63,17 +63,17 @@ export function EscrowCard({
             <span className="font-semibold">{formatEther(amount)} cUSD</span>
           </div>
 
-          {/* Addresses with arrow (single line, right-aligned) */}
-          <div className="flex items-center justify-between gap-2 pt-2 border-t">
-            {isDepositor ? (
-              <span className="text-xs text-primary font-medium">You</span>
-            ) : (
-              <AddressDisplay address={depositor} showCopy={false} showExplorer={false} className="text-xs" />
-            )}
-            <div className="flex items-center gap-2">
-              <ArrowRight className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+          {/* Addresses with arrow (depositor left, arrow center, recipient right) */}
+          <div className="flex justify-center pt-2">
+            <div className="relative flex items-center justify-between w-full max-w-[640px]">
+              {isDepositor ? (
+                <span className="text-sm text-primary font-medium">You</span>
+              ) : (
+                <AddressDisplay address={depositor} showCopy={false} showExplorer={false} className="text-xs" />
+              )}
+              <ArrowRight className="absolute left-1/2 -translate-x-1/2 h-4 w-4 text-muted-foreground flex-shrink-0" />
               {isRecipient ? (
-                <span className="text-xs text-primary font-medium">You</span>
+                <span className="text-sm text-primary font-medium">You</span>
               ) : (
                 <AddressDisplay address={recipient} showCopy={false} showExplorer={false} className="text-xs" />
               )}
