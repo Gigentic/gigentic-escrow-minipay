@@ -8,6 +8,24 @@ CheckPay is a decentralized escrow protocol built on Celo blockchain, designed f
 
 **Core Value Proposition:** Enable trustless transactions between parties without traditional banking, with built-in dispute resolution and optional identity verification for enhanced trust.
 
+## Documentation Repository
+
+Project documentation is maintained in a separate repository at `/Users/marci/dev/Gigentic/my-project-docs/` and organized as follows:
+
+- **Technical Specifications**: `/Users/marci/dev/Gigentic/my-project-docs/TechSpec/CheckPay/`
+  - Contains architecture documents, code reviews, and technical implementation details
+  - Key files: `ESCROW_ARCHITECTURE.md`, `FRONTEND_CODE_REVIEW.md`
+  - Subdirectories: auth, cache, contract, design, mcp, minipay-diff, self, wallet-connect
+
+- **Strategy Documents**: `/Users/marci/dev/Gigentic/my-project-docs/Strategy/CheckPay/`
+  - Business strategy, go-to-market plans, and project planning
+  - Key files: `CheckPay_ Trustless Payments for the Unbanked.md`, `GTM.md`, `PoS-submission.md`
+
+- **Presentations**: `/Users/marci/dev/Gigentic/my-project-docs/Presentation/CheckPay/`
+  - Pitch decks, investor presentations, and demo materials
+
+When researching project context, architecture decisions, or business strategy, refer to these documentation directories for comprehensive information.
+
 ## Tech Stack
 
 - **Monorepo Manager**: Turborepo with PNPM (v8.10.0+)
