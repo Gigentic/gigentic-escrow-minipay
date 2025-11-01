@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { type Address } from "viem";
-import { formatEther } from "viem";
 import { Card } from "@/components/ui/card";
 import { AddressDisplay } from "@/components/wallet/address-display";
 import { EscrowState, formatEscrowState, getStateColor } from "@/lib/escrow-config";
 import { formatRelativeTime } from "@/lib/utils";
+import { formatAmount } from "@/lib/format-utils";
+import { isDepositor, isRecipient } from "@/lib/address-utils";
 import { ArrowRight } from "lucide-react";
 
 interface EscrowCardProps {
@@ -42,8 +43,8 @@ export function EscrowCard({
   const relativeTime = formatRelativeTime(createdAt);
 
   // Check if user is depositor or recipient
-  const isDepositor = currentUserAddress?.toLowerCase() === depositor.toLowerCase();
-  const isRecipient = currentUserAddress?.toLowerCase() === recipient.toLowerCase();
+  const userIsDepositor = isDepositor(currentUserAddress, { depositor });
+  const userIsRecipient = isRecipient(currentUserAddress, { recipient });
 
   return (
     <Link href={`/escrow/${address}`}>
@@ -60,19 +61,19 @@ export function EscrowCard({
           {/* Date + Amount (inline with amount right-aligned) */}
           <div className="flex items-center justify-between gap-2 text-sm">
             <span className="text-muted-foreground">{relativeTime}</span>
-            <span className="font-semibold">{formatEther(amount)} cUSD</span>
+            <span className="font-semibold">{formatAmount(amount)}</span>
           </div>
 
           {/* Addresses with arrow (depositor left, arrow center, recipient right) */}
           <div className="flex justify-center pt-2">
             <div className="relative flex items-center justify-between w-full max-w-[640px]">
-              {isDepositor ? (
+              {userIsDepositor ? (
                 <span className="text-sm text-primary font-medium">You</span>
               ) : (
                 <AddressDisplay address={depositor} showCopy={false} showExplorer={false} className="text-xs" />
               )}
               <ArrowRight className="absolute left-1/2 -translate-x-1/2 h-4 w-4 text-muted-foreground flex-shrink-0" />
-              {isRecipient ? (
+              {userIsRecipient ? (
                 <span className="text-sm text-primary font-medium">You</span>
               ) : (
                 <AddressDisplay address={recipient} showCopy={false} showExplorer={false} className="text-xs" />

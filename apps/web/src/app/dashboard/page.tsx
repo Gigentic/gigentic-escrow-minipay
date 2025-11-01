@@ -12,6 +12,7 @@ import {
 } from "@/lib/escrow-config";
 import { useUserEscrows } from "@/hooks/use-user-escrows";
 import { useRequireAuth } from "@/hooks/use-require-auth";
+import { useEscrowFilters } from "@/hooks/use-escrow-filters";
 import { Loader2, SlidersHorizontal } from "lucide-react";
 
 export default function DashboardPage() {
@@ -20,9 +21,6 @@ export default function DashboardPage() {
 
   const { address, isConnected } = useAccount();
 
-  const [filter, setFilter] = useState<"all" | "depositor" | "recipient">("all");
-  const [stateFilter, setStateFilter] = useState<EscrowState | "all">("all");
-  const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
   const [showFilters, setShowFilters] = useState(false);
 
   // Fetch user's escrow addresses from contract
@@ -42,6 +40,18 @@ export default function DashboardPage() {
 
   // Use hook to fetch details for each escrow in parallel
   const { escrows, isLoading } = useUserEscrows(userEscrowAddresses);
+
+  // Use filter hook for filtering and sorting logic
+  const {
+    filteredEscrows,
+    hasActiveFilters,
+    filter,
+    setFilter,
+    stateFilter,
+    setStateFilter,
+    sortOrder,
+    setSortOrder,
+  } = useEscrowFilters(escrows, address);
 
   // Show loading while checking auth (prevents flicker)
   if (isCheckingAuth) {
@@ -65,39 +75,6 @@ export default function DashboardPage() {
     // This should never happen, but keep as fallback
     return null;
   }
-
-  // Filter and sort escrows
-  const filteredEscrows = escrows
-    .filter((escrow) => {
-      // Role filter
-      if (filter === "depositor" && escrow.depositor.toLowerCase() !== address?.toLowerCase()) {
-        return false;
-      }
-      if (filter === "recipient" && escrow.recipient.toLowerCase() !== address?.toLowerCase()) {
-        return false;
-      }
-
-      // State filter
-      if (stateFilter !== "all" && escrow.state !== stateFilter) {
-        return false;
-      }
-
-      return true;
-    })
-    .sort((a, b) => {
-      // Sort by createdAt timestamp
-      const aTime = Number(a.createdAt);
-      const bTime = Number(b.createdAt);
-
-      if (sortOrder === "newest") {
-        return bTime - aTime; // Newest first (descending)
-      } else {
-        return aTime - bTime; // Oldest first (ascending)
-      }
-    });
-
-  // Check if filters are active
-  const hasActiveFilters = filter !== "all" || stateFilter !== "all";
 
   return (
     <main className="flex-1 container mx-auto px-4 py-12">

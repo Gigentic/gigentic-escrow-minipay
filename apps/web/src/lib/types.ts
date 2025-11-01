@@ -1,4 +1,5 @@
 import type { Address } from "viem";
+import { EscrowState } from "@/lib/escrow-config";
 
 /**
  * Centralized TypeScript types for the escrow application
@@ -118,7 +119,7 @@ export interface EscrowDetailData {
     escrowAmount: bigint;
     platformFee: bigint;
     disputeBond: bigint;
-    state: number;
+    state: EscrowState; // Use EscrowState enum instead of number
     deliverableHash: `0x${string}`; // Changed from string to hex string type
     createdAt: bigint;
   } | null;
@@ -141,7 +142,7 @@ export interface EscrowListItem {
   depositor: Address;
   recipient: Address;
   amount: bigint;
-  state: number;
+  state: EscrowState; // Use EscrowState enum instead of number
   createdAt: bigint;
   title?: string;
 }

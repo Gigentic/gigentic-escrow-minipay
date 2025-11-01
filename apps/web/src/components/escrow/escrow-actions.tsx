@@ -17,6 +17,7 @@ import {
 import { EscrowState } from "@/lib/escrow-config";
 import { useCompleteEscrow } from "@/hooks/use-complete-escrow";
 import { useDisputeEscrow } from "@/hooks/use-dispute-escrow";
+import { isDepositor, isRecipient, isParty } from "@/lib/address-utils";
 
 interface EscrowActionsProps {
   escrowAddress: Address;
@@ -68,14 +69,14 @@ export function EscrowActions({
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  // Determine user's role
-  const isDepositor = userAddress?.toLowerCase() === depositor.toLowerCase();
-  const isRecipient = userAddress?.toLowerCase() === recipient.toLowerCase();
-  const isParty = isDepositor || isRecipient;
+  // Determine user's role using utilities
+  const userIsDepositor = isDepositor(userAddress, { depositor });
+  const userIsRecipient = isRecipient(userAddress, { recipient });
+  const userIsParty = isParty(userAddress, { depositor, recipient });
 
   // Handle complete escrow
   const handleComplete = async () => {
-    if (!isConnected || !isDepositor) return;
+    if (!isConnected || !userIsDepositor) return;
 
     setError("");
     setSuccess("");
@@ -93,7 +94,7 @@ export function EscrowActions({
 
   // Handle dispute
   const handleDisputeSubmit = async () => {
-    if (!isConnected || !isParty || !userAddress) return;
+    if (!isConnected || !userIsParty || !userAddress) return;
     if (!disputeReason.trim()) {
       setError("Please provide a reason for the dispute");
       return;
@@ -121,7 +122,7 @@ export function EscrowActions({
     return null;
   }
 
-  if (!isParty) {
+  if (!userIsParty) {
     return (
       <Card className="p-6">
         <p className="text-muted-foreground text-center">
@@ -154,7 +155,7 @@ export function EscrowActions({
         {/* CREATED state actions */}
         {state === EscrowState.CREATED && (
           <div className="space-y-3">
-            {isDepositor && (
+            {userIsDepositor && (
               <div className="space-y-2">
                 <p className="text-sm text-muted-foreground mb-2">
                   As the depositor, you can complete this escrow to release funds to the recipient,
@@ -171,7 +172,7 @@ export function EscrowActions({
               </div>
             )}
 
-            {isRecipient && (
+            {userIsRecipient && (
               <div className="space-y-2">
                 <p className="text-sm text-muted-foreground mb-2">
                   You are the recipient of this escrow. Wait for the depositor to complete the escrow,

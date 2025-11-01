@@ -2,14 +2,15 @@
 
 import { useState } from "react";
 import { type Address } from "viem";
-import { formatEther } from "viem";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AddressDisplay } from "@/components/wallet/address-display";
-import { type EscrowDetails, EscrowState, formatEscrowState, getStateColor } from "@/lib/escrow-config";
+import { type EscrowDetails, EscrowState, formatEscrowState, getStateColor, calculateTotalRequired } from "@/lib/escrow-config";
 import type { ResolutionDocument } from "@/lib/types";
 import { shortenHash } from "@/lib/hash";
+import { formatAmount, formatDate } from "@/lib/format-utils";
+import { addressesEqual } from "@/lib/address-utils";
 import { Lock, ChevronDown, ChevronRight } from "lucide-react";
 
 interface EscrowDetailsDisplayProps {
@@ -49,7 +50,10 @@ export function EscrowDetailsDisplay({
 
   const stateText = formatEscrowState(details.state);
   const stateColor = getStateColor(details.state);
-  const createdDate = new Date(Number(details.createdAt) * 1000).toLocaleString();
+  const createdDate = formatDate(details.createdAt);
+
+  // Calculate total using helper function
+  const { total: totalLocked } = calculateTotalRequired(details.escrowAmount);
 
   return (
     <div className="space-y-4">
@@ -65,7 +69,7 @@ export function EscrowDetailsDisplay({
           {/* Amount & Status */}
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-3xl font-bold">{formatEther(details.escrowAmount)} cUSD</p>
+              <p className="text-3xl font-bold">{formatAmount(details.escrowAmount)}</p>
             </div>
             <span className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${stateColor}`}>
               {stateText}
@@ -76,13 +80,13 @@ export function EscrowDetailsDisplay({
           <div className="space-y-3">
             <div className="flex items-center justify-between gap-3">
               <p className="text-sm text-muted-foreground mb-1">
-                From{isConnected && userAddress?.toLowerCase() === details.depositor.toLowerCase() && <span className="text-primary font-medium"> You</span>}:
+                From{isConnected && addressesEqual(userAddress, details.depositor) && <span className="text-primary font-medium"> You</span>}:
               </p>
               <AddressDisplay address={details.depositor} />
             </div>
             <div className="flex items-center justify-between gap-3">
               <p className="text-sm text-muted-foreground mb-1">
-                To{isConnected && userAddress?.toLowerCase() === details.recipient.toLowerCase() && <span className="text-primary font-medium"> You</span>}:
+                To{isConnected && addressesEqual(userAddress, details.recipient) && <span className="text-primary font-medium"> You</span>}:
               </p>
               <AddressDisplay address={details.recipient} />
             </div>
@@ -113,23 +117,19 @@ export function EscrowDetailsDisplay({
                   <div className="space-y-3">
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Payment</span>
-                      <span className="font-medium">{formatEther(details.escrowAmount)} cUSD</span>
+                      <span className="font-medium">{formatAmount(details.escrowAmount)}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Platform Fee</span>
-                      <span className="font-medium">{formatEther(details.platformFee)} cUSD</span>
+                      <span className="font-medium">{formatAmount(details.platformFee)}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Dispute Bond</span>
-                      <span className="font-medium">{formatEther(details.disputeBond)} cUSD</span>
+                      <span className="font-medium">{formatAmount(details.disputeBond)}</span>
                     </div>
                     <div className="flex justify-between text-sm pt-3 border-t font-semibold">
                       <span>Total Locked</span>
-                      <span>
-                        {formatEther(
-                          BigInt(details.escrowAmount) + BigInt(details.platformFee) + BigInt(details.disputeBond)
-                        )} cUSD
-                      </span>
+                      <span>{formatAmount(totalLocked)}</span>
                     </div>
                   </div>
                 </Card>

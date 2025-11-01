@@ -444,21 +444,21 @@ export interface EscrowDetails {
 
 export interface DisputeInfo {
   disputeReasonHash: `0x${string}`;
-  resolutionHash: `0x${string}`;
+  resolutionHash?: `0x${string}`; // Optional - only set after dispute is raised
+}
+
+/**
+ * Extended dispute info with resolved reason text (from KV storage)
+ * Used by hooks that fetch both contract data and off-chain documents
+ */
+export interface DisputeInfoWithReason extends DisputeInfo {
+  disputeReason: string; // Cleartext reason from KV
 }
 
 export interface FactoryStatistics {
   escrowsCreated: bigint;
   volumeProcessed: bigint;
   feesCollected: bigint;
-}
-
-
-export interface UserMetadata {
-  displayName?: string;
-  bio?: string;
-  escrowCount: number;
-  lastActive: number;
 }
 
 // Helper function to calculate total required for escrow

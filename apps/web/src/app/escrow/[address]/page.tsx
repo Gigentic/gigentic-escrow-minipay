@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useSearchParams } from "next/navigation";
-import { type Address } from "viem";
+import { type Address, formatEther } from "viem";
 import { useAccount } from "wagmi";
 import { EscrowDetailsDisplay } from "@/components/escrow/escrow-details";
 import { EscrowActions } from "@/components/escrow/escrow-actions";
 import { EscrowSuccessModal } from "@/components/escrow/escrow-success-modal";
 import { useEscrowDetails } from "@/hooks/use-escrow-details";
+import { isParty as checkIsParty } from "@/lib/address-utils";
 
 export default function EscrowDetailPage() {
   const params = useParams();
@@ -29,11 +30,7 @@ export default function EscrowDetailPage() {
   }, [searchParams, details]);
 
   // Check if current user is a party to this escrow
-  const isParty =
-    userAddress &&
-    details &&
-    (userAddress.toLowerCase() === details.depositor.toLowerCase() ||
-      userAddress.toLowerCase() === details.recipient.toLowerCase());
+  const isParty = details ? checkIsParty(userAddress, details) : false;
 
   if (isLoading) {
     return (
@@ -68,9 +65,7 @@ export default function EscrowDetailPage() {
   }
 
   // Format amount for success modal
-  const formattedAmount = details
-    ? (Number(details.escrowAmount) / 1e18).toFixed(2)
-    : "0";
+  const formattedAmount = formatEther(details.escrowAmount);
 
   return (
     <main className="flex-1 container mx-auto px-4 py-12">
@@ -81,7 +76,7 @@ export default function EscrowDetailPage() {
           deliverable={deliverable || undefined}
           disputeInfo={disputeInfo || undefined}
           resolution={resolution || undefined}
-          isParty={!!isParty}
+          isParty={isParty}
           isConnected={isConnected}
           userAddress={userAddress}
         />
