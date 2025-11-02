@@ -15,8 +15,6 @@ const navLinks = [
   { name: "Dashboard", href: "/dashboard", external: false },
 ]
 
-const isDev = process.env.NODE_ENV === "development"
-
 export function Navbar() {
   const pathname = usePathname()
   const { chain, isConnected } = useAccount()
@@ -58,11 +56,6 @@ export function Navbar() {
 
         {/* Wallet controls */}
         <div className="flex items-center gap-1">
-          {isDev && chain && (
-            <div className="hidden sm:flex items-center px-2 py-1 rounded-md bg-muted text-xs text-muted-foreground">
-              {chain.name}
-            </div>
-          )}
           {/* Chain switcher button - hidden on mobile */}
           {isConnected && openChainModal && (
             <Button
@@ -73,7 +66,6 @@ export function Navbar() {
               title="Switch Network"
             >
               <Network className="h-4 w-4" />
-              <span className="text-sm">{chain?.name || 'Network'}</span>
             </Button>
           )}
           <ThemeToggle />
