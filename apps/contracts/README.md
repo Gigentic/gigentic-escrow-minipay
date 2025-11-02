@@ -1,6 +1,6 @@
-# gigentic-escrow-minipay - Smart Contracts
+# CheckPay Smart Contracts
 
-This directory contains the smart contracts for gigentic-escrow-minipay, built with Hardhat and optimized for the Celo blockchain.
+This directory contains the smart contracts for CheckPay, built with Hardhat and optimized for the Celo blockchain.
 
 ## 🚀 Quick Start
 
