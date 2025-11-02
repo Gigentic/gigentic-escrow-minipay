@@ -3,11 +3,13 @@
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
-import { ExternalLink } from "lucide-react"
+import { ExternalLink, Network } from "lucide-react"
 import { useAccount } from "wagmi"
+import { useChainModal } from "@rainbow-me/rainbowkit"
 
 import { ConnectButton } from "@/components/wallet/connect-button"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { Button } from "@/components/ui/button"
 
 const navLinks = [
   { name: "Dashboard", href: "/dashboard", external: false },
@@ -17,7 +19,8 @@ const isDev = process.env.NODE_ENV === "development"
 
 export function Navbar() {
   const pathname = usePathname()
-  const { chain } = useAccount()
+  const { chain, isConnected } = useAccount()
+  const { openChainModal } = useChainModal()
 
   return (
     <header className="sticky top-0 z-50 w-full bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60">
@@ -59,6 +62,19 @@ export function Navbar() {
             <div className="hidden sm:flex items-center px-2 py-1 rounded-md bg-muted text-xs text-muted-foreground">
               {chain.name}
             </div>
+          )}
+          {/* Chain switcher button - hidden on mobile */}
+          {isConnected && openChainModal && (
+            <Button
+              onClick={openChainModal}
+              variant="ghost"
+              size="sm"
+              className="hidden sm:flex items-center gap-2"
+              title="Switch Network"
+            >
+              <Network className="h-4 w-4" />
+              <span className="text-sm">{chain?.name || 'Network'}</span>
+            </Button>
           )}
           <ThemeToggle />
           <ConnectButton />

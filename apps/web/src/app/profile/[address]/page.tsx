@@ -3,13 +3,14 @@
 import { useState } from "react";
 import { useAccount, useReadContract } from "wagmi";
 import { useSession } from "next-auth/react";
+import { useChainModal } from "@rainbow-me/rainbowkit";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AddressDisplay } from "@/components/wallet/address-display";
 import { VerificationBadge } from "@/components/profile/verification-badge";
 import { ProfileModal } from "@/components/profile/profile-modal";
 import { useProfile } from "@/hooks/use-profile";
-import { Loader2, UserCircle } from "lucide-react";
+import { Loader2, UserCircle, Network } from "lucide-react";
 import { type Address } from "viem";
 import {
   MASTER_FACTORY_ADDRESS,
@@ -18,8 +19,9 @@ import {
 
 export default function ProfilePage({ params }: { params: { address: string } }) {
   const profileAddress = params.address as Address;
-  const { address: currentUserAddress } = useAccount();
+  const { address: currentUserAddress, chain } = useAccount();
   const { data: session } = useSession();
+  const { openChainModal } = useChainModal();
   const [showEditModal, setShowEditModal] = useState(false);
 
   // Fetch profile data
@@ -90,15 +92,29 @@ export default function ProfilePage({ params }: { params: { address: string } })
                 <p className="text-muted-foreground mb-3">{profile.bio}</p>
               )}
 
-              {/* Edit Button (only for own profile) */}
+              {/* Action Buttons (only for own profile) */}
               {isOwnProfile && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowEditModal(true)}
-                >
-                  Edit Profile
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowEditModal(true)}
+                  >
+                    Edit Profile
+                  </Button>
+                  {openChainModal && (
+                    <Button
+                      onClick={openChainModal}
+                      variant="outline"
+                      size="sm"
+                      className="flex items-center gap-2"
+                      title="Switch Network"
+                    >
+                      <Network className="h-4 w-4" />
+                      <span>{chain?.name || 'Network'}</span>
+                    </Button>
+                  )}
+                </div>
               )}
             </div>
           </div>

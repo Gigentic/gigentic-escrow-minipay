@@ -74,31 +74,16 @@ const connectors = connectorsForWallets(
 );
 
 
-// Create configs for each supported chain
-const chainConfigs = {
-  hardhat: createConfig({
-    chains: [hardhat],
-    connectors,
-    transports: { [hardhat.id]: http() },
-    ssr: true,
-  }),
-  celo: createConfig({
-    chains: [celo],
-    connectors,
-    transports: { [celo.id]: http() },
-    ssr: true,
-  }),
-  celoSepolia: createConfig({
-    chains: [celoSepolia],
-    connectors,
-    transports: { [celoSepolia.id]: http() },
-    ssr: true,
-  }),
-};
-
-// Select config based on environment variable
-const selectedChainKey = process.env.NEXT_PUBLIC_CHAIN! as keyof typeof chainConfigs;
-const wagmiConfig = chainConfigs[selectedChainKey];
+// Create wagmi config with both Celo and Celo Sepolia support
+const wagmiConfig = createConfig({
+  chains: [celo, celoSepolia],
+  connectors,
+  transports: {
+    [celo.id]: http(),
+    [celoSepolia.id]: http(),
+  },
+  ssr: true,
+});
 
 const queryClient = new QueryClient({
   defaultOptions: {
