@@ -20,7 +20,6 @@ import {
 export default function ProfilePage({ params }: { params: { address: string } }) {
   const profileAddress = params.address as Address;
   const { address: currentUserAddress, chain } = useAccount();
-  const { data: session } = useSession();
   const { openChainModal } = useChainModal();
   const [showEditModal, setShowEditModal] = useState(false);
 

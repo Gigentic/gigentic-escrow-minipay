@@ -17,7 +17,7 @@ const navLinks = [
 
 export function Navbar() {
   const pathname = usePathname()
-  const { chain, isConnected } = useAccount()
+  const { isConnected } = useAccount()
   const { openChainModal } = useChainModal()
 
   return (
@@ -57,6 +57,7 @@ export function Navbar() {
         {/* Wallet controls */}
         <div className="flex items-center gap-1">
           {/* Chain switcher button - hidden on mobile */}
+          <ThemeToggle />
           {isConnected && openChainModal && (
             <Button
               onClick={openChainModal}
@@ -68,7 +69,6 @@ export function Navbar() {
               <Network className="h-4 w-4" />
             </Button>
           )}
-          <ThemeToggle />
           <ConnectButton />
         </div>
       </div>

@@ -109,7 +109,7 @@ export function ConnectButton() {
                       <Button
                         onClick={() => address && router.push(`/profile/${address}`)}
                         type="button"
-                        variant="outline"
+                        variant="ghost"
                         className="flex items-center gap-2"
                       >
                         {account.ensAvatar && (
