@@ -5,7 +5,7 @@ import { useAccount, usePublicClient, useWriteContract } from "wagmi";
 import type { Address } from "viem";
 import { queryKeys } from "@/lib/queries";
 import {
-  MASTER_FACTORY_ADDRESS,
+  getMasterFactoryAddress,
   MASTER_FACTORY_ABI,
   calculateTotalRequired,
 } from "@/lib/escrow-config";
@@ -32,16 +32,18 @@ export function useCreateEscrow(options?: {
   onSuccess?: (data: { escrowAddress: Address; txHash: `0x${string}` }) => void | Promise<void>;
   onError?: (error: Error) => void;
 }) {
-  const { address: userAddress } = useAccount();
+  const { address: userAddress, chainId } = useAccount();
   const publicClient = usePublicClient();
   const { writeContractAsync } = useWriteContract();
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
     mutationFn: async (params: CreateEscrowParams) => {
-      if (!userAddress || !publicClient) {
-        throw new Error("Wallet not connected");
+      if (!userAddress || !publicClient || !chainId) {
+        throw new Error("Wallet not connected or chain not selected");
       }
+
+      const factoryAddress = getMasterFactoryAddress(chainId);
 
       const { recipient, amount, deliverable } = params;
 
@@ -69,7 +71,7 @@ export function useCreateEscrow(options?: {
       let createGasLimit: bigint | undefined;
       try {
         const estimatedGas = await publicClient.estimateContractGas({
-          address: MASTER_FACTORY_ADDRESS,
+          address: factoryAddress,
           abi: MASTER_FACTORY_ABI,
           functionName: "createEscrow",
           args: [recipient, amount, deliverableHash],
@@ -82,7 +84,7 @@ export function useCreateEscrow(options?: {
       }
 
       const createTxHash = await writeContractAsync({
-        address: MASTER_FACTORY_ADDRESS,
+        address: factoryAddress,
         abi: MASTER_FACTORY_ABI,
         functionName: "createEscrow",
         args: [recipient, amount, deliverableHash],
@@ -114,6 +116,7 @@ export function useCreateEscrow(options?: {
           hash: deliverableHash,
           document: deliverableDoc,
           escrowAddress,
+          chainId,
         }),
       });
 
@@ -140,15 +143,18 @@ export function useCreateEscrow(options?: {
 
       // Also invalidate the specific getUserEscrows query pattern
       // wagmi uses a specific query key structure
-      await queryClient.invalidateQueries({
-        queryKey: [
-          "readContract",
-          {
-            address: MASTER_FACTORY_ADDRESS,
-            functionName: "getUserEscrows",
-          },
-        ],
-      });
+      if (chainId) {
+        const factoryAddress = getMasterFactoryAddress(chainId);
+        await queryClient.invalidateQueries({
+          queryKey: [
+            "readContract",
+            {
+              address: factoryAddress,
+              functionName: "getUserEscrows",
+            },
+          ],
+        });
+      }
 
       // Invalidate escrow details for the new escrow
       await queryClient.invalidateQueries({

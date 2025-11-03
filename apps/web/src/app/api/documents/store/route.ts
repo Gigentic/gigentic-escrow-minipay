@@ -31,12 +31,19 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { hash, document, escrowAddress } = body;
+    const { hash, document, escrowAddress, chainId } = body;
 
     // Validate input
     if (!hash || !document) {
       return NextResponse.json(
         { error: "Missing hash or document" },
+        { status: 400 }
+      );
+    }
+
+    if (!chainId || typeof chainId !== 'number') {
+      return NextResponse.json(
+        { error: "Missing or invalid chainId" },
         { status: 400 }
       );
     }
@@ -95,7 +102,7 @@ export async function POST(request: Request) {
 
       // Fetch deliverable to get both parties
       const kv = getKVClient();
-      const deliverable: any = await kv.get(kvKeys.deliverable(escrowAddr));
+      const deliverable: any = await kv.get(kvKeys.deliverable(chainId, escrowAddr));
 
       if (!deliverable) {
         return NextResponse.json(
@@ -133,10 +140,10 @@ export async function POST(request: Request) {
 
     // Generate appropriate key
     const key = isDeliverable
-      ? kvKeys.deliverable(escrowAddress)
+      ? kvKeys.deliverable(chainId, escrowAddress)
       : isResolution
-        ? kvKeys.resolution(hash)
-        : kvKeys.dispute(hash);
+        ? kvKeys.resolution(chainId, hash)
+        : kvKeys.dispute(chainId, hash);
 
     // Store in KV
     const kv = getKVClient();

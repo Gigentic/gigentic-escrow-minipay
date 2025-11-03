@@ -76,12 +76,12 @@ const connectors = connectorsForWallets(
 
 // Create wagmi config with both Celo and Celo Sepolia support
 const wagmiConfig = createConfig({
+  chains: [celo, celoSepolia],
   // chains: [celo, celoSepolia, hardhat],
-  chains: [celoSepolia],
   connectors,
   transports: {
     // [hardhat.id]: http(),
-    // [celo.id]: http(),
+    [celo.id]: http(),
     [celoSepolia.id]: http(),
   },
   ssr: true,

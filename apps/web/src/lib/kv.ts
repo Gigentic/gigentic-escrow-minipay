@@ -28,36 +28,40 @@ export function getKVClient(): Redis {
   return kvClient;
 }
 
-// Get environment and chain from environment variables
+// Get environment from environment variables
 const APP_ENV = process.env.NEXT_PUBLIC_APP_ENV;
-const CHAIN = process.env.NEXT_PUBLIC_CHAIN;
 
 if (!APP_ENV) {
   throw new Error("NEXT_PUBLIC_APP_ENV is not defined. Please set it in your environment variables.");
 }
 
-if (!CHAIN) {
-  throw new Error("NEXT_PUBLIC_CHAIN is not defined. Please set it in your environment variables.");
+// Create namespace prefix (without chain - chain will be dynamic)
+const NAMESPACE = `${APP_ENV}:`;
+
+// Helper to map chainId to chain name for KV keys
+function getChainName(chainId: number): string {
+  const chainMap: Record<number, string> = {
+    11142220: "celoSepolia",
+    42220: "celo",
+    31337: "hardhat",
+  };
+  return chainMap[chainId] || "unknown";
 }
-
-// Create namespace prefix
-const NAMESPACE = `${APP_ENV}:${CHAIN}:`;
-
-// Key prefixes for different data types
-export const KV_PREFIXES = {
-  DELIVERABLE: `${NAMESPACE}deliverable:`,
-  RESOLUTION: `${NAMESPACE}resolution:`,
-  DISPUTE: `${NAMESPACE}dispute:`,
-  USER: `${NAMESPACE}user:`,
-} as const;
 
 // Helper functions for key generation
 export const kvKeys = {
-  deliverable: (escrowAddress: string) => `${KV_PREFIXES.DELIVERABLE}${escrowAddress.toLowerCase()}`,
-  resolution: (hash: string) => `${KV_PREFIXES.RESOLUTION}${hash}`,
-  dispute: (hash: string) => `${KV_PREFIXES.DISPUTE}${hash}`,
-  user: (address: string) => `${KV_PREFIXES.USER}${address.toLowerCase()}`,
-  profile: (address: string) => `${NAMESPACE}profile:${address.toLowerCase()}`,
+  deliverable: (chainId: number, escrowAddress: string) =>
+    `${NAMESPACE}${getChainName(chainId)}:deliverable:${escrowAddress.toLowerCase()}`,
+
+  resolution: (chainId: number, hash: string) =>
+    `${NAMESPACE}${getChainName(chainId)}:resolution:${hash}`,
+
+  dispute: (chainId: number, hash: string) =>
+    `${NAMESPACE}${getChainName(chainId)}:dispute:${hash}`,
+
+  // Profile is global across all chains
+  profile: (address: string) =>
+    `${NAMESPACE}profile:${address.toLowerCase()}`,
 };
 
 // User Profile Types

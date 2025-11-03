@@ -3,9 +3,9 @@
 import { useMutation } from "@tanstack/react-query";
 import { useAccount, usePublicClient, useWriteContract } from "wagmi";
 import {
-  CUSD_ADDRESS,
+  getCUSDAddress,
+  getMasterFactoryAddress,
   ERC20_ABI,
-  MASTER_FACTORY_ADDRESS,
 } from "@/lib/escrow-config";
 
 /**
@@ -21,15 +21,18 @@ export function useApproveSpendingCap(options?: {
   onSuccess?: (txHash: `0x${string}`) => void | Promise<void>;
   onError?: (error: Error) => void;
 }) {
-  const { address: userAddress } = useAccount();
+  const { address: userAddress, chainId } = useAccount();
   const publicClient = usePublicClient();
   const { writeContractAsync } = useWriteContract();
 
   const mutation = useMutation({
     mutationFn: async (amount: bigint) => {
-      if (!userAddress || !publicClient) {
-        throw new Error("Wallet not connected");
+      if (!userAddress || !publicClient || !chainId) {
+        throw new Error("Wallet not connected or chain not selected");
       }
+
+      const cusdAddress = getCUSDAddress(chainId);
+      const factoryAddress = getMasterFactoryAddress(chainId);
 
       console.log("Approving spending cap for:", amount.toString());
 
@@ -37,10 +40,10 @@ export function useApproveSpendingCap(options?: {
       let approveGasLimit: bigint | undefined;
       try {
         const estimatedGas = await publicClient.estimateContractGas({
-          address: CUSD_ADDRESS,
+          address: cusdAddress,
           abi: ERC20_ABI,
           functionName: "approve",
-          args: [MASTER_FACTORY_ADDRESS, amount],
+          args: [factoryAddress, amount],
           account: userAddress,
         });
         approveGasLimit = (estimatedGas * 140n) / 100n;
@@ -51,10 +54,10 @@ export function useApproveSpendingCap(options?: {
 
       // Execute approval transaction
       const approveTxHash = await writeContractAsync({
-        address: CUSD_ADDRESS,
+        address: cusdAddress,
         abi: ERC20_ABI,
         functionName: "approve",
-        args: [MASTER_FACTORY_ADDRESS, amount],
+        args: [factoryAddress, amount],
         gas: approveGasLimit,
       });
 

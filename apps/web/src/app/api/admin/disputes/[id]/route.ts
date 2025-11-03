@@ -5,14 +5,13 @@ import { requireAdmin } from "@/lib/server-auth";
 import {
   ESCROW_CONTRACT_ABI,
   EscrowState,
-  CHAIN_ID,
 } from "@/lib/escrow-config";
 import { getKVClient, kvKeys } from "@/lib/kv";
 import type { DisputeDocument, DeliverableDocument } from "@/lib/types";
 
-// Helper to get the correct chain based on CHAIN_ID
-function getChain() {
-  switch (CHAIN_ID) {
+// Helper to get the correct chain based on chainId
+function getChain(chainId: number) {
+  switch (chainId) {
     case 31337:
       return hardhat;
     case 42220:
@@ -25,12 +24,12 @@ function getChain() {
 }
 
 /**
- * GET /api/admin/disputes/[id]
+ * GET /api/admin/disputes/[id]?chainId=<chainId>
  * Get detailed information about a specific disputed escrow
  * Includes deliverable document if available
  */
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
@@ -38,10 +37,27 @@ export async function GET(
     await requireAdmin();
 
     const escrowAddress = params.id as Address;
+    const { searchParams } = new URL(request.url);
+    const chainIdStr = searchParams.get('chainId');
+
+    if (!chainIdStr) {
+      return NextResponse.json(
+        { error: "chainId query parameter required" },
+        { status: 400 }
+      );
+    }
+
+    const chainId = Number(chainIdStr);
+    if (isNaN(chainId)) {
+      return NextResponse.json(
+        { error: "Invalid chainId" },
+        { status: 400 }
+      );
+    }
 
     // Create public client and KV client
     const publicClient = createPublicClient({
-      chain: getChain(),
+      chain: getChain(chainId),
       transport: http(),
     });
     const kv = getKVClient();
@@ -71,11 +87,11 @@ export async function GET(
 
     // Fetch dispute reason from KV directly
     const [disputeReasonHash] = disputeInfo;
-    const disputeDoc = await kv.get<DisputeDocument>(kvKeys.dispute(disputeReasonHash as string));
+    const disputeDoc = await kv.get<DisputeDocument>(kvKeys.dispute(chainId, disputeReasonHash as string));
     const actualDisputeReason = disputeDoc?.reason || "Dispute reason not found";
 
     // Get deliverable document from KV directly
-    const deliverable = await kv.get<DeliverableDocument>(kvKeys.deliverable(escrowAddress));
+    const deliverable = await kv.get<DeliverableDocument>(kvKeys.deliverable(chainId, escrowAddress));
 
     return NextResponse.json({
       address: escrowAddress,

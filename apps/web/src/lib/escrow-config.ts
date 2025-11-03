@@ -417,10 +417,39 @@ export const ERC20_ABI = [
   },
 ] as const;
 
-// Contract addresses from environment variables
-export const MASTER_FACTORY_ADDRESS = (process.env.NEXT_PUBLIC_MASTER_FACTORY_ADDRESS! as Address);
-export const CUSD_ADDRESS = (process.env.NEXT_PUBLIC_CUSD_ADDRESS! as Address);
-export const CHAIN_ID = Number(process.env.NEXT_PUBLIC_CHAIN_ID!);
+// Contract address mapping functions
+export function getMasterFactoryAddress(chainId: number): Address {
+  const addresses: Record<number, Address> = {
+    11142220: process.env.NEXT_PUBLIC_MASTER_FACTORY_ADDRESS_SEPOLIA! as Address,
+    42220: process.env.NEXT_PUBLIC_MASTER_FACTORY_ADDRESS_CELO! as Address,
+    31337: process.env.NEXT_PUBLIC_MASTER_FACTORY_ADDRESS_HARDHAT as Address || "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512" as Address,
+  };
+
+  if (!addresses[chainId]) {
+    throw new Error(`No MasterFactory address configured for chain ${chainId}`);
+  }
+
+  return addresses[chainId];
+}
+
+export function getCUSDAddress(chainId: number): Address {
+  const addresses: Record<number, Address> = {
+    11142220: "0xdE9e4C3ce781b4bA68120d6261cbad65ce0aB00b" as Address, // Celo Sepolia
+    42220: "0x765de816845861e75a25fca122bb6898b8b1282a" as Address, // Celo Mainnet
+    31337: process.env.NEXT_PUBLIC_CUSD_ADDRESS_HARDHAT as Address || "0x5FbDB2315678afecb367f032d93F642f64180aa3" as Address, // Hardhat
+  };
+
+  if (!addresses[chainId]) {
+    throw new Error(`No cUSD address configured for chain ${chainId}`);
+  }
+
+  return addresses[chainId];
+}
+
+// Legacy exports for backward compatibility (will be removed in refactor)
+export const MASTER_FACTORY_ADDRESS = getMasterFactoryAddress(11142220); // Default to Sepolia for now
+export const CUSD_ADDRESS = getCUSDAddress(11142220);
+export const CHAIN_ID = 11142220; // Default chain ID
 
 // TypeScript interfaces for contract data structures
 

@@ -4,7 +4,7 @@ import { getAuthenticatedUser } from "@/lib/server-auth";
 import { type Address } from "viem";
 
 /**
- * GET /api/documents/[hash]
+ * GET /api/documents/[hash]?chainId=<chainId>
  * Retrieve a document by its hash or escrow address
  *
  * For deliverables: expects escrow address
@@ -13,15 +13,32 @@ import { type Address } from "viem";
  * Requires authentication - only depositor, recipient, or admin can access
  */
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: { hash: string } }
 ) {
   try {
     const { hash } = params;
+    const { searchParams } = new URL(request.url);
+    const chainId = searchParams.get('chainId');
 
     if (!hash) {
       return NextResponse.json(
         { error: "Hash/address parameter required" },
+        { status: 400 }
+      );
+    }
+
+    if (!chainId) {
+      return NextResponse.json(
+        { error: "chainId query parameter required" },
+        { status: 400 }
+      );
+    }
+
+    const chainIdNum = Number(chainId);
+    if (isNaN(chainIdNum)) {
+      return NextResponse.json(
+        { error: "Invalid chainId" },
         { status: 400 }
       );
     }
@@ -35,16 +52,16 @@ export async function GET(
 
     if (isAddress) {
       // Try deliverable by escrow address
-      document = await kv.get(kvKeys.deliverable(hash));
+      document = await kv.get(kvKeys.deliverable(chainIdNum, hash));
       type = "deliverable";
     } else {
       // Try resolution first
-      document = await kv.get(kvKeys.resolution(hash));
+      document = await kv.get(kvKeys.resolution(chainIdNum, hash));
       type = "resolution";
 
       // If not found, try dispute
       if (!document) {
-        document = await kv.get(kvKeys.dispute(hash));
+        document = await kv.get(kvKeys.dispute(chainIdNum, hash));
         type = "dispute";
       }
     }
@@ -77,7 +94,7 @@ export async function GET(
     } else if (type === "dispute") {
       // For disputes, we need to fetch the deliverable to get depositor/recipient
       const escrowAddress = document.escrowAddress as string;
-      const deliverable: any = await kv.get(kvKeys.deliverable(escrowAddress));
+      const deliverable: any = await kv.get(kvKeys.deliverable(chainIdNum, escrowAddress));
       if (!deliverable) {
         return NextResponse.json(
           { error: "Associated deliverable not found" },
@@ -90,7 +107,7 @@ export async function GET(
       // type === "resolution"
       // For resolutions, we need to fetch the deliverable to get depositor/recipient
       const escrowAddress = document.escrowAddress as string;
-      const deliverable: any = await kv.get(kvKeys.deliverable(escrowAddress));
+      const deliverable: any = await kv.get(kvKeys.deliverable(chainIdNum, escrowAddress));
       if (!deliverable) {
         return NextResponse.json(
           { error: "Associated deliverable not found" },

@@ -28,6 +28,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     const {
       escrowAddress,
+      chainId,
       favorDepositor,
       disputeReason,
       deliverableReview,
@@ -38,6 +39,7 @@ export async function POST(request: Request) {
     // Validate input
     if (
       !escrowAddress ||
+      !chainId ||
       favorDepositor === undefined ||
       !disputeReason ||
       !deliverableReview ||
@@ -68,7 +70,7 @@ export async function POST(request: Request) {
 
     // Store in KV
     const kv = getKVClient();
-    await kv.set(kvKeys.resolution(resolutionHash), resolutionDocument);
+    await kv.set(kvKeys.resolution(chainId, resolutionHash), resolutionDocument);
 
     return NextResponse.json({
       success: true,

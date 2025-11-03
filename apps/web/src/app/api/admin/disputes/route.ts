@@ -3,11 +3,10 @@ import { createPublicClient, http, type Address } from "viem";
 import { celoSepolia, hardhat, celo } from "viem/chains";
 import { requireAdmin } from "@/lib/server-auth";
 import {
-  MASTER_FACTORY_ADDRESS,
+  getMasterFactoryAddress,
   MASTER_FACTORY_ABI,
   ESCROW_CONTRACT_ABI,
   EscrowState,
-  CHAIN_ID,
 } from "@/lib/escrow-config";
 import { getKVClient, kvKeys } from "@/lib/kv";
 import type { DisputeDocument } from "@/lib/types";
@@ -15,9 +14,9 @@ import type { DisputeDocument } from "@/lib/types";
 // Tell Next.js this route must be dynamic (server-rendered on demand)
 export const dynamic = 'force-dynamic';
 
-// Helper to get the correct chain based on CHAIN_ID
-function getChain() {
-  switch (CHAIN_ID) {
+// Helper to get the correct chain based on chainId
+function getChain(chainId: number) {
+  switch (chainId) {
     case 31337:
       return hardhat;
     case 42220:
@@ -30,25 +29,45 @@ function getChain() {
 }
 
 /**
- * GET /api/admin/disputes
- * List all disputed escrows
+ * GET /api/admin/disputes?chainId=<chainId>
+ * List all disputed escrows for a specific chain
  * Requires admin wallet address in header
  */
-export async function GET() {
+export async function GET(request: Request) {
   try {
     // Check admin authorization using session
     await requireAdmin();
 
+    const { searchParams } = new URL(request.url);
+    const chainIdStr = searchParams.get('chainId');
+
+    if (!chainIdStr) {
+      return NextResponse.json(
+        { error: "chainId query parameter required" },
+        { status: 400 }
+      );
+    }
+
+    const chainId = Number(chainIdStr);
+    if (isNaN(chainId)) {
+      return NextResponse.json(
+        { error: "Invalid chainId" },
+        { status: 400 }
+      );
+    }
+
+    const factoryAddress = getMasterFactoryAddress(chainId);
+
     // Create public client and KV client
     const publicClient = createPublicClient({
-      chain: getChain(),
+      chain: getChain(chainId),
       transport: http(),
     });
     const kv = getKVClient();
 
     // Get all escrows
     const allEscrows = await publicClient.readContract({
-      address: MASTER_FACTORY_ADDRESS,
+      address: factoryAddress,
       abi: MASTER_FACTORY_ABI,
       functionName: "getAllEscrows",
     });
@@ -74,7 +93,7 @@ export async function GET() {
 
             // Fetch dispute reason from KV directly
             const [disputeReasonHash] = disputeInfo;
-            const disputeDoc = await kv.get<DisputeDocument>(kvKeys.dispute(disputeReasonHash as string));
+            const disputeDoc = await kv.get<DisputeDocument>(kvKeys.dispute(chainId, disputeReasonHash as string));
             const actualDisputeReason = disputeDoc?.reason || "Dispute reason not found";
 
             return {
