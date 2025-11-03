@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { useAccount } from "wagmi";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useIsAdmin } from "@/hooks/use-is-admin";
@@ -25,6 +26,7 @@ interface PlatformStats {
 export default function AdminStatsPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
+  const { chainId } = useAccount();
   const { isAdmin, isLoading: isCheckingAdmin } = useIsAdmin();
   const [stats, setStats] = useState<PlatformStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -32,13 +34,13 @@ export default function AdminStatsPage() {
 
   useEffect(() => {
     const fetchStats = async () => {
-      if (status !== "authenticated") {
+      if (status !== "authenticated" || !chainId) {
         setIsLoading(false);
         return;
       }
 
       try {
-        const response = await fetch("/api/admin/stats", {
+        const response = await fetch(`/api/admin/stats?chainId=${chainId}`, {
           credentials: "include",
         });
 
@@ -57,7 +59,7 @@ export default function AdminStatsPage() {
     };
 
     fetchStats();
-  }, [status]);
+  }, [status, chainId]);
 
   // Show loading while checking auth or admin status
   if (status === "loading" || isCheckingAdmin) {

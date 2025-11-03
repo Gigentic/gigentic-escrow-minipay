@@ -3,19 +3,18 @@ import { createPublicClient, http, type Address } from "viem";
 import { celoSepolia, hardhat, celo } from "viem/chains";
 import { requireAdmin } from "@/lib/server-auth";
 import {
-  MASTER_FACTORY_ADDRESS,
+  getMasterFactoryAddress,
   MASTER_FACTORY_ABI,
   ESCROW_CONTRACT_ABI,
   EscrowState,
-  CHAIN_ID,
 } from "@/lib/escrow-config";
 
 // Tell Next.js this route must be dynamic (server-rendered on demand)
 export const dynamic = 'force-dynamic';
 
-// Helper to get the correct chain based on CHAIN_ID
-function getChain() {
-  switch (CHAIN_ID) {
+// Helper to get the correct chain based on chainId
+function getChain(chainId: number) {
+  switch (chainId) {
     case 31337:
       return hardhat;
     case 42220:
@@ -31,28 +30,43 @@ function getChain() {
  * GET /api/admin/stats
  * Get platform-wide statistics
  * Requires admin wallet address in header
+ * Accepts chainId as query parameter
  */
 export async function GET(request: Request) {
   try {
     // Check admin authorization using session
     await requireAdmin();
 
+    // Get chainId from query params
+    const { searchParams } = new URL(request.url);
+    const chainIdParam = searchParams.get("chainId");
+
+    if (!chainIdParam) {
+      return NextResponse.json(
+        { error: "chainId query parameter is required" },
+        { status: 400 }
+      );
+    }
+
+    const chainId = parseInt(chainIdParam, 10);
+    const factoryAddress = getMasterFactoryAddress(chainId);
+
     // Create public client
     const publicClient = createPublicClient({
-      chain: getChain(),
+      chain: getChain(chainId),
       transport: http(),
     });
 
     // Get factory statistics
     const factoryStats = await publicClient.readContract({
-      address: MASTER_FACTORY_ADDRESS,
+      address: factoryAddress,
       abi: MASTER_FACTORY_ABI,
       functionName: "getStatistics",
     });
 
     // Get all escrows
     const allEscrows = await publicClient.readContract({
-      address: MASTER_FACTORY_ADDRESS,
+      address: factoryAddress,
       abi: MASTER_FACTORY_ABI,
       functionName: "getAllEscrows",
     });
