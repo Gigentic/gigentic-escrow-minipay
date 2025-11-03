@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { EscrowList } from "@/components/escrow/escrow-list";
 import {
-  MASTER_FACTORY_ADDRESS,
+  getMasterFactoryAddress,
   MASTER_FACTORY_ABI,
   EscrowState,
 } from "@/lib/escrow-config";
@@ -19,18 +19,18 @@ export default function DashboardPage() {
   // Protect this route - requires authentication
   const { shouldRenderContent, isCheckingAuth } = useRequireAuth();
 
-  const { address, isConnected } = useAccount();
+  const { address, isConnected, chainId } = useAccount();
 
   const [showFilters, setShowFilters] = useState(false);
 
   // Fetch user's escrow addresses from contract
   const { data: userEscrowAddresses } = useReadContract({
-    address: MASTER_FACTORY_ADDRESS,
+    address: chainId ? getMasterFactoryAddress(chainId) : undefined,
     abi: MASTER_FACTORY_ABI,
     functionName: "getUserEscrows",
     args: address ? [address] : undefined,
     query: {
-      enabled: !!address,
+      enabled: !!address && !!chainId,
       staleTime: 0, // Always consider stale to ensure fresh data
       refetchOnMount: "always", // Always refetch on mount
       refetchOnWindowFocus: true, // Refetch when window regains focus

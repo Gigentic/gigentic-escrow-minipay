@@ -6,8 +6,8 @@ import { parseEther, type Address } from "viem";
 import { Card } from "@/components/ui/card";
 import {
   ERC20_ABI,
-  CUSD_ADDRESS,
-  MASTER_FACTORY_ADDRESS,
+  getCUSDAddress,
+  getMasterFactoryAddress,
   calculateTotalRequired,
 } from "@/lib/escrow-config";
 import { useRouter } from "next/navigation";
@@ -22,7 +22,7 @@ import { CreateEscrowReviewModal } from "./create-escrow-review-modal";
  */
 export function CreateEscrowForm({ initialAmount }: { initialAmount?: string }) {
   const router = useRouter();
-  const { address: userAddress, isConnected } = useAccount();
+  const { address: userAddress, isConnected, chainId } = useAccount();
   const { createEscrowAsync, isCreating, error: createError } = useCreateEscrow({
     onSuccess: async (data) => {
       console.log("Escrow created successfully:", data.escrowAddress);
@@ -47,12 +47,12 @@ export function CreateEscrowForm({ initialAmount }: { initialAmount?: string }) 
 
   // Check cUSD balance
   const { data: balance } = useReadContract({
-    address: CUSD_ADDRESS,
+    address: chainId ? getCUSDAddress(chainId) : undefined,
     abi: ERC20_ABI,
     functionName: "balanceOf",
     args: userAddress ? [userAddress] : undefined,
     query: {
-      enabled: !!userAddress,
+      enabled: !!userAddress && !!chainId,
     },
   });
 
@@ -62,12 +62,12 @@ export function CreateEscrowForm({ initialAmount }: { initialAmount?: string }) 
 
   // Check current spending cap (allowance)
   const { data: currentAllowance, refetch: refetchAllowance } = useReadContract({
-    address: CUSD_ADDRESS,
+    address: chainId ? getCUSDAddress(chainId) : undefined,
     abi: ERC20_ABI,
     functionName: "allowance",
-    args: userAddress ? [userAddress, MASTER_FACTORY_ADDRESS] : undefined,
+    args: userAddress && chainId ? [userAddress, getMasterFactoryAddress(chainId)] : undefined,
     query: {
-      enabled: !!userAddress,
+      enabled: !!userAddress && !!chainId,
       refetchInterval: allowanceRefetchKey > 0 ? 1000 : false, // Poll every 1s after approval
     },
   });

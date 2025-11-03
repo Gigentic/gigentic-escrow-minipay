@@ -13,13 +13,13 @@ import { useProfile } from "@/hooks/use-profile";
 import { Loader2, UserCircle, Network } from "lucide-react";
 import { type Address } from "viem";
 import {
-  MASTER_FACTORY_ADDRESS,
+  getMasterFactoryAddress,
   MASTER_FACTORY_ABI,
 } from "@/lib/escrow-config";
 
 export default function ProfilePage({ params }: { params: { address: string } }) {
   const profileAddress = params.address as Address;
-  const { address: currentUserAddress, chain } = useAccount();
+  const { address: currentUserAddress, chain, chainId } = useAccount();
   const { openChainModal } = useChainModal();
   const [showEditModal, setShowEditModal] = useState(false);
 
@@ -33,10 +33,13 @@ export default function ProfilePage({ params }: { params: { address: string } })
 
   // Fetch user's escrow addresses
   const { data: userEscrowAddresses, isLoading: isLoadingEscrows } = useReadContract({
-    address: MASTER_FACTORY_ADDRESS,
+    address: chainId ? getMasterFactoryAddress(chainId) : undefined,
     abi: MASTER_FACTORY_ABI,
     functionName: "getUserEscrows",
     args: [profileAddress],
+    query: {
+      enabled: !!chainId,
+    },
   });
 
   // Calculate stats from escrow addresses (simplified - just counts)
