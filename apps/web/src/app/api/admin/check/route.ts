@@ -4,6 +4,9 @@ import { authOptions } from "@/lib/auth";
 
 const ADMIN_WALLET_ADDRESS = process.env.ADMIN_WALLET_ADDRESS;
 
+// Tell Next.js this route must be dynamic (server-rendered on demand)
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/admin/check
  * Check if the current user is an admin
