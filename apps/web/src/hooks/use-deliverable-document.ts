@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { useAccount } from "wagmi";
 import type { Address } from "viem";
 import { queryKeys } from "@/lib/queries";
 import type { DeliverableDocument, DocumentResponse } from "@/lib/types";
@@ -23,12 +24,14 @@ import type { DeliverableDocument, DocumentResponse } from "@/lib/types";
  * @returns Query result with deliverable data, loading state, and error
  */
 export function useDeliverableDocument(escrowAddress: Address | undefined) {
-  return useQuery({
-    queryKey: queryKeys.documents.detail(escrowAddress || ""),
-    queryFn: async () => {
-      if (!escrowAddress) return null;
+  const { chainId } = useAccount();
 
-      const response = await fetch(`/api/documents/${escrowAddress}`);
+  return useQuery({
+    queryKey: queryKeys.documents.detail(escrowAddress || "", chainId),
+    queryFn: async () => {
+      if (!escrowAddress || !chainId) return null;
+
+      const response = await fetch(`/api/documents/${escrowAddress}?chainId=${chainId}`);
 
       // 404 is expected for escrows without deliverables
       if (response.status === 404) {
@@ -42,7 +45,7 @@ export function useDeliverableDocument(escrowAddress: Address | undefined) {
       const data: DocumentResponse<DeliverableDocument> = await response.json();
       return data.document;
     },
-    enabled: !!escrowAddress,
+    enabled: !!escrowAddress && !!chainId,
     staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
     retry: 1, // Only retry once on failure
   });

@@ -34,8 +34,8 @@ export const queryKeys = {
   // Document queries (deliverables, disputes, resolutions)
   documents: {
     all: ["documents"] as const,
-    detail: (hashOrAddress: string) =>
-      [...queryKeys.documents.all, hashOrAddress] as const,
+    detail: (hashOrAddress: string, chainId?: number) =>
+      [...queryKeys.documents.all, hashOrAddress, chainId] as const,
   },
 
   // Contract read queries (for wagmi integration)

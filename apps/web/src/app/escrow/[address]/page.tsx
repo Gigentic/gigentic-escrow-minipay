@@ -14,7 +14,7 @@ export default function EscrowDetailPage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const escrowAddress = params.address as Address;
-  const { address: userAddress, isConnected } = useAccount();
+  const { address: userAddress, isConnected, chainId } = useAccount();
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   // Use the hook for parallel data fetching

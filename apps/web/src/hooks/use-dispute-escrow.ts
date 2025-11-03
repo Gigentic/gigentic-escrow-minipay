@@ -22,15 +22,15 @@ export function useDisputeEscrow(options?: {
   onSuccess?: (data: { txHash: `0x${string}`; disputeHash: `0x${string}` }, params: DisputeParams) => void | Promise<void>;
   onError?: (error: Error) => void;
 }) {
-  const { address: userAddress } = useAccount();
+  const { address: userAddress, chainId } = useAccount();
   const publicClient = usePublicClient();
   const { writeContractAsync } = useWriteContract();
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
     mutationFn: async (params: DisputeParams) => {
-      if (!userAddress) {
-        throw new Error("Wallet not connected");
+      if (!userAddress || !chainId) {
+        throw new Error("Wallet not connected or chain not selected");
       }
 
       if (!publicClient) {
@@ -61,6 +61,7 @@ export function useDisputeEscrow(options?: {
         body: JSON.stringify({
           hash: disputeHash,
           document: disputeDoc,
+          chainId,
         }),
       });
 

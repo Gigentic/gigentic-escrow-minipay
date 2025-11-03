@@ -13,13 +13,15 @@ import type {
 /**
  * Fetch dispute document by hash
  * @param hash - The dispute reason hash from contract
+ * @param chainId - The chain ID where the escrow exists
  * @returns Dispute document with cleartext reason
  * @throws Error if fetch fails or document not found
  */
 export async function fetchDisputeDocument(
-  hash: `0x${string}`
+  hash: `0x${string}`,
+  chainId: number
 ): Promise<DisputeDocument> {
-  const response = await fetch(`/api/documents/${hash}`);
+  const response = await fetch(`/api/documents/${hash}?chainId=${chainId}`);
 
   if (!response.ok) {
     throw new Error(

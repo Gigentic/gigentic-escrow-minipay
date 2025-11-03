@@ -1,7 +1,7 @@
 "use client";
 
 import { useQueries, useQuery } from "@tanstack/react-query";
-import { usePublicClient } from "wagmi";
+import { usePublicClient, useAccount } from "wagmi";
 import type { Address } from "viem";
 import { queryKeys } from "@/lib/queries";
 import {
@@ -36,7 +36,8 @@ function parseEscrowDetails(details: readonly unknown[]): EscrowDetails {
  * Now properly typed with wagmi's auto-generated types from ABI
  */
 async function parseDisputeInfo(
-  disputeData: readonly [`0x${string}`, `0x${string}`]
+  disputeData: readonly [`0x${string}`, `0x${string}`],
+  chainId: number
 ): Promise<{
   disputeReason: string;
   disputeReasonHash: `0x${string}`;
@@ -53,7 +54,7 @@ async function parseDisputeInfo(
   }
 
   // Fetch cleartext from KV using centralized helper
-  const disputeDoc = await fetchDisputeDocument(disputeReasonHash);
+  const disputeDoc = await fetchDisputeDocument(disputeReasonHash, chainId);
 
   return {
     disputeReason: disputeDoc.reason,
@@ -72,6 +73,7 @@ async function parseDisputeInfo(
  * @returns Combined escrow data with loading and error states
  */
 export function useEscrowDetails(escrowAddress: Address | undefined) {
+  const { chainId } = useAccount();
   const publicClient = usePublicClient();
 
   // Fetch escrow details, deliverable, and dispute info in parallel
@@ -99,18 +101,18 @@ export function useEscrowDetails(escrowAddress: Address | undefined) {
 
       // Query 2: Deliverable document from API
       {
-        queryKey: queryKeys.documents.detail(escrowAddress || ""),
+        queryKey: queryKeys.documents.detail(escrowAddress || "", chainId),
         queryFn: async () => {
-          if (!escrowAddress) return null;
+          if (!escrowAddress || !chainId) return null;
 
-          const response = await fetch(`/api/documents/${escrowAddress}`);
+          const response = await fetch(`/api/documents/${escrowAddress}?chainId=${chainId}`);
           if (!response.ok) return null;
 
           const data: DocumentResponse<DeliverableDocument> =
             await response.json();
           return data.document;
         },
-        enabled: !!escrowAddress,
+        enabled: !!escrowAddress && !!chainId,
         staleTime: 5 * 60_000, // Fresh for 5 minutes (documents are immutable)
       },
 
@@ -121,7 +123,7 @@ export function useEscrowDetails(escrowAddress: Address | undefined) {
           "dispute",
         ],
         queryFn: async () => {
-          if (!publicClient || !escrowAddress) return null;
+          if (!publicClient || !escrowAddress || !chainId) return null;
 
           const disputeData = await publicClient.readContract({
             address: escrowAddress,
@@ -129,9 +131,9 @@ export function useEscrowDetails(escrowAddress: Address | undefined) {
             functionName: "getDisputeInfo",
           });
 
-          return parseDisputeInfo(disputeData);
+          return parseDisputeInfo(disputeData, chainId);
         },
-        enabled: !!publicClient && !!escrowAddress,
+        enabled: !!publicClient && !!escrowAddress && !!chainId,
         staleTime: 5_000, // Fresh for 5 seconds for more responsive updates
         refetchOnMount: true,
         refetchOnWindowFocus: true,
@@ -149,16 +151,16 @@ export function useEscrowDetails(escrowAddress: Address | undefined) {
       resolutionHash,
     ],
     queryFn: async () => {
-      if (!resolutionHash) return null;
+      if (!resolutionHash || !chainId) return null;
 
-      const response = await fetch(`/api/documents/${resolutionHash}`);
+      const response = await fetch(`/api/documents/${resolutionHash}?chainId=${chainId}`);
       if (!response.ok) return null;
 
       const data: DocumentResponse<ResolutionDocument> =
         await response.json();
       return data.document;
     },
-    enabled: !!resolutionHash && !queries[2].isLoading,
+    enabled: !!resolutionHash && !!chainId && !queries[2].isLoading,
     staleTime: 5 * 60_000,
   });
 

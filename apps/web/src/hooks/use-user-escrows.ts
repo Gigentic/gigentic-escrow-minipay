@@ -1,7 +1,7 @@
 "use client";
 
 import { useQueries } from "@tanstack/react-query";
-import { usePublicClient } from "wagmi";
+import { usePublicClient, useAccount } from "wagmi";
 import type { Address } from "viem";
 import { queryKeys } from "@/lib/queries";
 import { ESCROW_CONTRACT_ABI } from "@/lib/escrow-config";
@@ -31,6 +31,7 @@ import type { EscrowListItem } from "@/lib/types";
  * @returns Array of escrow list items with loading state
  */
 export function useUserEscrows(addresses: readonly Address[] | Address[] | undefined) {
+  const { chainId } = useAccount();
   const publicClient = usePublicClient();
 
   const queries = useQueries({
@@ -49,15 +50,17 @@ export function useUserEscrows(addresses: readonly Address[] | Address[] | undef
 
           // Fetch deliverable title (optional - don't fail if missing)
           let title: string | undefined;
-          try {
-            const docResponse = await fetch(`/api/documents/${escrowAddress}`);
-            if (docResponse.ok) {
-              const docData = await docResponse.json();
-              title = docData.document?.title;
+          if (chainId) {
+            try {
+              const docResponse = await fetch(`/api/documents/${escrowAddress}?chainId=${chainId}`);
+              if (docResponse.ok) {
+                const docData = await docResponse.json();
+                title = docData.document?.title;
+              }
+            } catch (err) {
+              // Deliverable is optional - continue without it
+              console.error(`Error fetching deliverable for ${escrowAddress}:`, err);
             }
-          } catch (err) {
-            // Deliverable is optional - continue without it
-            console.error(`Error fetching deliverable for ${escrowAddress}:`, err);
           }
 
           return {
@@ -74,7 +77,7 @@ export function useUserEscrows(addresses: readonly Address[] | Address[] | undef
           return null;
         }
       },
-      enabled: !!publicClient && !!escrowAddress,
+      enabled: !!publicClient && !!escrowAddress && !!chainId,
       staleTime: 5_000, // Fresh for only 5 seconds to ensure more frequent updates
       retry: 1, // Only retry once on failure
       refetchOnMount: true, // Refetch when component mounts
