@@ -17,7 +17,7 @@ const WalletProvider = dynamic(
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Gigentic Escrow',
+  title: 'Gigentic CheckPay',
   description: 'Send money through an escrow with built in AI dispute resolution',
 };
 

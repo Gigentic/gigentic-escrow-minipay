@@ -4,6 +4,9 @@ import { Button } from "@/components/ui/button";
 import { requireAdmin } from "@/lib/server-auth";
 import { redirect } from "next/navigation";
 
+// Force dynamic rendering - this page uses session/auth
+export const dynamic = 'force-dynamic';
+
 export default async function AdminDashboardPage() {
   // Server-side admin check - redirects if not admin
   try {

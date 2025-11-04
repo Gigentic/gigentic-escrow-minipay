@@ -1,14 +1,18 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import { useAccount } from "wagmi";
+import { redirect } from "next/navigation";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { useIsAdmin } from "@/hooks/use-is-admin";
+import { requireAdmin } from "@/lib/server-auth";
+import { createPublicClient, http, type Address } from "viem";
+import { celoSepolia, hardhat, celo } from "viem/chains";
+import {
+  getMasterFactoryAddress,
+  MASTER_FACTORY_ABI,
+  ESCROW_CONTRACT_ABI,
+  EscrowState,
+} from "@/lib/escrow-config";
 import { formatEther } from "viem";
-import { ShieldAlert } from "lucide-react";
+
+// Force dynamic rendering - this page uses session/auth
+export const dynamic = 'force-dynamic';
 
 interface PlatformStats {
   totalEscrows: string;
@@ -23,82 +27,115 @@ interface PlatformStats {
   successRate: string;
 }
 
-export default function AdminStatsPage() {
-  const router = useRouter();
-  const { data: session, status } = useSession();
-  const { chainId } = useAccount();
-  const { isAdmin, isLoading: isCheckingAdmin } = useIsAdmin();
-  const [stats, setStats] = useState<PlatformStats | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
+// Helper to get the correct chain based on chainId
+function getChain(chainId: number) {
+  switch (chainId) {
+    case 31337:
+      return hardhat;
+    case 42220:
+      return celo;
+    case 11142220:
+      return celoSepolia;
+    default:
+      return celoSepolia;
+  }
+}
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      if (status !== "authenticated" || !chainId) {
-        setIsLoading(false);
-        return;
-      }
+export default async function AdminStatsPage({
+  searchParams,
+}: {
+  searchParams: { chainId?: string };
+}) {
+  // Server-side admin check - redirects if not admin
+  try {
+    await requireAdmin();
+  } catch (error) {
+    console.error("[Admin Stats] Access denied:", error);
+    redirect("/");
+  }
 
+  // Default to Celo Sepolia testnet
+  const chainId = searchParams.chainId ? parseInt(searchParams.chainId, 10) : 11142220;
+
+  let stats: PlatformStats | null = null;
+  let error = "";
+
+  try {
+    const factoryAddress = getMasterFactoryAddress(chainId);
+
+    // Create public client
+    const publicClient = createPublicClient({
+      chain: getChain(chainId),
+      transport: http(),
+    });
+
+    // Get factory statistics
+    const factoryStats = await publicClient.readContract({
+      address: factoryAddress,
+      abi: MASTER_FACTORY_ABI,
+      functionName: "getStatistics",
+    });
+
+    // Get all escrows
+    const allEscrows = await publicClient.readContract({
+      address: factoryAddress,
+      abi: MASTER_FACTORY_ABI,
+      functionName: "getAllEscrows",
+    });
+
+    // Count escrows by state
+    let createdCount = 0;
+    let disputedCount = 0;
+    let completedCount = 0;
+    let refundedCount = 0;
+
+    for (const escrowAddress of allEscrows) {
       try {
-        const response = await fetch(`/api/admin/stats?chainId=${chainId}`, {
-          credentials: "include",
+        const details = await publicClient.readContract({
+          address: escrowAddress as Address,
+          abi: ESCROW_CONTRACT_ABI,
+          functionName: "getDetails",
         });
 
-        if (!response.ok) {
-          throw new Error("Failed to fetch statistics");
+        const state = details[5] as EscrowState;
+
+        switch (state) {
+          case EscrowState.CREATED:
+            createdCount++;
+            break;
+          case EscrowState.DISPUTED:
+            disputedCount++;
+            break;
+          case EscrowState.COMPLETED:
+            completedCount++;
+            break;
+          case EscrowState.REFUNDED:
+            refundedCount++;
+            break;
         }
-
-        const data = await response.json();
-        setStats(data);
-      } catch (err: any) {
-        console.error("Error fetching stats:", err);
-        setError(err.message || "Failed to load statistics");
-      } finally {
-        setIsLoading(false);
+      } catch (error) {
+        console.error(`Error fetching escrow ${escrowAddress}:`, error);
       }
+    }
+
+    stats = {
+      totalEscrows: factoryStats[0].toString(),
+      volumeProcessed: factoryStats[1].toString(),
+      feesCollected: factoryStats[2].toString(),
+      escrowsByState: {
+        created: createdCount,
+        disputed: disputedCount,
+        completed: completedCount,
+        refunded: refundedCount,
+      },
+      successRate:
+        completedCount + refundedCount > 0
+          ? ((completedCount / (completedCount + refundedCount)) * 100).toFixed(2)
+          : "0",
     };
-
-    fetchStats();
-  }, [status, chainId]);
-
-  // Show loading while checking auth or admin status
-  if (status === "loading" || isCheckingAdmin) {
-    return (
-      <main className="flex-1 container mx-auto px-4 py-12">
-        <Card className="p-8 text-center max-w-md mx-auto">
-          <p className="text-muted-foreground">Loading...</p>
-        </Card>
-      </main>
-    );
-  }
-
-  if (status === "unauthenticated") {
-    return (
-      <main className="flex-1 container mx-auto px-4 py-12">
-        <Card className="p-8 text-center max-w-md mx-auto">
-          <h1 className="text-2xl font-bold mb-4">Platform Statistics</h1>
-          <p className="text-muted-foreground">
-            Please connect your wallet to access this page
-          </p>
-        </Card>
-      </main>
-    );
-  }
-
-  // Check if user is admin
-  if (!isAdmin) {
-    return (
-      <main className="flex-1 container mx-auto px-4 py-12">
-        <Card className="p-8 text-center max-w-md mx-auto border-yellow-300 dark:border-yellow-700">
-          <ShieldAlert className="h-12 w-12 mx-auto mb-4 text-yellow-600 dark:text-yellow-400" />
-          <h1 className="text-2xl font-bold mb-4">Access Denied</h1>
-          <p className="text-muted-foreground mb-6">
-            You must be an admin to view platform statistics.
-          </p>
-          <Button onClick={() => router.push("/")}>Go to Homepage</Button>
-        </Card>
-      </main>
-    );
+  } catch (err: any) {
+    console.error("Error fetching stats:", err);
+    error = err.message || "Failed to load statistics";
   }
 
   if (error) {
@@ -110,16 +147,6 @@ export default function AdminStatsPage() {
           </h1>
           <p className="text-muted-foreground">{error}</p>
         </Card>
-      </main>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <main className="flex-1 container mx-auto px-4 py-12">
-        <div className="text-center">
-          <p className="text-muted-foreground">Loading statistics...</p>
-        </div>
       </main>
     );
   }
@@ -275,4 +302,3 @@ export default function AdminStatsPage() {
     </main>
   );
 }
-

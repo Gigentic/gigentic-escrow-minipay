@@ -1,16 +1,21 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
+import { redirect } from "next/navigation";
 import { type Address } from "viem";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { ResolveForm } from "@/components/admin/resolve-form";
 import { AddressDisplay } from "@/components/wallet/address-display";
-import { useIsAdmin } from "@/hooks/use-is-admin";
+import { requireAdmin } from "@/lib/server-auth";
+import { createPublicClient, http } from "viem";
+import { celoSepolia, hardhat, celo } from "viem/chains";
+import {
+  ESCROW_CONTRACT_ABI,
+  EscrowState,
+} from "@/lib/escrow-config";
+import { getKVClient, kvKeys } from "@/lib/kv";
+import type { DisputeDocument, DeliverableDocument } from "@/lib/types";
 import { formatEther } from "viem";
-import { ShieldAlert } from "lucide-react";
+
+// Force dynamic rendering - this page uses session/auth
+export const dynamic = 'force-dynamic';
 
 interface DisputeDetails {
   address: Address;
@@ -30,85 +35,93 @@ interface DisputeDetails {
   };
 }
 
-export default function ResolveDisputePage() {
-  const params = useParams();
-  const router = useRouter();
-  const { data: session, status } = useSession();
-  const { isAdmin, isLoading: isCheckingAdmin } = useIsAdmin();
+// Helper to get the correct chain based on chainId
+function getChain(chainId: number) {
+  switch (chainId) {
+    case 31337:
+      return hardhat;
+    case 42220:
+      return celo;
+    case 11142220:
+      return celoSepolia;
+    default:
+      return celoSepolia;
+  }
+}
+
+export default async function ResolveDisputePage({
+  params,
+  searchParams,
+}: {
+  params: { id: string };
+  searchParams: { chainId?: string };
+}) {
+  // Server-side admin check - redirects if not admin
+  try {
+    await requireAdmin();
+  } catch (error) {
+    console.error("[Admin Resolve] Access denied:", error);
+    redirect("/");
+  }
+
   const escrowAddress = params.id as Address;
+  // Default to Celo Sepolia testnet
+  const chainId = searchParams.chainId ? parseInt(searchParams.chainId, 10) : 11142220;
 
-  const [dispute, setDispute] = useState<DisputeDetails | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
+  let dispute: DisputeDetails | null = null;
+  let error = "";
 
-  useEffect(() => {
-    const fetchDispute = async () => {
-      if (status !== "authenticated") {
-        setIsLoading(false);
-        return;
-      }
+  try {
+    // Create public client and KV client
+    const publicClient = createPublicClient({
+      chain: getChain(chainId),
+      transport: http(),
+    });
+    const kv = getKVClient();
 
-      try {
-        // Session cookie automatically included with credentials: 'include'
-        const response = await fetch(`/api/admin/disputes/${escrowAddress}`, {
-          credentials: "include",
-        });
+    // Get escrow details
+    const details = await publicClient.readContract({
+      address: escrowAddress,
+      abi: ESCROW_CONTRACT_ABI,
+      functionName: "getDetails",
+    });
 
-        if (!response.ok) {
-          throw new Error("Failed to fetch dispute details");
-        }
+    const state = details[5] as EscrowState;
 
-        const data = await response.json();
-        setDispute(data);
-      } catch (err: any) {
-        console.error("Error fetching dispute:", err);
-        setError(err.message || "Failed to load dispute details");
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    if (state !== EscrowState.DISPUTED) {
+      error = "Escrow is not in disputed state";
+    } else {
+      // Get dispute info
+      const disputeInfo = await publicClient.readContract({
+        address: escrowAddress,
+        abi: ESCROW_CONTRACT_ABI,
+        functionName: "getDisputeInfo",
+      });
 
-    fetchDispute();
-  }, [status, escrowAddress]);
+      // Fetch dispute reason from KV directly
+      const [disputeReasonHash] = disputeInfo;
+      const disputeDoc = await kv.get<DisputeDocument>(kvKeys.dispute(chainId, disputeReasonHash as string));
+      const actualDisputeReason = disputeDoc?.reason || "Dispute reason not found";
 
-  // Show loading while checking auth or admin status
-  if (status === "loading" || isCheckingAdmin) {
-    return (
-      <main className="flex-1 container mx-auto px-4 py-12">
-        <Card className="p-8 text-center max-w-md mx-auto">
-          <p className="text-muted-foreground">Loading...</p>
-        </Card>
-      </main>
-    );
-  }
+      // Get deliverable document from KV directly
+      const deliverable = await kv.get<DeliverableDocument>(kvKeys.deliverable(chainId, escrowAddress));
 
-  if (status === "unauthenticated") {
-    return (
-      <main className="flex-1 container mx-auto px-4 py-12">
-        <Card className="p-8 text-center max-w-md mx-auto">
-          <h1 className="text-2xl font-bold mb-4">Resolve Dispute</h1>
-          <p className="text-muted-foreground">
-            Please connect your wallet to access this page
-          </p>
-        </Card>
-      </main>
-    );
-  }
-
-  // Check if user is admin
-  if (!isAdmin) {
-    return (
-      <main className="flex-1 container mx-auto px-4 py-12">
-        <Card className="p-8 text-center max-w-md mx-auto border-yellow-300 dark:border-yellow-700">
-          <ShieldAlert className="h-12 w-12 mx-auto mb-4 text-yellow-600 dark:text-yellow-400" />
-          <h1 className="text-2xl font-bold mb-4">Access Denied</h1>
-          <p className="text-muted-foreground mb-6">
-            You must be an admin to resolve disputes.
-          </p>
-          <Button onClick={() => router.push("/")}>Go to Homepage</Button>
-        </Card>
-      </main>
-    );
+      dispute = {
+        address: escrowAddress,
+        depositor: details[0],
+        recipient: details[1],
+        escrowAmount: details[2].toString(),
+        platformFee: details[3].toString(),
+        disputeBond: details[4].toString(),
+        deliverableHash: details[6],
+        createdAt: details[7].toString(),
+        disputeReason: actualDisputeReason,
+        deliverable: deliverable || undefined,
+      };
+    }
+  } catch (err: any) {
+    console.error("Error fetching dispute:", err);
+    error = err.message || "Failed to load dispute details";
   }
 
   if (error) {
@@ -120,16 +133,6 @@ export default function ResolveDisputePage() {
           </h1>
           <p className="text-muted-foreground">{error}</p>
         </Card>
-      </main>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <main className="flex-1 container mx-auto px-4 py-12">
-        <div className="text-center">
-          <p className="text-muted-foreground">Loading dispute details...</p>
-        </div>
       </main>
     );
   }
@@ -212,4 +215,3 @@ export default function ResolveDisputePage() {
     </main>
   );
 }
-
