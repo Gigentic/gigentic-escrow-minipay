@@ -50,7 +50,6 @@ export default async function AdminStatsPage({
   try {
     await requireAdmin();
   } catch (error) {
-    console.error("[Admin Stats] Access denied:", error);
     redirect("/");
   }
 

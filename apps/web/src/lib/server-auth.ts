@@ -15,7 +15,6 @@ export async function getAuthenticatedUser(): Promise<AuthenticatedSession | nul
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.address) {
-    console.log("[Auth] No session or address found");
     return null;
   }
 
@@ -25,10 +24,6 @@ export async function getAuthenticatedUser(): Promise<AuthenticatedSession | nul
   const adminAddress = process.env.ADMIN_WALLET_ADDRESS?.toLowerCase();
 
   const isAdmin = adminAddress ? address.toLowerCase() === adminAddress : false;
-
-  console.log("[Auth] User address:", address.toLowerCase());
-  console.log("[Auth] Admin address:", adminAddress);
-  console.log("[Auth] Is admin:", isAdmin);
 
   return {
     address,
@@ -56,9 +51,11 @@ export async function requireAdmin(): Promise<AuthenticatedSession> {
   const user = await requireAuth();
 
   if (!user.isAdmin) {
+    console.warn("[Admin Auth] Access denied for user:", user.address);
     throw new Error("FORBIDDEN");
   }
 
+  console.log("[Admin Auth] Access granted for admin:", user.address);
   return user;
 }
 

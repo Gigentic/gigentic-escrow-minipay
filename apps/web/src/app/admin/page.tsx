@@ -12,9 +12,6 @@ export default async function AdminDashboardPage() {
   try {
     await requireAdmin();
   } catch (error) {
-    // Log the error for debugging
-    console.error("[Admin Page] Access denied:", error);
-    console.error("[Admin Page] Error message:", (error as Error).message);
     // Redirect unauthorized users to home page
     redirect("/");
   }

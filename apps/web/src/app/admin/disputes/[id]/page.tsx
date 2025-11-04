@@ -60,7 +60,6 @@ export default async function ResolveDisputePage({
   try {
     await requireAdmin();
   } catch (error) {
-    console.error("[Admin Resolve] Access denied:", error);
     redirect("/");
   }
 

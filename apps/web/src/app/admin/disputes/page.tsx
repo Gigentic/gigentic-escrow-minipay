@@ -51,7 +51,6 @@ export default async function AdminDisputesPage({
   try {
     await requireAdmin();
   } catch (error) {
-    console.error("[Admin Disputes] Access denied:", error);
     redirect("/");
   }
 
