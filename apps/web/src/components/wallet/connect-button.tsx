@@ -13,14 +13,13 @@ import { Loader2, LogOut } from "lucide-react";
 
 export function ConnectButton() {
   const router = useRouter();
-  const { chain, address } = useAccount();
+  const { address } = useAccount();
   const { status: sessionStatus } = useSession();
   const { profile } = useProfile(address);
   const { isAuthenticating, signIn } = useAuthState();
   const logout = useLogout();
   const [isMiniPay, setIsMiniPay] = useState(false);
 
-  const isDev = process.env.NEXT_PUBLIC_APP_ENV !== "prod";
   const isAuthenticated = sessionStatus === 'authenticated';
 
   // Detect MiniPay environment

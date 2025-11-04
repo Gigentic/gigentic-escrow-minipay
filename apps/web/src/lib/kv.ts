@@ -28,16 +28,6 @@ export function getKVClient(): Redis {
   return kvClient;
 }
 
-// Get environment from environment variables
-const APP_ENV = process.env.NEXT_PUBLIC_APP_ENV;
-
-if (!APP_ENV) {
-  throw new Error("NEXT_PUBLIC_APP_ENV is not defined. Please set it in your environment variables.");
-}
-
-// Create namespace prefix (without chain - chain will be dynamic)
-const NAMESPACE = `${APP_ENV}:`;
-
 // Helper to map chainId to chain name for KV keys
 function getChainName(chainId: number): string {
   const chainMap: Record<number, string> = {
@@ -48,20 +38,20 @@ function getChainName(chainId: number): string {
   return chainMap[chainId] || "unknown";
 }
 
-// Helper functions for key generation
+// Helper functions for key generation (no environment prefix)
 export const kvKeys = {
   deliverable: (chainId: number, escrowAddress: string) =>
-    `${NAMESPACE}${getChainName(chainId)}:deliverable:${escrowAddress.toLowerCase()}`,
+    `${getChainName(chainId)}:deliverable:${escrowAddress.toLowerCase()}`,
 
   resolution: (chainId: number, hash: string) =>
-    `${NAMESPACE}${getChainName(chainId)}:resolution:${hash}`,
+    `${getChainName(chainId)}:resolution:${hash}`,
 
   dispute: (chainId: number, hash: string) =>
-    `${NAMESPACE}${getChainName(chainId)}:dispute:${hash}`,
+    `${getChainName(chainId)}:dispute:${hash}`,
 
   // Profile is global across all chains
   profile: (address: string) =>
-    `${NAMESPACE}profile:${address.toLowerCase()}`,
+    `profile:${address.toLowerCase()}`,
 };
 
 // User Profile Types
