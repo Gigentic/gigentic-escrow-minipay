@@ -11,6 +11,7 @@ import { useQueryClient } from "@tanstack/react-query";
 
 interface ResolveFormProps {
   escrowAddress: Address;
+  chainId: number;
   disputeReason: string;
   deliverableTitle?: string;
   deliverableDescription?: string;
@@ -23,6 +24,7 @@ interface ResolveFormProps {
  */
 export function ResolveForm({
   escrowAddress,
+  chainId,
   disputeReason,
   deliverableTitle,
   deliverableDescription,
@@ -88,6 +90,7 @@ export function ResolveForm({
         },
         body: JSON.stringify({
           escrowAddress,
+          chainId,
           favorDepositor,
           disputeReason,
           deliverableReview,

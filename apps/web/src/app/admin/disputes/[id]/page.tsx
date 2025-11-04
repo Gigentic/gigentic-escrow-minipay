@@ -205,6 +205,7 @@ export default async function ResolveDisputePage({
         {/* Resolution Form */}
         <ResolveForm
           escrowAddress={escrowAddress}
+          chainId={chainId}
           disputeReason={dispute.disputeReason}
           deliverableTitle={dispute.deliverable?.title}
           deliverableDescription={dispute.deliverable?.description}
