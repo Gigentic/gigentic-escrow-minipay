@@ -7,8 +7,10 @@ import { SessionProvider } from 'next-auth/react'
 import {
   metaMaskWallet,
   injectedWallet,
+  valoraWallet,
+  walletConnectWallet,
 } from "@rainbow-me/rainbowkit/wallets";
-import { WagmiProvider, createConfig, http, useConnect, useAccount } from "wagmi";
+import { WagmiProvider, createConfig, http, useConnect, useAccount, cookieStorage, createStorage } from "wagmi";
 import { celo, hardhat } from 'wagmi/chains'
 import { defineChain } from 'viem'
 import { QueryClientProvider, QueryClient } from '@tanstack/react-query'
@@ -63,6 +65,7 @@ const connectors = connectorsForWallets(
       wallets: [
         injectedWallet,
         metaMaskWallet,
+        // valoraWallet,
         // walletConnectWallet,
       ],
     },
@@ -85,6 +88,9 @@ const wagmiConfig = createConfig({
     [celoSepolia.id]: http(),
   },
   ssr: true,
+  // storage: createStorage({
+  //   storage: cookieStorage,
+  // }),
 });
 
 const queryClient = new QueryClient({
