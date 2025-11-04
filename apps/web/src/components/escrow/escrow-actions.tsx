@@ -153,7 +153,7 @@ export function EscrowActions({
         )}
 
         {/* CREATED state actions */}
-        {state === EscrowState.CREATED && (
+        {state === EscrowState.CREATED && !success && (
           <div className="space-y-3">
             {userIsDepositor && (
               <div className="space-y-2">
