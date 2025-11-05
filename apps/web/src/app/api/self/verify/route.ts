@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
     // CRITICAL: Use direct ISO country codes like "IRN", "PRK" (not constants)
     const verificationConfig = {
       excludedCountries: ['IRN', 'PRK'] as any, // Direct 3-letter ISO codes (typed as any to avoid SDK type conflicts)
-      ofac: false,
+      ofac: true,
       minimumAge: 18,
     };
 
@@ -80,11 +80,11 @@ export async function POST(request: NextRequest) {
     const endpoint = process.env.NEXT_PUBLIC_SELF_ENDPOINT!;
 
     // Initialize Self Backend Verifier
-    // mockPassport: true for testing (use false for production)
+    // mockPassport: false for production (use true for testing)
     const selfBackendVerifier = new SelfBackendVerifier(
       scope,           // Scope name (must match frontend)
       endpoint,        // API endpoint
-      true,           // mockPassport: true for testing
+      false,          // mockPassport: false for production with real passports
       AllIds,         // Accept all document types (passports, EU ID cards)
       configStore,    // Verification configuration
       'hex'           // userIdType: 'hex' for wallet addresses

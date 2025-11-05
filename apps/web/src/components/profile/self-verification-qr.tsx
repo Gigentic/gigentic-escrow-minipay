@@ -51,7 +51,7 @@ export function SelfVerificationQR({ onSuccess, onClose }: SelfVerificationQRPro
         appName: appName,
         scope: scope,
         endpoint: endpoint,
-        endpointType: 'staging_https',
+        endpointType: 'https',
         userIdType: 'hex',
         userId: address,
         logoBase64: 'https://i.postimg.cc/mrmVf9hm/self.png', // Self Protocol default logo
@@ -60,7 +60,7 @@ export function SelfVerificationQR({ onSuccess, onClose }: SelfVerificationQRPro
           // Verification requirements (must match backend)
           minimumAge: 18,
           excludedCountries: ['IRN', 'PRK'], // Direct ISO codes
-          ofac: false,
+          ofac: true,
         },
       }).build();
 

@@ -51,65 +51,6 @@ export default async function AdminDashboardPage() {
             </Card>
           </Link>
         </div>
-
-        {/* Info Cards */}
-        <div className="grid md:grid-cols-3 gap-6">
-          <Card className="p-6">
-            <h3 className="text-sm font-medium text-muted-foreground mb-2">
-              Admin Capabilities
-            </h3>
-            <ul className="space-y-2 text-sm">
-              <li>• Resolve disputes</li>
-              <li>• View all escrows</li>
-              <li>• Access platform stats</li>
-              <li>• Update arbiter address</li>
-            </ul>
-          </Card>
-
-          <Card className="p-6">
-            <h3 className="text-sm font-medium text-muted-foreground mb-2">
-              Resolution Guidelines
-            </h3>
-            <ul className="space-y-2 text-sm">
-              <li>• Review deliverables carefully</li>
-              <li>• Consider all evidence</li>
-              <li>• Provide clear rationale</li>
-              <li>• Act with impartiality</li>
-            </ul>
-          </Card>
-
-          <Card className="p-6">
-            <h3 className="text-sm font-medium text-muted-foreground mb-2">
-              Important Notes
-            </h3>
-            <ul className="space-y-2 text-sm">
-              <li>• Resolutions are final</li>
-              <li>• Recorded on-chain</li>
-              <li>• Affects platform reputation</li>
-              <li>• Use multi-sig for production</li>
-            </ul>
-          </Card>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="mt-8">
-          <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
-          <div className="flex flex-wrap gap-4">
-            <Link href="/admin/disputes">
-              <Button size="lg">View Pending Disputes</Button>
-            </Link>
-            <Link href="/admin/stats">
-              <Button variant="outline" size="lg">
-                View Statistics
-              </Button>
-            </Link>
-            <Link href="/dashboard">
-              <Button variant="outline" size="lg">
-                User Dashboard
-              </Button>
-            </Link>
-          </div>
-        </div>
       </div>
     </main>
   );
