@@ -7,7 +7,7 @@ import { useChainModal } from "@rainbow-me/rainbowkit";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AddressDisplay } from "@/components/wallet/address-display";
-import { VerificationBadge } from "@/components/profile/verification-badge";
+import { VerificationBadge, VerificationIcon } from "@/components/profile/verification-badge";
 import { ProfileModal } from "@/components/profile/profile-modal";
 import { useProfile } from "@/hooks/use-profile";
 import { Loader2, UserCircle, Network } from "lucide-react";
@@ -73,11 +73,16 @@ export default function ProfilePage({ params }: { params: { address: string } })
 
             {/* Profile Info */}
             <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2">
+              <div className="flex items-center gap-2 mb-2">
                 <h1 className="text-2xl font-bold">
                   {profile?.name || "Anonymous User"}
                 </h1>
-                {profile?.isVerified && <VerificationBadge size="md" />}
+                {profile?.isVerified && (
+                  <VerificationIcon
+                    isVerified={profile.isVerified}
+                    className="h-5 w-5"
+                  />
+                )}
               </div>
 
               {/* Wallet Address */}
