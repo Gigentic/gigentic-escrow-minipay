@@ -446,11 +446,6 @@ export function getCUSDAddress(chainId: number): Address {
   return addresses[chainId];
 }
 
-// Legacy exports for backward compatibility (will be removed in refactor)
-export const MASTER_FACTORY_ADDRESS = getMasterFactoryAddress(11142220); // Default to Sepolia for now
-export const CUSD_ADDRESS = getCUSDAddress(11142220);
-export const CHAIN_ID = 11142220; // Default chain ID
-
 // TypeScript interfaces for contract data structures
 
 export enum EscrowState {

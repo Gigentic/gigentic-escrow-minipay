@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { type Address } from "viem";
+import { useAccount } from "wagmi";
 import { Button } from "@/components/ui/button";
 import { Check, Copy } from "lucide-react";
 import { getAddressExplorerUrl } from "@/lib/blockchain-utils";
-import { CHAIN_ID } from "@/lib/escrow-config";
 
 interface AddressDisplayProps {
   address: Address;
@@ -32,12 +32,14 @@ export function AddressDisplay({
   suffixLength = 4,
 }: AddressDisplayProps) {
   const [copied, setCopied] = useState(false);
+  const { chainId } = useAccount();
 
   const displayAddress = truncate
     ? `${address.slice(0, prefixLength)}...${address.slice(-suffixLength)}`
     : address;
 
-  const explorerUrl = getAddressExplorerUrl(address, CHAIN_ID);
+  // Use the connected wallet's chain ID - will error if not connected
+  const explorerUrl = getAddressExplorerUrl(address, chainId!);
 
   const handleCopy = async () => {
     try {
