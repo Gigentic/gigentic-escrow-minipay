@@ -78,7 +78,11 @@
       "WebFetch(domain:ui.shadcn.com)",
       "mcp__playwright__browser_fill_form",
       "Bash(npx tsx:*)",
-      "Bash(pnpm build:*)"
+      "Bash(pnpm build:*)",
+      "Bash(hardhat --help:*)",
+      "Bash(pnpm exec hardhat ignition --help:*)",
+      "Bash(pnpm exec hardhat ignition deploy --help:*)",
+      "Bash(pnpm exec hardhat --help:*)"
     ],
     "deny": [],
     "ask": []
