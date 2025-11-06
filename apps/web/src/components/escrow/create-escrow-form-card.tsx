@@ -96,7 +96,9 @@ export function CreateEscrowFormCard({
             placeholder="1.00"
             value={amount}
             onChange={(e) => {
-              const value = e.target.value;
+              let value = e.target.value;
+              // Replace comma with period for iOS locale compatibility
+              value = value.replace(',', '.');
               // Allow only numbers and decimal point
               if (value === '' || /^\d*\.?\d*$/.test(value)) {
                 setAmount(value);
