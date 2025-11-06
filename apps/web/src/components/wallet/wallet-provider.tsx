@@ -11,7 +11,7 @@ import { SessionProvider } from 'next-auth/react'
 //   walletConnectWallet,
 // } from "@rainbow-me/rainbowkit/wallets";
 import { injectedWallet } from "@rainbow-me/rainbowkit/wallets";
-import { WagmiProvider, createConfig, http, useConnect, useAccount, cookieStorage, createStorage } from "wagmi";
+import { WagmiProvider, createConfig, http, useConnect, useAccount, cookieStorage, createStorage, type State } from "wagmi";
 import { celo, hardhat } from 'wagmi/chains'
 import { defineChain } from 'viem'
 import { QueryClientProvider, QueryClient } from '@tanstack/react-query'
@@ -59,27 +59,34 @@ const celoSepolia = defineChain({
   testnet: true,
 })
 
-const connectors = connectorsForWallets(
-  [
-    {
-      groupName: "Recommended",
-      wallets: [
-        injectedWallet,
-        // metaMaskWallet,
-        // valoraWallet,
-        // walletConnectWallet,
+// Check if running on server (SSR) or client
+const isServer = typeof window === "undefined";
+
+// Conditional connectors - only create during client-side rendering
+// This prevents issues with browser-only APIs like indexedDB during SSR
+const connectors = isServer
+  ? []
+  : connectorsForWallets(
+      [
+        {
+          groupName: "Recommended",
+          wallets: [
+            injectedWallet,
+            // metaMaskWallet,
+            // valoraWallet,
+            // walletConnectWallet,
+          ],
+        },
       ],
-    },
-  ],
-  {
-    appName: "Gigentic Escrow",
-    projectId: process.env.NEXT_PUBLIC_WC_PROJECT_ID!,
-  }
-);
+      {
+        appName: "Gigentic Escrow",
+        projectId: process.env.NEXT_PUBLIC_WC_PROJECT_ID!,
+      }
+    );
 
-
-// Create wagmi config with both Celo and Celo Sepolia support
-const wagmiConfig = createConfig({
+// Client-side wagmi config with conditional connectors
+// Used by WalletProvider component
+export const wagmiConfig = createConfig({
   chains: [celo, celoSepolia],
   // chains: [celo, celoSepolia, hardhat],
   connectors,
@@ -89,9 +96,9 @@ const wagmiConfig = createConfig({
     [celoSepolia.id]: http(),
   },
   ssr: true,
-  // storage: createStorage({
-  //   storage: cookieStorage,
-  // }),
+  storage: createStorage({
+    storage: cookieStorage,
+  }),
 });
 
 const queryClient = new QueryClient({
@@ -149,7 +156,13 @@ function RainbowKitWithAutoAuth({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function WalletProvider({ children }: { children: React.ReactNode }) {
+export function WalletProvider({
+  children,
+  initialState
+}: {
+  children: React.ReactNode;
+  initialState?: State | undefined;
+}) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -162,7 +175,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <WagmiProvider config={wagmiConfig}>
+    <WagmiProvider config={wagmiConfig} initialState={initialState}>
       <SessionProvider refetchInterval={0}>
         <QueryClientProvider client={queryClient}>
           <RainbowKitWithAutoAuth>

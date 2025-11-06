@@ -1,18 +1,15 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
-import dynamic from 'next/dynamic';
+import { headers } from 'next/headers';
+import { cookieToInitialState } from 'wagmi';
 // import { Analytics } from "@vercel/analytics/next"
 // import { SpeedInsights } from "@vercel/speed-insights/next"
 import { Navbar } from '@/components/navbar';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from '@/components/ui/sonner';
-
-// Load WalletProvider only on client-side to avoid IndexedDB errors during SSR/build
-const WalletProvider = dynamic(
-  () => import('@/components/wallet/wallet-provider').then(mod => ({ default: mod.WalletProvider })),
-  { ssr: false }
-);
+import { WalletProvider } from '@/components/wallet/wallet-provider';
+import { wagmiSsrConfig } from '@/config/wagmi-ssr';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -21,11 +18,17 @@ export const metadata: Metadata = {
   description: 'Send money through an escrow with built in AI dispute resolution',
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // Extract cookies and create initial state for SSR
+  const initialState = cookieToInitialState(
+    wagmiSsrConfig,
+    (await headers()).get('cookie')
+  );
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
@@ -37,7 +40,7 @@ export default function RootLayout({
         >
           {/* Navbar is included on all pages */}
           <div className="relative flex min-h-screen flex-col">
-            <WalletProvider>
+            <WalletProvider initialState={initialState}>
               <Navbar />
               <main className="flex-1">
                 {children}
