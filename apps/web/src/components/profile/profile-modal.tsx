@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { useProfile } from '@/hooks/use-profile';
 import { useLogout } from '@/hooks/use-logout';
 import {
@@ -17,8 +18,20 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { VerificationBadge } from '@/components/profile/verification-badge';
-import { SelfVerificationQR } from '@/components/profile/self-verification-qr';
-import { Shield } from 'lucide-react';
+import { Shield, Loader2 } from 'lucide-react';
+
+// Lazy load Self verification component (only loads when user clicks "Verify Humanity")
+const SelfVerificationQR = dynamic(
+  () => import('@/components/profile/self-verification-qr').then(mod => mod.SelfVerificationQR),
+  {
+    loading: () => (
+      <div className="flex items-center justify-center p-8">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    ),
+    ssr: false,
+  }
+);
 
 interface ProfileModalProps {
   open: boolean;

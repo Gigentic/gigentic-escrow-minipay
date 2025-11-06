@@ -2,12 +2,11 @@
 
 import { useState } from "react";
 import { useAccount, useReadContract } from "wagmi";
-import { useSession } from "next-auth/react";
 import { useChainModal } from "@rainbow-me/rainbowkit";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AddressDisplay } from "@/components/wallet/address-display";
-import { VerificationBadge, VerificationIcon } from "@/components/profile/verification-badge";
+import { VerificationIcon } from "@/components/profile/verification-badge";
 import { ProfileModal } from "@/components/profile/profile-modal";
 import { useProfile } from "@/hooks/use-profile";
 import { Loader2, UserCircle, Network } from "lucide-react";
