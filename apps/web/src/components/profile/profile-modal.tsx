@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { useProfile } from '@/hooks/use-profile';
 import { useLogout } from '@/hooks/use-logout';
 import {
@@ -17,8 +18,21 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { VerificationBadge } from '@/components/profile/verification-badge';
-import { SelfVerificationQR } from '@/components/profile/self-verification-qr';
-import { Shield } from 'lucide-react';
+import { Shield, Loader2 } from 'lucide-react';
+
+// Lazy load Self verification component (saves ~900 KB from initial bundle)
+const SelfVerificationQR = dynamic(
+  () => import('@/components/profile/self-verification-qr').then(mod => ({ default: mod.SelfVerificationQR })),
+  {
+    loading: () => (
+      <div className="flex flex-col items-center justify-center p-8 space-y-4">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="text-sm text-muted-foreground">Loading verification...</p>
+      </div>
+    ),
+    ssr: false
+  }
+);
 
 interface ProfileModalProps {
   open: boolean;
