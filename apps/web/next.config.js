@@ -2,6 +2,15 @@
 const nextConfig = {
   reactStrictMode: true,
 
+  // Performance optimizations
+  swcMinify: true, // 7x faster than Terser
+  compiler: {
+    // Remove console.log in production
+    removeConsole: process.env.NODE_ENV === 'production' ? {
+      exclude: ['error', 'warn'],
+    } : false,
+  },
+
   webpack: (config) => {
     config.externals.push('pino-pretty', 'lokijs', 'encoding')
     config.module.exprContextCritical = false;

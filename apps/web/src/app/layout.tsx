@@ -11,7 +11,13 @@ import { Toaster } from '@/components/ui/sonner';
 import { WalletProvider } from '@/components/wallet/wallet-provider';
 import { wagmiSsrConfig } from '@/config/wagmi-ssr';
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({
+  subsets: ['latin'],
+  display: 'swap', // Show fallback font while loading
+  variable: '--font-inter',
+  preload: true,
+  fallback: ['system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Arial', 'sans-serif'],
+});
 
 export const metadata: Metadata = {
   title: 'Gigentic CheckPay',
@@ -31,6 +37,11 @@ export default async function RootLayout({
 
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* Preconnect to Google Fonts for faster font loading */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+      </head>
       <body className={inter.className}>
         <ThemeProvider
           attribute="class"

@@ -82,7 +82,8 @@
       "Bash(hardhat --help:*)",
       "Bash(pnpm exec hardhat ignition --help:*)",
       "Bash(pnpm exec hardhat ignition deploy --help:*)",
-      "Bash(pnpm exec hardhat --help:*)"
+      "Bash(pnpm exec hardhat --help:*)",
+      "Bash(lighthouse:*)"
     ],
     "deny": [],
     "ask": []
