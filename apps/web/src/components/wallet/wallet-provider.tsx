@@ -4,13 +4,11 @@ import { useState, useEffect, createContext, useContext } from 'react'
 import '@rainbow-me/rainbowkit/styles.css'
 import { RainbowKitProvider, connectorsForWallets } from '@rainbow-me/rainbowkit'
 import { SessionProvider } from 'next-auth/react'
-// import {
-//   metaMaskWallet,
-//   injectedWallet,
-//   valoraWallet,
-//   walletConnectWallet,
-// } from "@rainbow-me/rainbowkit/wallets";
-import { injectedWallet } from "@rainbow-me/rainbowkit/wallets";
+import {
+  injectedWallet,
+  valoraWallet,
+  // walletConnectWallet,
+} from "@rainbow-me/rainbowkit/wallets";
 import { WagmiProvider, createConfig, http, useConnect, useAccount, cookieStorage, createStorage, type State } from "wagmi";
 import { celo, hardhat } from 'wagmi/chains'
 import { defineChain } from 'viem'
@@ -72,8 +70,7 @@ const connectors = isServer
           groupName: "Recommended",
           wallets: [
             injectedWallet,
-            // metaMaskWallet,
-            // valoraWallet,
+            valoraWallet,
             // walletConnectWallet,
           ],
         },
