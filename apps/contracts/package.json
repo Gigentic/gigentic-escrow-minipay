@@ -9,7 +9,9 @@
     "test": "hardhat test",
     "verify": "hardhat verify",
     "clean": "hardhat clean",
-    "typechain": "hardhat typechain"
+    "typechain": "hardhat typechain",
+    "deploy:sepolia": "hardhat ignition deploy ignition/modules/Factory.ts --network sepolia --parameters '{\"FactoryModule\":{\"cUSDAddress\":\"0xdE9e4C3ce781b4bA68120d6261cbad65ce0aB00b\"}}'",
+    "deploy:celo": "hardhat ignition deploy ignition/modules/Factory.ts --network celo --parameters '{\"FactoryModule\":{\"cUSDAddress\":\"0x765de816845861e75a25fca122bb6898b8b1282a\"}}'"
   },
   "keywords": [
     "hardhat",
