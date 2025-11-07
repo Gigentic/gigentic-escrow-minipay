@@ -53,8 +53,8 @@ export default async function AdminStatsPage({
     redirect("/");
   }
 
-  // Default to Celo Sepolia testnet
-  const chainId = searchParams.chainId ? parseInt(searchParams.chainId, 10) : 11142220;
+  // Default to Celo Mainnet (production)
+  const chainId = searchParams.chainId ? parseInt(searchParams.chainId, 10) : 42220;
 
   let stats: PlatformStats | null = null;
   let error = "";

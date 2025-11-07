@@ -64,8 +64,12 @@ export default async function ResolveDisputePage({
   }
 
   const escrowAddress = params.id as Address;
-  // Default to Celo Sepolia testnet
-  const chainId = searchParams.chainId ? parseInt(searchParams.chainId, 10) : 11142220;
+  // Default to Celo Mainnet (production)
+  const chainId = searchParams.chainId ? parseInt(searchParams.chainId, 10) : 42220;
+
+  console.log('[Admin Dispute Details] Loading dispute for escrow:', escrowAddress);
+  console.log('[Admin Dispute Details] ChainId:', chainId);
+  console.log('[Admin Dispute Details] Chain name:', chainId === 42220 ? 'Celo Mainnet' : chainId === 11142220 ? 'Celo Sepolia' : 'Unknown');
 
   let dispute: DisputeDetails | null = null;
   let error = "";
@@ -78,6 +82,8 @@ export default async function ResolveDisputePage({
     });
     const kv = getKVClient();
 
+    console.log('[Admin Dispute Details] Fetching escrow details from contract...');
+
     // Get escrow details
     const details = await publicClient.readContract({
       address: escrowAddress,
@@ -85,7 +91,10 @@ export default async function ResolveDisputePage({
       functionName: "getDetails",
     });
 
+    console.log('[Admin Dispute Details] Contract details fetched successfully');
+
     const state = details[5] as EscrowState;
+    console.log('[Admin Dispute Details] Escrow state:', state, `(DISPUTED=${EscrowState.DISPUTED})`);
 
     if (state !== EscrowState.DISPUTED) {
       error = "Escrow is not in disputed state";

@@ -54,14 +54,18 @@ export default async function AdminDisputesPage({
     redirect("/");
   }
 
-  // Default to Celo Sepolia testnet
-  const chainId = searchParams.chainId ? parseInt(searchParams.chainId, 10) : 11142220;
+  // Default to Celo Mainnet (production)
+  const chainId = searchParams.chainId ? parseInt(searchParams.chainId, 10) : 42220;
+
+  console.log('[Admin Disputes] Loading disputes for chainId:', chainId);
+  console.log('[Admin Disputes] Chain name:', chainId === 42220 ? 'Celo Mainnet' : chainId === 11142220 ? 'Celo Sepolia' : 'Unknown');
 
   let disputes: DisputedEscrow[] = [];
   let error = "";
 
   try {
     const factoryAddress = getMasterFactoryAddress(chainId);
+    console.log('[Admin Disputes] Factory address:', factoryAddress);
 
     // Create public client and KV client
     const publicClient = createPublicClient({
@@ -77,6 +81,8 @@ export default async function AdminDisputesPage({
       functionName: "getAllEscrows",
     });
 
+    console.log('[Admin Disputes] Total escrows found:', allEscrows.length);
+
     // Filter for disputed escrows - parallel execution for performance
     const disputedEscrowsData = await Promise.all(
       allEscrows.map(async (escrowAddress) => {
@@ -88,6 +94,8 @@ export default async function AdminDisputesPage({
           });
 
           const state = details[5] as EscrowState;
+
+          console.log(`[Admin Disputes] Escrow ${escrowAddress} state:`, state, `(DISPUTED=${EscrowState.DISPUTED})`);
 
           if (state === EscrowState.DISPUTED) {
             const disputeInfo = await publicClient.readContract({
@@ -122,6 +130,7 @@ export default async function AdminDisputesPage({
     );
 
     disputes = disputedEscrowsData.filter((escrow) => escrow !== null) as DisputedEscrow[];
+    console.log('[Admin Disputes] Total disputed escrows found:', disputes.length);
   } catch (err: any) {
     console.error("Error fetching disputes:", err);
     error = err.message || "Failed to load disputes";
@@ -161,7 +170,7 @@ export default async function AdminDisputesPage({
           </div>
         )}
 
-        <DisputeList disputes={disputes} isLoading={false} />
+        <DisputeList disputes={disputes} isLoading={false} chainId={chainId} />
       </div>
     </main>
   );

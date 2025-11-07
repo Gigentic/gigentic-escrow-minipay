@@ -21,13 +21,14 @@ interface DisputedEscrow {
 interface DisputeListProps {
   disputes: DisputedEscrow[];
   isLoading?: boolean;
+  chainId: number;
 }
 
 /**
  * Dispute List Component
  * Displays a table of disputed escrows for admin review
  */
-export function DisputeList({ disputes, isLoading }: DisputeListProps) {
+export function DisputeList({ disputes, isLoading, chainId }: DisputeListProps) {
   if (isLoading) {
     return (
       <Card className="p-8 text-center">
@@ -55,7 +56,7 @@ export function DisputeList({ disputes, isLoading }: DisputeListProps) {
                 <h3 className="text-lg font-semibold mb-2">Disputed Escrow</h3>
                 <AddressDisplay address={dispute.address} />
               </div>
-              <Link href={`/admin/disputes/${dispute.address}`}>
+              <Link href={`/admin/disputes/${dispute.address}?chainId=${chainId}`}>
                 <Button>Review & Resolve</Button>
               </Link>
             </div>
