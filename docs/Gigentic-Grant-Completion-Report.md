@@ -110,7 +110,7 @@ We successfully integrated Celo's Self Protocol for privacy-preserving identity 
 - Transaction history: https://celo-sepolia.blockscout.com/address/0x02Dc42666AECB9b780177d45591c2093e409e750?tab=txs
 - Comprehensive testing across different wallet providers and transaction scenarios
 
-**Adaptation to Ecosystem Changes:** When Opera's crypto browser was deprecated, we proactively integrated with MiniPay, ensuring our solution remained aligned with Celo's mobile-first vision and current ecosystem infrastructure.
+**Adaptation to Ecosystem Changes:** As Opera's built-in crypto wallet is being deprecated, we proactively integrated with MiniPay, ensuring our solution remained aligned with Celo's mobile-first vision and current ecosystem infrastructure.
 
 ---
 
