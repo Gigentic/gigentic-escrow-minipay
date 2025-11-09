@@ -103,8 +103,7 @@ We successfully integrated Celo's Self Protocol for privacy-preserving identity 
 **Self Protocol Integration:**
 - Real passport verification working in production
 - Privacy-preserving identity layer for enhanced trust
-- Visual demonstration: [Self Verification](./assets/Self.gif)
-
+![Self Verification](./assets/Self.gif)
 
 **Extensive Testing:**
 - 40+ test transactions on Sepolia testnet
