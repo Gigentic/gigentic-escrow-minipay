@@ -93,7 +93,7 @@ We successfully integrated Celo's Self Protocol for privacy-preserving identity 
 
 - ✅ Valora Wallet (native Celo wallet)
 
-![Valora Wallet](./assets/valora.png)
+![Valora Wallet](./assets/Valora.png)
 
 - ✅ MiniPay (Opera's successor for mobile crypto payments)
 
