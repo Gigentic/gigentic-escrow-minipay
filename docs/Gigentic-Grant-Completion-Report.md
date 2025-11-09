@@ -12,6 +12,8 @@
 
 We're thrilled to report the successful completion of all major milestones for the CheckPay escrow protocol on Celo. We have delivered a production-ready, mobile-optimized escrow platform that leverages Celo's unique strengths in identity verification and mobile-first design to serve underbanked populations.
 
+![Gigentic CheckPay Dashboard](./assets/dashboard.png)
+
 **Key Achievements:**
 - ✅ Fully functional smart contract system deployed on both Sepolia testnet and Celo mainnet
 - ✅ Production-ready web application with mobile-first design at https://checkpay.gigentic.ai
@@ -40,7 +42,12 @@ We created a robust, production-grade smart contract architecture using a **Fact
 **Technical Implementation:**
 - GitHub Repository: https://github.com/Gigentic/gigentic-escrow-minipay (open-source, MIT license)
 - Sepolia Testnet: https://celo-sepolia.blockscout.com/address/0x02Dc42666AECB9b780177d45591c2093e409e750?tab=contract
-- Test Coverage: [Screenshot 1](https://github.com/Gigentic/gigentic-escrow-minipay/blob/main/public/contract-test1.png) | [Screenshot 2](https://github.com/Gigentic/gigentic-escrow-minipay/blob/main/public/contract-test2.png)
+
+**Test Coverage:**
+
+![Contract Test Coverage 1](./assets/contract-test1.png)
+
+![Contract Test Coverage 2](./assets/contract-test2.png)
 
 **Note:** We deployed to Celo Sepolia instead of Alfajores as the latter was deprecated during the grant period. We proactively adapted to this ecosystem change to ensure long-term viability.
 
@@ -81,15 +88,23 @@ The platform successfully handles limited bandwidth environments through efficie
 
 We successfully integrated Celo's Self Protocol for privacy-preserving identity verification alongside comprehensive multi-wallet support:
 
+**Multi-Wallet Support:**
+- ✅ MetaMask and other Web3 wallets via RainbowKit
+
+- ✅ Valora Wallet (native Celo wallet)
+
+![Valora Wallet](./assets/valora.png)
+
+- ✅ MiniPay (Opera's successor for mobile crypto payments)
+
+![MiniPay](./assets/minipay.png)
+
+
 **Self Protocol Integration:**
 - Real passport verification working in production
 - Privacy-preserving identity layer for enhanced trust
-- Visual demonstration: https://github.com/Gigentic/gigentic-escrow-minipay/blob/main/public/Self.gif
+- Visual demonstration: [Self Verification](./assets/Self.gif)
 
-**Multi-Wallet Support:**
-- ✅ Valora Wallet (native Celo wallet)
-- ✅ MiniPay (Opera's successor for mobile crypto payments)
-- ✅ MetaMask and other Web3 wallets via RainbowKit
 
 **Extensive Testing:**
 - 40+ test transactions on Sepolia testnet
