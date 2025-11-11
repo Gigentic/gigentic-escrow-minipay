@@ -12,8 +12,8 @@
 4. [Topic 3: Mobile First Comes Last (But Not Least)](#topic-3-mobile-first-comes-last-but-not-least)
 5. [Topic 4: Gas Optimization—Beyond Hashes to Encryption Tradeoffs](#topic-4-gas-optimizationbeyond-hashes-to-encryption-tradeoffs)
 6. [Topic 5: Ecosystem Timing—When Your Testnet Disappears](#topic-5-ecosystem-timingwhen-your-testnet-disappears)
-7. [Topic 6: The Bundle Size Paradox](#topic-6-the-bundle-size-paradoxwhen-your-solution-is-the-problem)
-8. [Closing: Vibecoding to Production—The Real Rules](#closing-vibecoding-to-productionthe-real-rules)
+7. [Topic 6: The Bundle Size Paradox](#topic-6-the-bundle-size-paradox)
+8. [Closing: Vibecoding to Production—The Real Rules](#conclusion-vibecoding-to-productionthe-real-rules)
 9. [About CheckPay](#about-checkpay)
 
 ---
@@ -437,7 +437,7 @@ Celo Builder Telegram Group: https://t.me/proofofship
 
 ---
 
-## Topic 6: The Bundle Size Paradox—When Removing One Package Saves 2MB
+## Topic 6: The Bundle Size Paradox
 
 > *"I could have spent hours optimizing fonts, lazy loading components, refactoring providers. But I just deleted one wallet package and saved 2MB."*
 
