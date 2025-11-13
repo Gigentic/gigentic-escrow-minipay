@@ -83,7 +83,10 @@
       "Bash(pnpm exec hardhat ignition --help:*)",
       "Bash(pnpm exec hardhat ignition deploy --help:*)",
       "Bash(pnpm exec hardhat --help:*)",
-      "Bash(lighthouse:*)"
+      "Bash(lighthouse:*)",
+      "WebFetch(domain:www.fireblocks.com)",
+      "WebFetch(domain:www.ainvest.com)",
+      "WebFetch(domain:www.mckinsey.com)"
     ],
     "deny": [],
     "ask": []
