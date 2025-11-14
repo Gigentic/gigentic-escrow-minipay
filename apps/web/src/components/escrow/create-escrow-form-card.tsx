@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Check } from "lucide-react";
+import { getStablecoinDecimals, getStablecoinSymbol } from "@/lib/escrow-config";
 
 interface CreateEscrowFormCardProps {
   recipient: string;
@@ -21,6 +22,7 @@ interface CreateEscrowFormCardProps {
   error: string | null;
   createError?: { message: string } | null;
   onReviewClick: () => void;
+  chainId?: number;
 }
 
 /**
@@ -41,7 +43,10 @@ export function CreateEscrowFormCard({
   error,
   createError,
   onReviewClick,
+  chainId,
 }: CreateEscrowFormCardProps) {
+  const decimals = chainId ? getStablecoinDecimals(chainId) : 18;
+  const symbol = chainId ? getStablecoinSymbol(chainId) : 'cUSD';
   return (
     <Card className="p-6">
       <div className="space-y-6">
@@ -88,7 +93,7 @@ export function CreateEscrowFormCard({
 
         {/* Amount */}
         <div className="space-y-2">
-          <Label htmlFor="amount">Amount (cUSD) *</Label>
+          <Label htmlFor="amount">Amount ({symbol}) *</Label>
           <Input
             id="amount"
             type="text"
@@ -112,21 +117,21 @@ export function CreateEscrowFormCard({
           <div className="border rounded-md p-4 space-y-2 text-sm">
             <div className="flex justify-between">
               <span>Recipient receives:</span>
-              <span className="font-medium">${amount} cUSD</span>
+              <span className="font-medium">${amount} {symbol}</span>
             </div>
             <div className="flex justify-between text-muted-foreground">
               <span>Platform fee:</span>
-              <span>${(parseFloat(amount) * 0.01).toFixed(2)} cUSD</span>
+              <span>${(parseFloat(amount) * 0.01).toFixed(2)} {symbol}</span>
             </div>
             <div className="flex justify-between items-center text-muted-foreground">
               <div className="flex items-center gap-1">
                 <span>Refundable bond:</span>
               </div>
-              <span>${(parseFloat(amount) * 0.04).toFixed(2)} cUSD</span>
+              <span>${(parseFloat(amount) * 0.04).toFixed(2)} {symbol}</span>
             </div>
             <div className="flex justify-between font-semibold border-t pt-2 mt-2">
               <span>Total you pay:</span>
-              <span>${(parseFloat(amount) * 1.05).toFixed(2)} cUSD</span>
+              <span>${(parseFloat(amount) * 1.05).toFixed(2)} {symbol}</span>
             </div>
           </div>
         )}
@@ -134,7 +139,7 @@ export function CreateEscrowFormCard({
         {/* Balance Display */}
         {balance !== undefined && (
           <div className="flex items-center gap-2 text-sm">
-            <span>Your balance: ${(Number(balance) / 1e18).toFixed(2)} cUSD</span>
+            <span>Your balance: ${(Number(balance) / Math.pow(10, decimals)).toFixed(decimals === 6 ? 2 : 2)} {symbol}</span>
             {balance >= totalRequired && <Check className="h-4 w-4 text-green-600" />}
           </div>
         )}

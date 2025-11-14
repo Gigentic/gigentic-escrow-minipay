@@ -86,7 +86,14 @@
       "Bash(lighthouse:*)",
       "WebFetch(domain:www.fireblocks.com)",
       "WebFetch(domain:www.ainvest.com)",
-      "WebFetch(domain:www.mckinsey.com)"
+      "WebFetch(domain:www.mckinsey.com)",
+      "Bash(forge install:*)",
+      "Bash(forge build:*)",
+      "Bash(forge test:*)",
+      "Bash(source .env)",
+      "Bash(forge script:*)",
+      "WebFetch(domain:chainlist.org)",
+      "WebFetch(domain:thirdweb.com)"
     ],
     "deny": [],
     "ask": []

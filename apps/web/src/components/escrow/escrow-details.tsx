@@ -30,6 +30,7 @@ interface EscrowDetailsDisplayProps {
   isParty: boolean;
   isConnected: boolean;
   userAddress?: Address;
+  chainId?: number;
 }
 
 /**
@@ -45,6 +46,7 @@ export function EscrowDetailsDisplay({
   isParty,
   isConnected,
   userAddress,
+  chainId,
 }: EscrowDetailsDisplayProps) {
   const [showFeeBreakdown, setShowFeeBreakdown] = useState(false);
 
@@ -69,7 +71,7 @@ export function EscrowDetailsDisplay({
           {/* Amount & Status */}
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-3xl font-bold">{formatAmount(details.escrowAmount)}</p>
+              <p className="text-3xl font-bold">{formatAmount(details.escrowAmount, chainId)}</p>
             </div>
             <span className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${stateColor}`}>
               {stateText}
@@ -117,19 +119,19 @@ export function EscrowDetailsDisplay({
                   <div className="space-y-3">
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Payment</span>
-                      <span className="font-medium">{formatAmount(details.escrowAmount)}</span>
+                      <span className="font-medium">{formatAmount(details.escrowAmount, chainId)}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Platform Fee</span>
-                      <span className="font-medium">{formatAmount(details.platformFee)}</span>
+                      <span className="font-medium">{formatAmount(details.platformFee, chainId)}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Dispute Bond</span>
-                      <span className="font-medium">{formatAmount(details.disputeBond)}</span>
+                      <span className="font-medium">{formatAmount(details.disputeBond, chainId)}</span>
                     </div>
                     <div className="flex justify-between text-sm pt-3 border-t font-semibold">
                       <span>Total Locked</span>
-                      <span>{formatAmount(totalLocked)}</span>
+                      <span>{formatAmount(totalLocked, chainId)}</span>
                     </div>
                   </div>
                 </Card>

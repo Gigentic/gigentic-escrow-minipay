@@ -9,6 +9,8 @@ export function getExplorerUrl(chainId: number): string {
       return 'https://alfajores.celoscan.io';
     case 11142220: // Celo Sepolia
       return 'https://celo-sepolia.blockscout.com';
+    case 5042002: // Arc Testnet
+      return 'https://testnet.arcscan.app';
     case 31337: // Hardhat
       return 'http://localhost:8545';
     default:

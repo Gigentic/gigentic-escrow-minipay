@@ -9,10 +9,12 @@ import { celoSepolia, hardhat, celo } from "viem/chains";
 import {
   ESCROW_CONTRACT_ABI,
   EscrowState,
+  getStablecoinDecimals,
+  getStablecoinSymbol,
 } from "@/lib/escrow-config";
 import { getKVClient, kvKeys } from "@/lib/kv";
 import type { DisputeDocument, DeliverableDocument } from "@/lib/types";
-import { formatEther } from "viem";
+import { formatUnits } from "viem";
 
 // Force dynamic rendering - this page uses session/auth
 export const dynamic = 'force-dynamic';
@@ -185,19 +187,19 @@ export default async function ResolveDisputePage({
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Escrow Amount</p>
                 <p className="text-lg font-semibold">
-                  {formatEther(BigInt(dispute.escrowAmount))} cUSD
+                  {formatUnits(BigInt(dispute.escrowAmount), getStablecoinDecimals(chainId))} {getStablecoinSymbol(chainId)}
                 </p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Platform Fee</p>
                 <p className="text-lg font-semibold">
-                  {formatEther(BigInt(dispute.platformFee))} cUSD
+                  {formatUnits(BigInt(dispute.platformFee), getStablecoinDecimals(chainId))} {getStablecoinSymbol(chainId)}
                 </p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Dispute Bond</p>
                 <p className="text-lg font-semibold">
-                  {formatEther(BigInt(dispute.disputeBond))} cUSD
+                  {formatUnits(BigInt(dispute.disputeBond), getStablecoinDecimals(chainId))} {getStablecoinSymbol(chainId)}
                 </p>
               </div>
             </div>

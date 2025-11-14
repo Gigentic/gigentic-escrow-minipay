@@ -2,13 +2,15 @@
 
 import { useState, useEffect } from "react";
 import { useAccount, useReadContract } from "wagmi";
-import { parseEther, type Address } from "viem";
+import { parseUnits, type Address } from "viem";
 import { Card } from "@/components/ui/card";
 import {
   ERC20_ABI,
   getCUSDAddress,
   getMasterFactoryAddress,
   calculateTotalRequired,
+  getStablecoinDecimals,
+  getStablecoinSymbol,
 } from "@/lib/escrow-config";
 import { useRouter } from "next/navigation";
 import { useCreateEscrow } from "@/hooks/use-create-escrow";
@@ -57,7 +59,8 @@ export function CreateEscrowForm({ initialAmount }: { initialAmount?: string }) 
   });
 
   // Calculate if spending cap is sufficient
-  const amountWei = amount ? parseEther(amount) : 0n;
+  const decimals = chainId ? getStablecoinDecimals(chainId) : 18;
+  const amountWei = amount ? parseUnits(amount, decimals) : 0n;
   const { total: totalRequired } = calculateTotalRequired(amountWei);
 
   // Check current spending cap (allowance)
@@ -74,9 +77,11 @@ export function CreateEscrowForm({ initialAmount }: { initialAmount?: string }) 
 
   // Log current spending cap when it changes
   useEffect(() => {
-    if (currentAllowance !== undefined) {
-      const humanReadable = (Number(currentAllowance) / 1e18).toFixed(4);
-      console.log("Current spending cap (allowance):", currentAllowance.toString(), `(${humanReadable} cUSD)`);
+    if (currentAllowance !== undefined && chainId) {
+      const symbol = getStablecoinSymbol(chainId);
+      const decimals = getStablecoinDecimals(chainId);
+      const humanReadable = (Number(currentAllowance) / Math.pow(10, decimals)).toFixed(4);
+      console.log("Current spending cap (allowance):", currentAllowance.toString(), `(${humanReadable} ${symbol})`);
 
       // Stop polling if allowance is now sufficient
       if (allowanceRefetchKey > 0 && amount && currentAllowance >= totalRequired) {
@@ -84,7 +89,7 @@ export function CreateEscrowForm({ initialAmount }: { initialAmount?: string }) 
         setAllowanceRefetchKey(0);
       }
     }
-  }, [currentAllowance, allowanceRefetchKey, totalRequired, amount]);
+  }, [currentAllowance, allowanceRefetchKey, totalRequired, amount, chainId]);
 
   // Hook for approving spending cap
   const { approveSpendingCapAsync, isApproving, error: approvalError } = useApproveSpendingCap({
@@ -132,11 +137,13 @@ export function CreateEscrowForm({ initialAmount }: { initialAmount?: string }) 
     }
 
     // Check if user has enough balance
-    if (balance) {
-      const amountWei = parseEther(amount);
+    if (balance && chainId) {
+      const decimals = getStablecoinDecimals(chainId);
+      const symbol = getStablecoinSymbol(chainId);
+      const amountWei = parseUnits(amount, decimals);
       const { total } = calculateTotalRequired(amountWei);
       if (balance < total) {
-        setError("Insufficient cUSD balance");
+        setError(`Insufficient ${symbol} balance`);
         return false;
       }
     }
@@ -162,7 +169,8 @@ export function CreateEscrowForm({ initialAmount }: { initialAmount?: string }) 
     setError("");
 
     try {
-      const amountWei = parseEther(amount);
+      const decimals = chainId ? getStablecoinDecimals(chainId) : 18;
+      const amountWei = parseUnits(amount, decimals);
       const { total } = calculateTotalRequired(amountWei);
       await approveSpendingCapAsync(total);
     } catch (err: any) {
@@ -183,7 +191,8 @@ export function CreateEscrowForm({ initialAmount }: { initialAmount?: string }) 
     setError("");
 
     try {
-      const amountWei = parseEther(amount);
+      const decimals = chainId ? getStablecoinDecimals(chainId) : 18;
+      const amountWei = parseUnits(amount, decimals);
 
       // Call the hook with properly typed parameters
       // Navigation to dashboard is handled in the onSuccess callback
@@ -233,6 +242,7 @@ export function CreateEscrowForm({ initialAmount }: { initialAmount?: string }) 
         error={error}
         createError={createError}
         onReviewClick={handleReviewClick}
+        chainId={chainId}
       />
 
       <CreateEscrowReviewModal

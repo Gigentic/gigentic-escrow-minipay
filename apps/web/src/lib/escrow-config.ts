@@ -422,11 +422,12 @@ export function getMasterFactoryAddress(chainId: number): Address {
   const addresses: Record<number, Address> = {
     11142220: process.env.NEXT_PUBLIC_MASTER_FACTORY_ADDRESS_SEPOLIA! as Address,
     42220: process.env.NEXT_PUBLIC_MASTER_FACTORY_ADDRESS_CELO! as Address,
+    5042002: process.env.NEXT_PUBLIC_MASTER_FACTORY_ADDRESS_ARC! as Address, // Arc Testnet
     31337: process.env.NEXT_PUBLIC_MASTER_FACTORY_ADDRESS_HARDHAT as Address || "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512" as Address,
   };
 
   if (!addresses[chainId]) {
-    throw new Error(`No MasterFactory address configured for chain ${chainId}`);
+    throw new Error(`No MasterFactory address configured for chain ${chainId}. Supported chains: Celo Mainnet (42220), Celo Sepolia (11142220), Arc Testnet (5042002)`);
   }
 
   return addresses[chainId];
@@ -434,16 +435,47 @@ export function getMasterFactoryAddress(chainId: number): Address {
 
 export function getCUSDAddress(chainId: number): Address {
   const addresses: Record<number, Address> = {
-    11142220: "0xdE9e4C3ce781b4bA68120d6261cbad65ce0aB00b" as Address, // Celo Sepolia
-    42220: "0x765de816845861e75a25fca122bb6898b8b1282a" as Address, // Celo Mainnet
+    11142220: "0xdE9e4C3ce781b4bA68120d6261cbad65ce0aB00b" as Address, // Celo Sepolia cUSD
+    42220: "0x765de816845861e75a25fca122bb6898b8b1282a" as Address, // Celo Mainnet cUSD
+    5042002: "0x3600000000000000000000000000000000000000" as Address, // Arc Testnet USDC (native ERC-20 interface)
     31337: process.env.NEXT_PUBLIC_CUSD_ADDRESS_HARDHAT as Address || "0x5FbDB2315678afecb367f032d93F642f64180aa3" as Address, // Hardhat
   };
 
   if (!addresses[chainId]) {
-    throw new Error(`No cUSD address configured for chain ${chainId}`);
+    throw new Error(`No stablecoin address configured for chain ${chainId}. Supported chains: Celo Mainnet (42220), Celo Sepolia (11142220), Arc Testnet (5042002)`);
   }
 
   return addresses[chainId];
+}
+
+/**
+ * Get the decimals for the stablecoin on a given chain
+ * Celo chains use cUSD with 18 decimals
+ * Arc uses USDC with 6 decimals
+ */
+export function getStablecoinDecimals(chainId: number): number {
+  const decimals: Record<number, number> = {
+    11142220: 18, // Celo Sepolia cUSD
+    42220: 18,    // Celo Mainnet cUSD
+    5042002: 6,   // Arc Testnet USDC
+    31337: 18,    // Hardhat (usually cUSD mock)
+  };
+
+  return decimals[chainId] ?? 18; // Default to 18 if unknown
+}
+
+/**
+ * Get the stablecoin symbol for display
+ */
+export function getStablecoinSymbol(chainId: number): string {
+  const symbols: Record<number, string> = {
+    11142220: 'cUSD',
+    42220: 'cUSD',
+    5042002: 'USDC',
+    31337: 'cUSD',
+  };
+
+  return symbols[chainId] ?? 'cUSD';
 }
 
 // TypeScript interfaces for contract data structures

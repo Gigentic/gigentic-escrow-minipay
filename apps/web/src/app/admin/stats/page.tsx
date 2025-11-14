@@ -8,8 +8,10 @@ import {
   MASTER_FACTORY_ABI,
   ESCROW_CONTRACT_ABI,
   EscrowState,
+  getStablecoinDecimals,
+  getStablecoinSymbol,
 } from "@/lib/escrow-config";
-import { formatEther } from "viem";
+import { formatUnits } from "viem";
 
 // Force dynamic rendering - this page uses session/auth
 export const dynamic = 'force-dynamic';
@@ -180,17 +182,17 @@ export default async function AdminStatsPage({
           <Card className="p-6">
             <p className="text-sm text-muted-foreground mb-2">Volume Processed</p>
             <p className="text-3xl font-bold">
-              {formatEther(BigInt(stats.volumeProcessed))}
+              {formatUnits(BigInt(stats.volumeProcessed), getStablecoinDecimals(chainId))}
             </p>
-            <p className="text-xs text-muted-foreground mt-1">cUSD</p>
+            <p className="text-xs text-muted-foreground mt-1">{getStablecoinSymbol(chainId)}</p>
           </Card>
 
           <Card className="p-6">
             <p className="text-sm text-muted-foreground mb-2">Fees Collected</p>
             <p className="text-3xl font-bold">
-              {formatEther(BigInt(stats.feesCollected))}
+              {formatUnits(BigInt(stats.feesCollected), getStablecoinDecimals(chainId))}
             </p>
-            <p className="text-xs text-muted-foreground mt-1">cUSD</p>
+            <p className="text-xs text-muted-foreground mt-1">{getStablecoinSymbol(chainId)}</p>
           </Card>
 
           <Card className="p-6">
@@ -270,11 +272,12 @@ export default async function AdminStatsPage({
                 <span className="text-sm text-muted-foreground">Avg. Escrow Size</span>
                 <span className="font-medium">
                   {stats.totalEscrows !== "0"
-                    ? formatEther(
-                        BigInt(stats.volumeProcessed) / BigInt(stats.totalEscrows)
+                    ? formatUnits(
+                        BigInt(stats.volumeProcessed) / BigInt(stats.totalEscrows),
+                        getStablecoinDecimals(chainId)
                       )
                     : "0"}{" "}
-                  cUSD
+                  {getStablecoinSymbol(chainId)}
                 </span>
               </div>
               <div className="flex justify-between">
@@ -282,8 +285,8 @@ export default async function AdminStatsPage({
                 <span className="font-medium">
                   {stats.volumeProcessed !== "0"
                     ? (
-                        (Number(formatEther(BigInt(stats.feesCollected))) /
-                          Number(formatEther(BigInt(stats.volumeProcessed)))) *
+                        (Number(formatUnits(BigInt(stats.feesCollected), getStablecoinDecimals(chainId))) /
+                          Number(formatUnits(BigInt(stats.volumeProcessed), getStablecoinDecimals(chainId)))) *
                         100
                       ).toFixed(2)
                     : "0"}

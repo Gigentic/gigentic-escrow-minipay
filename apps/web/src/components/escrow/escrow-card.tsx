@@ -19,6 +19,7 @@ interface EscrowCardProps {
   createdAt: bigint;
   currentUserAddress?: Address;
   title?: string;
+  chainId?: number;
 }
 
 /**
@@ -34,6 +35,7 @@ export function EscrowCard({
   createdAt,
   currentUserAddress,
   title,
+  chainId,
 }: EscrowCardProps) {
   // Format state for display with appropriate styling
   const stateText = formatEscrowState(state);
@@ -61,7 +63,7 @@ export function EscrowCard({
           {/* Date + Amount (inline with amount right-aligned) */}
           <div className="flex items-center justify-between gap-2 text-sm">
             <span className="text-muted-foreground">{relativeTime}</span>
-            <span className="font-semibold">{formatAmount(amount)}</span>
+            <span className="font-semibold">{formatAmount(amount, chainId)}</span>
           </div>
 
           {/* Addresses with arrow (depositor left, arrow center, recipient right) */}

@@ -5,10 +5,16 @@ import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { calculateTotalRequired } from "@/lib/escrow-config";
+import { calculateTotalRequired, getStablecoinDecimals, getStablecoinSymbol } from "@/lib/escrow-config";
 import { formatUnits, parseUnits } from "viem";
 
-export function FeeCalculatorWidget() {
+interface FeeCalculatorWidgetProps {
+  chainId?: number;
+}
+
+export function FeeCalculatorWidget({ chainId }: FeeCalculatorWidgetProps = {}) {
+  const decimals = chainId ? getStablecoinDecimals(chainId) : 18;
+  const symbol = chainId ? getStablecoinSymbol(chainId) : 'cUSD';
   const router = useRouter();
   const [amount, setAmount] = useState("");
 
@@ -29,14 +35,14 @@ export function FeeCalculatorWidget() {
     }
 
     try {
-      const amountInWei = parseUnits(amount, 18);
+      const amountInWei = parseUnits(amount, decimals);
       const fees = calculateTotalRequired(amountInWei);
 
       return {
-        amount: formatUnits(fees.amount, 18),
-        platformFee: formatUnits(fees.platformFee, 18),
-        disputeBond: formatUnits(fees.disputeBond, 18),
-        total: formatUnits(fees.total, 18),
+        amount: formatUnits(fees.amount, decimals),
+        platformFee: formatUnits(fees.platformFee, decimals),
+        disputeBond: formatUnits(fees.disputeBond, decimals),
+        total: formatUnits(fees.total, decimals),
       };
     } catch (error) {
       return null;
@@ -87,7 +93,7 @@ export function FeeCalculatorWidget() {
               onChange={(e) => handleAmountChange(e.target.value)}
               className="flex-1 text-right"
             />
-            <span className="text-sm font-medium">cUSD</span>
+            <span className="text-sm font-medium">{symbol}</span>
           </div>
         </div>
 
@@ -95,23 +101,23 @@ export function FeeCalculatorWidget() {
           <div className="space-y-2 pt-4 border-t">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Recipient receives:</span>
-              <span className="font-medium">{parseFloat(fees.amount).toFixed(2)} cUSD</span>
+              <span className="font-medium">{parseFloat(fees.amount).toFixed(2)} {symbol}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Platform fee (1%):</span>
-              <span className="font-medium">{parseFloat(fees.platformFee).toFixed(2)} cUSD</span>
+              <span className="font-medium">{parseFloat(fees.platformFee).toFixed(2)} {symbol}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Refundable bond (4%):</span>
-              <span className="font-medium">{parseFloat(fees.disputeBond).toFixed(2)} cUSD</span>
+              <span className="font-medium">{parseFloat(fees.disputeBond).toFixed(2)} {symbol}</span>
             </div>
             <div className="flex justify-between text-base font-semibold pt-2 border-t">
               <span>Total you pay:</span>
-              <span className="text-primary">{parseFloat(fees.total).toFixed(2)} cUSD</span>
+              <span className="text-primary">{parseFloat(fees.total).toFixed(2)} {symbol}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">You get back (when no disputes):</span>
-              <span className="font-medium">{parseFloat(fees.disputeBond).toFixed(2)} cUSD</span>
+              <span className="font-medium">{parseFloat(fees.disputeBond).toFixed(2)} {symbol}</span>
             </div>
           </div>
         )}

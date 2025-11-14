@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useSearchParams } from "next/navigation";
-import { type Address, formatEther } from "viem";
+import { type Address, formatUnits } from "viem";
 import { useAccount } from "wagmi";
 import { EscrowDetailsDisplay } from "@/components/escrow/escrow-details";
 import { EscrowActions } from "@/components/escrow/escrow-actions";
 import { EscrowSuccessModal } from "@/components/escrow/escrow-success-modal";
 import { useEscrowDetails } from "@/hooks/use-escrow-details";
 import { isParty as checkIsParty } from "@/lib/address-utils";
+import { getStablecoinDecimals } from "@/lib/escrow-config";
 
 export default function EscrowDetailPage() {
   const params = useParams();
@@ -65,7 +66,8 @@ export default function EscrowDetailPage() {
   }
 
   // Format amount for success modal
-  const formattedAmount = formatEther(details.escrowAmount);
+  const decimals = chainId ? getStablecoinDecimals(chainId) : 18;
+  const formattedAmount = formatUnits(details.escrowAmount, decimals);
 
   return (
     <main className="flex-1 container mx-auto px-4 py-12">
@@ -79,6 +81,7 @@ export default function EscrowDetailPage() {
           isParty={isParty}
           isConnected={isConnected}
           userAddress={userAddress}
+          chainId={chainId}
         />
 
         <EscrowActions
@@ -96,6 +99,7 @@ export default function EscrowDetailPage() {
         onOpenChange={setShowSuccessModal}
         escrowAddress={escrowAddress}
         amount={formattedAmount}
+        chainId={chainId}
       />
     </main>
   );

@@ -57,6 +57,29 @@ const celoSepolia = defineChain({
   testnet: true,
 })
 
+// Define Arc Testnet chain
+const arcTestnet = defineChain({
+  id: 5042002,
+  name: 'Arc Testnet',
+  nativeCurrency: {
+    decimals: 18,
+    name: 'USDC',
+    symbol: 'USDC',
+  },
+  rpcUrls: {
+    default: {
+      http: ['https://rpc.testnet.arc.network'],
+    },
+  },
+  blockExplorers: {
+    default: {
+      name: 'Arcscan',
+      url: 'https://testnet.arcscan.app',
+    },
+  },
+  testnet: true,
+})
+
 // Check if running on server (SSR) or client
 const isServer = typeof window === "undefined";
 
@@ -84,13 +107,14 @@ const connectors = isServer
 // Client-side wagmi config with conditional connectors
 // Used by WalletProvider component
 export const wagmiConfig = createConfig({
-  chains: [celo, celoSepolia],
+  chains: [celo, celoSepolia, arcTestnet],
   // chains: [celo, celoSepolia, hardhat],
   connectors,
   transports: {
     // [hardhat.id]: http(),
     [celo.id]: http(),
     [celoSepolia.id]: http(),
+    [arcTestnet.id]: http(),
   },
   ssr: true,
   storage: createStorage({

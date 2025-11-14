@@ -13,13 +13,14 @@ import {
   ResponsiveDialogDescription,
 } from "@/components/ui/responsive-dialog";
 import { Copy, Check } from "lucide-react";
-import { EscrowState, formatEscrowState, getStateColor } from "@/lib/escrow-config";
+import { EscrowState, formatEscrowState, getStateColor, getStablecoinSymbol } from "@/lib/escrow-config";
 
 interface EscrowSuccessModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   escrowAddress: Address;
   amount: string;
+  chainId?: number;
 }
 
 export function EscrowSuccessModal({
@@ -27,6 +28,7 @@ export function EscrowSuccessModal({
   onOpenChange,
   escrowAddress,
   amount,
+  chainId,
 }: EscrowSuccessModalProps) {
   const router = useRouter();
   const [copied, setCopied] = useState(false);
@@ -62,7 +64,7 @@ export function EscrowSuccessModal({
             🎉 &nbsp;Escrow Created!
           </ResponsiveDialogTitle>
           <ResponsiveDialogDescription>
-            Your ${amount} cUSD escrow is now live
+            Your ${amount} {getStablecoinSymbol(chainId ?? 11142220)} escrow is now live
           </ResponsiveDialogDescription>
         </ResponsiveDialogHeader>
 

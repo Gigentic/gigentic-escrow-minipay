@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { formatEther, type Address } from "viem";
+import { formatUnits, type Address } from "viem";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AddressDisplay } from "@/components/wallet/address-display";
+import { getStablecoinDecimals, getStablecoinSymbol } from "@/lib/escrow-config";
 
 interface DisputedEscrow {
   address: Address;
@@ -74,7 +75,7 @@ export function DisputeList({ disputes, isLoading, chainId }: DisputeListProps) 
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Escrow Amount</p>
                 <p className="text-lg font-semibold">
-                  {formatEther(BigInt(dispute.escrowAmount))} cUSD
+                  {formatUnits(BigInt(dispute.escrowAmount), getStablecoinDecimals(chainId))} {getStablecoinSymbol(chainId)}
                 </p>
               </div>
               <div>

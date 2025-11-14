@@ -10,6 +10,7 @@ import {
   ResponsiveDialogFooter,
 } from "@/components/ui/responsive-dialog";
 import { Check } from "lucide-react";
+import { getStablecoinSymbol } from "@/lib/escrow-config";
 
 interface CreateEscrowReviewModalProps {
   open: boolean;
@@ -24,6 +25,7 @@ interface CreateEscrowReviewModalProps {
   isCreating: boolean;
   onApprove: () => void;
   onSubmit: () => void;
+  chainId?: number;
 }
 
 /**
@@ -43,7 +45,9 @@ export function CreateEscrowReviewModal({
   isCreating,
   onApprove,
   onSubmit,
+  chainId,
 }: CreateEscrowReviewModalProps) {
+  const symbol = getStablecoinSymbol(chainId ?? 11142220);
   return (
     <ResponsiveDialog open={open} onOpenChange={onOpenChange}>
       <ResponsiveDialogContent className="sm:max-w-md">
@@ -63,7 +67,7 @@ export function CreateEscrowReviewModal({
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Amount:</span>
-              <span className="font-medium">${amount} cUSD</span>
+              <span className="font-medium">${amount} {symbol}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Work:</span>
@@ -80,14 +84,14 @@ export function CreateEscrowReviewModal({
           <div className="border-t pt-3">
             <div className="flex justify-between font-semibold">
               <span>Total payment:</span>
-              <span>${(parseFloat(amount || "0") * 1.05).toFixed(2)} cUSD</span>
+              <span>${(parseFloat(amount || "0") * 1.05).toFixed(2)} {symbol}</span>
             </div>
           </div>
 
           {/* Step 1: Authorize Contract */}
           <div className="space-y-3">
             <div className="text-sm">
-              <span className="font-medium">1.</span> Authorize contract to transfer your cUSD into escrow
+              <span className="font-medium">1.</span> Authorize contract to transfer your {symbol} into escrow
             </div>
 
             {approvalCompleted || !needsApproval ? (
