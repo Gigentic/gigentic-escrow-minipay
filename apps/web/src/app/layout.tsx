@@ -3,8 +3,7 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import { headers } from 'next/headers';
 import { cookieToInitialState } from 'wagmi';
-// import { Analytics } from "@vercel/analytics/next"
-// import { SpeedInsights } from "@vercel/speed-insights/next"
+import { Analytics } from "@vercel/analytics/next"
 import { Navbar } from '@/components/navbar';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from '@/components/ui/sonner';
@@ -59,8 +58,7 @@ export default async function RootLayout({
             </WalletProvider>
           </div>
           <Toaster />
-          {/* <Analytics />
-          <SpeedInsights /> */}
+          <Analytics />
         </ThemeProvider>
       </body>
     </html>

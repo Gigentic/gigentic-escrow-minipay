@@ -93,7 +93,14 @@
       "Bash(source .env)",
       "Bash(forge script:*)",
       "WebFetch(domain:chainlist.org)",
-      "WebFetch(domain:thirdweb.com)"
+      "WebFetch(domain:thirdweb.com)",
+      "mcp__circle__search_circle_documentation",
+      "mcp__circle__get_circle_product_summary",
+      "mcp__circle__search_circle_resources",
+      "Bash(git cherry-pick:*)",
+      "Bash(git commit:*)",
+      "Bash(git remote add:*)",
+      "Bash(git fetch:*)"
     ],
     "deny": [],
     "ask": []
